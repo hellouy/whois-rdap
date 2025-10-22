@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Calendar, User, Building, Server } from "lucide-react";
+import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2 } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 
 interface WhoisQueryProps {
@@ -296,9 +296,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
             </div>
           )}
 
-
           {whoisData.creationDate && (
-            <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md mb-4">
+            <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
               <div className="flex items-center gap-3 mb-2">
                 <Calendar className="h-5 w-5 text-primary" />
                 <p className="text-sm font-bold text-foreground">域名年龄</p>
@@ -313,6 +312,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               </div>
             </div>
           )}
+
+
 
           <div className="grid md:grid-cols-2 gap-4">
             {whoisData.creationDate && (
@@ -345,10 +346,13 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
             <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <p className="text-sm font-bold text-foreground mb-4">名称服务器</p>
-              <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-4">
+                <Server className="h-5 w-5 text-primary" />
+                <p className="text-sm font-bold text-foreground">名称服务器</p>
+              </div>
+              <div className="space-y-2.5">
                 {whoisData.nameServers.map((ns, index) => (
-                  <p key={index} className="font-mono text-sm text-foreground break-all">{ns}</p>
+                  <p key={index} className="font-mono text-sm text-muted-foreground break-all">{ns}</p>
                 ))}
               </div>
             </div>
@@ -370,7 +374,12 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
           {whoisData.status && whoisData.status.length > 0 && (
             <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <p className="text-sm font-bold text-foreground mb-4">域名状态</p>
+              <div className="flex items-center gap-2 mb-4">
+                <Badge className="h-5 w-5 p-0 bg-transparent hover:bg-transparent">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                </Badge>
+                <p className="text-sm font-bold text-foreground">域名状态</p>
+              </div>
               <div className="flex flex-wrap gap-2.5">
                 {whoisData.status.map((status, index) => (
                   <span

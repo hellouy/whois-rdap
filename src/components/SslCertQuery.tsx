@@ -68,12 +68,12 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           )}
 
-          <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <Shield className="h-6 w-6 text-primary mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground mb-2">颁发者</p>
-              <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.issuer}</p>
+          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="h-5 w-5 text-primary" />
+              <p className="text-sm font-bold text-foreground">颁发者 (Issuer)</p>
             </div>
+            <p className="font-mono text-sm text-foreground leading-relaxed break-all pl-7">{certData.issuer}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -104,13 +104,19 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <p className="text-sm font-bold text-foreground mb-3">算法</p>
-            <p className="font-mono text-sm text-foreground">{certData.algorithm}</p>
+            <div className="flex items-center gap-2 mb-3">
+              <Lock className="h-5 w-5 text-primary" />
+              <p className="text-sm font-bold text-foreground">签名算法 (Algorithm)</p>
+            </div>
+            <p className="font-mono text-sm text-foreground pl-7">{certData.algorithm}</p>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <p className="text-sm font-bold text-foreground mb-3">指纹</p>
-            <p className="font-mono text-xs text-foreground break-all leading-relaxed">{certData.fingerprint}</p>
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="h-5 w-5 text-primary" />
+              <p className="text-sm font-bold text-foreground">证书指纹 (Fingerprint)</p>
+            </div>
+            <p className="font-mono text-xs text-foreground break-all leading-relaxed pl-7">{certData.fingerprint}</p>
           </div>
         </div>
       ) : (
