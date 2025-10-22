@@ -132,7 +132,7 @@ const translateDomainStatus = (status: string): string => {
 
 export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
-  const { priceData, isLoading: isPriceLoading, fetchPrice, convertToCNY } = useDomainPrice();
+  const { priceData, isLoading: isPriceLoading, fetchPrice, formatPrice } = useDomainPrice();
 
   // 获取域名状态 - 增强判断逻辑
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
@@ -235,7 +235,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
   return (
     <Card className="p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <Button
           onClick={() => fetchPrice(domain)}
           disabled={isPriceLoading}
@@ -256,32 +256,21 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
         </Button>
         
         {priceData && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Badge variant={priceData.isPremium ? "destructive" : "default"} className="text-sm px-4 py-2">
               {priceData.isPremium ? "溢价域名" : "普通域名"}
             </Badge>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">注册:</span>
+              <span className="font-bold text-foreground">{formatPrice(priceData.registrationPrice)}</span>
+              <span className="text-muted-foreground">续费:</span>
+              <span className="font-bold text-foreground">{formatPrice(priceData.renewalPrice)}</span>
+              <span className="text-muted-foreground">转移:</span>
+              <span className="font-bold text-foreground">{formatPrice(priceData.transferPrice)}</span>
+            </div>
           </div>
         )}
       </div>
-
-      {priceData && (
-        <div className="mb-6 p-5 bg-primary/5 backdrop-blur-sm rounded-xl border border-primary/20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-lg">
-              <span className="text-sm text-muted-foreground mb-1">注册价格</span>
-              <span className="text-xl font-bold text-foreground">{convertToCNY(priceData.registrationPrice)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-lg">
-              <span className="text-sm text-muted-foreground mb-1">续费价格</span>
-              <span className="text-xl font-bold text-foreground">{convertToCNY(priceData.renewalPrice)}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-lg">
-              <span className="text-sm text-muted-foreground mb-1">转入价格</span>
-              <span className="text-xl font-bold text-foreground">{convertToCNY(priceData.transferPrice)}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">

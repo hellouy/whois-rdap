@@ -31,15 +31,15 @@ export const useDomainPrice = () => {
       
       const data = await response.json();
       
-      // 假设API返回的数据结构，根据实际API调整
+      // 适配API返回的数据结构
       const priceInfo: DomainPrice = {
         domain,
-        isPremium: data.isPremium || false,
-        registrationPrice: data.registrationPrice,
-        renewalPrice: data.renewalPrice,
-        transferPrice: data.transferPrice,
-        currency: data.currency || "USD",
-        exchangeRate: data.exchangeRate || 7.2, // 默认汇率
+        isPremium: data.premium === true || data.isPremium === true || data.premium === 1,
+        registrationPrice: parseFloat(data.price || data.registrationPrice || data.register) || undefined,
+        renewalPrice: parseFloat(data.renewPrice || data.renewalPrice || data.renew) || undefined,
+        transferPrice: parseFloat(data.transferPrice || data.transfer) || undefined,
+        currency: data.currency || "CNY",
+        exchangeRate: data.currency === "CNY" ? 1 : 7.2,
       };
       
       setPriceData(priceInfo);
@@ -60,9 +60,13 @@ export const useDomainPrice = () => {
     }
   };
 
-  const convertToCNY = (price?: number): string => {
-    if (!price || !priceData?.exchangeRate) return "N/A";
-    return `¥${(price * priceData.exchangeRate).toFixed(2)}`;
+  const formatPrice = (price?: number): string => {
+    if (!price) return "暂无";
+    if (priceData?.currency === "CNY") {
+      return `${price.toFixed(0)}元`;
+    }
+    const cnyPrice = price * (priceData?.exchangeRate || 7.2);
+    return `${cnyPrice.toFixed(0)}元`;
   };
 
   return {
@@ -70,6 +74,6 @@ export const useDomainPrice = () => {
     isLoading,
     error,
     fetchPrice,
-    convertToCNY,
+    formatPrice,
   };
 };
