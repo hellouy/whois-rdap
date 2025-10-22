@@ -1,0 +1,216 @@
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Network, MapPin, Globe2 } from "lucide-react";
+
+interface DnsMapProps {
+  domain: string;
+}
+
+interface DnsNode {
+  name: string;
+  type: string;
+  ip?: string;
+  location?: string;
+}
+
+export const DnsMap = ({ domain }: DnsMapProps) => {
+  const [nodes, setNodes] = useState<DnsNode[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const queryDnsMap = async () => {
+    setIsLoading(true);
+    const newNodes: DnsNode[] = [];
+    
+    try {
+      const normalizedDomain = domain.trim().toLowerCase();
+      if (!normalizedDomain) {
+        setNodes([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 查询多种DNS记录类型，增强准确性
+      const types = ['A', 'AAAA', 'MX', 'NS', 'CNAME', 'TXT'];
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
+      // 并行查询所有记录类型
+      const queries = types.map(async (type) => {
+        try {
+          const response = await fetch(
+            `https://dns.google/resolve?name=${encodeURIComponent(normalizedDomain)}&type=${type}&do=1`,
+            { 
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/dns-json'
+              }
+            }
+          );
+          
+          if (!response.ok) return;
+          
+          const data = await response.json();
+          
+          if (data.Answer) {
+            data.Answer.forEach((record: any) => {
+              // 去重：检查是否已存在相同的记录
+              const exists = newNodes.some(
+                node => node.name === record.name && 
+                        node.type === type && 
+                        node.ip === record.data
+              );
+              
+              if (!exists) {
+                newNodes.push({
+                  name: record.name,
+                  type: type,
+                  ip: record.data,
+                  location: getLocationFromIP(record.data),
+                });
+              }
+            });
+          }
+        } catch (err) {
+          console.error(`Error querying ${type} records:`, err);
+        }
+      });
+      
+      await Promise.allSettled(queries);
+      clearTimeout(timeoutId);
+      
+      setNodes(newNodes);
+    } catch (error) {
+      console.error("DNS映射查询错误:", error);
+      setNodes([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 增强的IP位置和服务商识别
+  const getLocationFromIP = (ip: string): string => {
+    if (!ip || ip.includes('@')) return "未知";
+    
+    // IPv6 识别
+    if (ip.includes(':')) {
+      if (ip.startsWith('2001:4860')) return "Google CDN (IPv6)";
+      if (ip.startsWith('2606:4700')) return "Cloudflare CDN (IPv6)";
+      if (ip.startsWith('2400:')) return "亚太地区 (IPv6)";
+      if (ip.startsWith('2001:67c')) return "欧洲地区 (IPv6)";
+      if (ip.startsWith('2a00:')) return "欧洲地区 (IPv6)";
+      return "IPv6 全球网络";
+    }
+    
+    // IPv4 判断
+    const parts = ip.split('.');
+    if (parts.length !== 4) return "未知";
+    
+    const first = parseInt(parts[0]);
+    const second = parseInt(parts[1]);
+    
+    // 常见CDN和云服务商
+    if (first === 104 && (second === 16 || second === 17 || second === 18)) return "Cloudflare CDN";
+    if (first === 172 && second >= 64 && second <= 127) return "Cloudflare CDN";
+    if (first === 108 && second === 162) return "Google Cloud";
+    if (first === 34 || first === 35) return "Google Cloud";
+    if (first === 52 || first === 54) return "Amazon AWS";
+    if (first === 13 || first === 18) return "Amazon AWS";
+    if (first === 40 || first === 52) return "Microsoft Azure";
+    if (first === 170 && second === 33) return "阿里云 CDN";
+    if (first === 47 && second === 89) return "阿里云";
+    if (first === 120 || first === 121) return "阿里云";
+    if (first === 203 && second === 107) return "腾讯云";
+    if (first === 182 && second === 254) return "腾讯云";
+    if (first === 43 && second === 240) return "百度云";
+    if (first === 180 && second === 76) return "百度云";
+    
+    // 地区判断
+    if (first >= 1 && first <= 2) return "亚太 APNIC";
+    if (first >= 58 && first <= 61) return "亚太 APNIC";
+    if (first >= 106 && first <= 125) return "中国网络";
+    if (first >= 175 && first <= 180) return "中国网络";
+    if (first >= 183 && first <= 223) return "亚太地区";
+    if (first >= 128 && first <= 191) return "北美/欧洲";
+    if (first >= 192 && first <= 223) return "全球网络";
+    
+    return "全球网络";
+  };
+
+  useEffect(() => {
+    queryDnsMap();
+  }, [domain]);
+
+  const getNodeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      "主域名": "border-primary bg-primary/20",
+      "CNAME": "border-secondary bg-secondary/20",
+      "MX": "border-accent bg-accent/20",
+      "NS": "border-primary/70 bg-primary/10",
+    };
+    return colors[type] || "border-muted bg-muted/20";
+  };
+
+  return (
+    <Card className="p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Network className="h-7 w-7 text-primary" />
+          <h2 className="text-3xl font-bold text-foreground">DNS映射</h2>
+        </div>
+        {nodes.length > 0 && !isLoading && (
+          <Badge variant="secondary" className="text-sm px-4 py-1.5">
+            共 {nodes.length} 个节点
+          </Badge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-foreground" />
+        </div>
+      ) : nodes.length > 0 ? (
+        <div className="space-y-4">
+          {nodes.map((node, index) => (
+            <div
+              key={index}
+              className="flex items-start gap-5 p-6 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
+            >
+              <div className="flex-shrink-0">
+                <Badge className="min-w-[75px] justify-center px-4 py-2 bg-primary text-primary-foreground text-sm font-bold shadow-md">
+                  {node.type}
+                </Badge>
+              </div>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="mb-3">
+                  <span className="font-mono text-sm font-semibold text-foreground break-all leading-relaxed">
+                    {node.name}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-4 text-xs">
+                  {node.ip && (
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Globe2 className="h-3.5 w-3.5" />
+                      <span className="font-mono break-all">{node.ip}</span>
+                    </span>
+                  )}
+                  {node.location && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-medium text-foreground">{node.location}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">
+          <Network className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p>暂无DNS映射</p>
+        </div>
+      )}
+    </Card>
+  );
+};
