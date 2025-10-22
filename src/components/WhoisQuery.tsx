@@ -1,7 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, DollarSign } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
+import { useDomainPrice } from "@/hooks/use-domain-price";
 
 interface WhoisQueryProps {
   domain: string;
@@ -130,6 +132,7 @@ const translateDomainStatus = (status: string): string => {
 
 export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
+  const { priceData, isLoading: isPriceLoading, fetchPrice, convertToCNY } = useDomainPrice();
 
   // 获取域名状态 - 增强判断逻辑
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
@@ -232,10 +235,53 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
   return (
     <Card className="p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      <div className="flex items-center gap-4 mb-8">
-        <FileText className="h-7 w-7 text-primary" />
-        <h2 className="text-3xl font-bold text-foreground">Whois信息</h2>
+      <div className="flex items-center justify-between mb-8">
+        <Button
+          onClick={() => fetchPrice(domain)}
+          disabled={isPriceLoading}
+          size="lg"
+          className="gap-2"
+        >
+          {isPriceLoading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              查询中...
+            </>
+          ) : (
+            <>
+              <DollarSign className="h-5 w-5" />
+              查询域名价格
+            </>
+          )}
+        </Button>
+        
+        {priceData && (
+          <div className="flex gap-3">
+            <Badge variant={priceData.isPremium ? "destructive" : "default"} className="text-sm px-4 py-2">
+              {priceData.isPremium ? "溢价域名" : "普通域名"}
+            </Badge>
+          </div>
+        )}
       </div>
+
+      {priceData && (
+        <div className="mb-6 p-5 bg-primary/5 backdrop-blur-sm rounded-xl border border-primary/20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-lg">
+              <span className="text-sm text-muted-foreground mb-1">注册价格</span>
+              <span className="text-xl font-bold text-foreground">{convertToCNY(priceData.registrationPrice)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-lg">
+              <span className="text-sm text-muted-foreground mb-1">续费价格</span>
+              <span className="text-xl font-bold text-foreground">{convertToCNY(priceData.renewalPrice)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 bg-background/50 rounded-lg">
+              <span className="text-sm text-muted-foreground mb-1">转入价格</span>
+              <span className="text-xl font-bold text-foreground">{convertToCNY(priceData.transferPrice)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">

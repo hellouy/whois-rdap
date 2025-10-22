@@ -4,6 +4,7 @@ import { DnsQuery } from "@/components/DnsQuery";
 import { WhoisQuery } from "@/components/WhoisQuery";
 import { SslCertQuery } from "@/components/SslCertQuery";
 import { DnsMap } from "@/components/DnsMap";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Globe, Activity } from "lucide-react";
 
 const Index = () => {
@@ -119,19 +120,50 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="space-y-8 md:space-y-12">
-            {/* 1. Whois信息 - 最重要的域名基本信息 */}
-            <WhoisQuery domain={domain} />
+          <Tabs defaultValue="whois" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-6 md:mb-10 bg-card/40 backdrop-blur-sm border border-border p-1.5 h-auto rounded-xl shadow-md">
+              <TabsTrigger 
+                value="whois" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+              >
+                Whois
+              </TabsTrigger>
+              <TabsTrigger 
+                value="dns" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+              >
+                DNS记录
+              </TabsTrigger>
+              <TabsTrigger 
+                value="map" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+              >
+                DNS映射
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ssl" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+              >
+                SSL证书
+              </TabsTrigger>
+            </TabsList>
 
-            {/* 2. DNS记录 - 域名解析配置 */}
-            <DnsQuery domain={domain} />
+            <TabsContent value="whois" className="mt-0">
+              <WhoisQuery domain={domain} />
+            </TabsContent>
 
-            {/* 3. DNS映射 - 地理位置和网络信息 */}
-            <DnsMap domain={domain} />
+            <TabsContent value="dns" className="mt-0">
+              <DnsQuery domain={domain} />
+            </TabsContent>
 
-            {/* 4. SSL证书 - 安全证书信息 */}
-            <SslCertQuery domain={domain} />
-          </div>
+            <TabsContent value="map" className="mt-0">
+              <DnsMap domain={domain} />
+            </TabsContent>
+
+            <TabsContent value="ssl" className="mt-0">
+              <SslCertQuery domain={domain} />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 
