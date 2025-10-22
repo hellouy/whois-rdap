@@ -242,156 +242,149 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           <Loader2 className="h-8 w-8 animate-spin text-foreground" />
         </div>
       ) : whoisData ? (
-        <div className="space-y-4">
-          {(whoisData.domainName || whoisData.dnssec) && (
-            <div className="relative flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <FileText className="h-6 w-6 text-primary mt-0.5" />
-              <div className="flex-1 min-w-0 pr-20">
-                {whoisData.domainName && (
-                  <p className="font-bold text-foreground mb-1 break-all">域名：{whoisData.domainName}</p>
-                )}
-                {whoisData.dnssec && (
-                  <p className="text-sm text-muted-foreground mt-2">DNSSEC：{whoisData.dnssec}</p>
-                )}
+        <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+          {/* 左侧：主要Whois信息 */}
+          <div className="space-y-4">
+            {(whoisData.domainName || whoisData.dnssec) && (
+              <div className="relative flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <FileText className="h-6 w-6 text-primary mt-0.5" />
+                <div className="flex-1 min-w-0 pr-20">
+                  {whoisData.domainName && (
+                    <p className="font-bold text-foreground mb-1 break-all">域名：{whoisData.domainName}</p>
+                  )}
+                  {whoisData.dnssec && (
+                    <p className="text-sm text-muted-foreground mt-2">DNSSEC：{whoisData.dnssec}</p>
+                  )}
+                </div>
+                <Badge 
+                  variant={getDomainStatus().variant} 
+                  className="absolute top-3 right-3 text-xs font-semibold px-3 py-1"
+                >
+                  {getDomainStatus().label}
+                </Badge>
               </div>
-              <Badge 
-                variant={getDomainStatus().variant} 
-                className="absolute top-3 right-3 text-xs font-semibold px-3 py-1"
-              >
-                {getDomainStatus().label}
-              </Badge>
-            </div>
-          )}
+            )}
 
-          {whoisData.registrar && (
-            <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <Building className="h-6 w-6 text-primary mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-foreground mb-1 break-all">注册商：{whoisData.registrar}</p>
-                <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
-                  {whoisData.registrarIanaId && <p>IANA ID：{whoisData.registrarIanaId}</p>}
-                  {(whoisData.registrarAbuseEmail || whoisData.registrarAbusePhone) && (
-                    <p className="break-all">
-                      Abuse：
-                      {whoisData.registrarAbuseEmail && <span className="ml-1">{whoisData.registrarAbuseEmail}</span>}
-                      {whoisData.registrarAbusePhone && <span className="ml-2">{whoisData.registrarAbusePhone}</span>}
-                    </p>
+            {whoisData.registrar && (
+              <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <Building className="h-6 w-6 text-primary mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-foreground mb-1 break-all">注册商：{whoisData.registrar}</p>
+                  <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                    {whoisData.registrarIanaId && <p>IANA ID：{whoisData.registrarIanaId}</p>}
+                    {(whoisData.registrarAbuseEmail || whoisData.registrarAbusePhone) && (
+                      <p className="break-all">
+                        Abuse：
+                        {whoisData.registrarAbuseEmail && <span className="ml-1">{whoisData.registrarAbuseEmail}</span>}
+                        {whoisData.registrarAbusePhone && <span className="ml-2">{whoisData.registrarAbusePhone}</span>}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(whoisData.registrantOrg || whoisData.registrantCountry) && (
+              <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <User className="h-6 w-6 text-primary mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  {whoisData.registrantOrg && (
+                    <p className="font-bold text-foreground mb-1 break-all">注册主体：{whoisData.registrantOrg}</p>
+                  )}
+                  {whoisData.registrantCountry && (
+                    <p className="text-sm text-muted-foreground mt-2">国家/地区：{whoisData.registrantCountry}</p>
                   )}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {(whoisData.registrantOrg || whoisData.registrantCountry) && (
-            <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <User className="h-6 w-6 text-primary mt-0.5" />
-              <div className="flex-1 min-w-0">
-                {whoisData.registrantOrg && (
-                  <p className="font-bold text-foreground mb-1 break-all">注册主体：{whoisData.registrantOrg}</p>
-                )}
-                {whoisData.registrantCountry && (
-                  <p className="text-sm text-muted-foreground mt-2">国家/地区：{whoisData.registrantCountry}</p>
-                )}
+            {whoisData.nameServers && whoisData.nameServers.length > 0 && (
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-2 mb-4">
+                  <Server className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">名称服务器</p>
+                </div>
+                <div className="space-y-2.5">
+                  {whoisData.nameServers.map((ns, index) => (
+                    <p key={index} className="font-mono text-sm text-muted-foreground break-all">{ns}</p>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {whoisData.creationDate && (
-            <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
-              <div className="flex items-center gap-3 mb-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <p className="text-sm font-bold text-foreground">域名年龄</p>
+            {whoisData.tldServers && whoisData.tldServers.length > 0 && (
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-2 mb-4">
+                  <Server className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">TLD权威服务器 (IANA)</p>
+                </div>
+                <div className="space-y-2.5">
+                  {whoisData.tldServers.map((server, index) => (
+                    <p key={index} className="font-mono text-sm text-muted-foreground break-all">{server}</p>
+                  ))}
+                </div>
               </div>
-              <div className="pl-8">
-                <p className="text-2xl font-bold text-primary mb-1">
+            )}
+
+            {whoisData.status && whoisData.status.length > 0 && (
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge className="h-5 w-5 p-0 bg-transparent hover:bg-transparent">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  </Badge>
+                  <p className="text-sm font-bold text-foreground">域名状态</p>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {whoisData.status.map((status, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
+                    >
+                      {translateDomainStatus(status)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 右侧：域名统计信息 */}
+          <div className="space-y-4">
+            {whoisData.creationDate && (
+              <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
+                <div className="flex items-center gap-3 mb-3">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">域名年龄</p>
+                </div>
+                <p className="text-3xl font-bold text-primary mb-2">
                   {getDomainAge(whoisData.creationDate)}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   创建于 {whoisData.creationDate}
                 </p>
               </div>
-            </div>
-          )}
-
-
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {whoisData.creationDate && (
-              <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <Calendar className="h-6 w-6 text-primary mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground break-all">创建日期：{whoisData.creationDate}</p>
-                </div>
-              </div>
             )}
 
             {whoisData.expirationDate && (
-              <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <Calendar className="h-6 w-6 text-primary mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground break-all">过期日期：{whoisData.expirationDate}</p>
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">过期日期</p>
                 </div>
+                <p className="font-mono text-sm text-foreground">{whoisData.expirationDate}</p>
               </div>
             )}
 
             {whoisData.updatedDate && (
-              <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <Calendar className="h-6 w-6 text-primary mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground break-all">更新日期：{whoisData.updatedDate}</p>
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">更新日期</p>
                 </div>
+                <p className="font-mono text-sm text-foreground">{whoisData.updatedDate}</p>
               </div>
             )}
           </div>
-
-          {whoisData.nameServers && whoisData.nameServers.length > 0 && (
-            <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-2 mb-4">
-                <Server className="h-5 w-5 text-primary" />
-                <p className="text-sm font-bold text-foreground">名称服务器</p>
-              </div>
-              <div className="space-y-2.5">
-                {whoisData.nameServers.map((ns, index) => (
-                  <p key={index} className="font-mono text-sm text-muted-foreground break-all">{ns}</p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {whoisData.tldServers && whoisData.tldServers.length > 0 && (
-            <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-2 mb-4">
-                <Server className="h-5 w-5 text-primary" />
-                <p className="text-sm font-bold text-foreground">TLD权威服务器 (IANA)</p>
-              </div>
-              <div className="space-y-2.5">
-                {whoisData.tldServers.map((server, index) => (
-                  <p key={index} className="font-mono text-sm text-muted-foreground break-all">{server}</p>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {whoisData.status && whoisData.status.length > 0 && (
-            <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-2 mb-4">
-                <Badge className="h-5 w-5 p-0 bg-transparent hover:bg-transparent">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                </Badge>
-                <p className="text-sm font-bold text-foreground">域名状态</p>
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                {whoisData.status.map((status, index) => (
-                  <span
-                    key={index}
-                    className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
-                  >
-                    {translateDomainStatus(status)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
