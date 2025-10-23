@@ -132,7 +132,7 @@ const translateDomainStatus = (status: string): string => {
 
 export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
-  const { priceData, isLoading: isPriceLoading, fetchPrice, formatPrice } = useDomainPrice();
+  const { priceData, isLoading: isPriceLoading, error, fetchPrice, formatPrice } = useDomainPrice();
 
   // 获取域名状态 - 增强判断逻辑
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
@@ -247,6 +247,11 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <Loader2 className="h-5 w-5 animate-spin" />
               查询中...
             </>
+          ) : error ? (
+            <>
+              <DollarSign className="h-5 w-5" />
+              重新查询价格
+            </>
           ) : (
             <>
               <DollarSign className="h-5 w-5" />
@@ -277,10 +282,9 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           <Loader2 className="h-8 w-8 animate-spin text-foreground" />
         </div>
       ) : whoisData ? (
-        <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-          {/* 左侧：主要Whois信息 */}
-          <div className="space-y-4">
-            {(whoisData.domainName || whoisData.dnssec) && (
+        <div className="space-y-6">
+          {/* 1. 域名信息 */}
+          {(whoisData.domainName || whoisData.dnssec) && (
               <div className="relative flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <FileText className="h-6 w-6 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0 pr-20">
@@ -300,7 +304,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               </div>
             )}
 
-            {whoisData.registrar && (
+          {/* 2. 注册商信息 */}
+          {whoisData.registrar && (
               <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <Building className="h-6 w-6 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0">
@@ -319,7 +324,44 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               </div>
             )}
 
-            {(whoisData.registrantOrg || whoisData.registrantCountry) && (
+          {/* 3. 时间信息 */}
+          <div className="grid sm:grid-cols-3 gap-4">
+            {whoisData.creationDate && (
+              <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">注册时间</p>
+                </div>
+                <p className="font-mono text-sm text-foreground">{whoisData.creationDate}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {getDomainAge(whoisData.creationDate)}
+                </p>
+              </div>
+            )}
+
+            {whoisData.expirationDate && (
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">过期时间</p>
+                </div>
+                <p className="font-mono text-sm text-foreground">{whoisData.expirationDate}</p>
+              </div>
+            )}
+
+            {whoisData.updatedDate && (
+              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-bold text-foreground">更新时间</p>
+                </div>
+                <p className="font-mono text-sm text-foreground">{whoisData.updatedDate}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 4. 注册人信息 */}
+          {(whoisData.registrantOrg || whoisData.registrantCountry) && (
               <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <User className="h-6 w-6 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0">
@@ -333,7 +375,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               </div>
             )}
 
-            {whoisData.nameServers && whoisData.nameServers.length > 0 && (
+          {/* 5. 域名NS */}
+          {whoisData.nameServers && whoisData.nameServers.length > 0 && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-center gap-2 mb-4">
                   <Server className="h-5 w-5 text-primary" />
@@ -347,7 +390,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               </div>
             )}
 
-            {whoisData.tldServers && whoisData.tldServers.length > 0 && (
+          {/* 6. TLD权威服务器 */}
+          {whoisData.tldServers && whoisData.tldServers.length > 0 && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-center gap-2 mb-4">
                   <Server className="h-5 w-5 text-primary" />
@@ -361,7 +405,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               </div>
             )}
 
-            {whoisData.status && whoisData.status.length > 0 && (
+          {/* 7. 域名状态 */}
+          {whoisData.status && whoisData.status.length > 0 && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-center gap-2 mb-4">
                   <Badge className="h-5 w-5 p-0 bg-transparent hover:bg-transparent">
@@ -381,45 +426,6 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* 右侧：域名统计信息 */}
-          <div className="space-y-4">
-            {whoisData.creationDate && (
-              <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">域名年龄</p>
-                </div>
-                <p className="text-3xl font-bold text-primary mb-2">
-                  {getDomainAge(whoisData.creationDate)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  创建于 {whoisData.creationDate}
-                </p>
-              </div>
-            )}
-
-            {whoisData.expirationDate && (
-              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-3 mb-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">过期日期</p>
-                </div>
-                <p className="font-mono text-sm text-foreground">{whoisData.expirationDate}</p>
-              </div>
-            )}
-
-            {whoisData.updatedDate && (
-              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-3 mb-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">更新日期</p>
-                </div>
-                <p className="font-mono text-sm text-foreground">{whoisData.updatedDate}</p>
-              </div>
-            )}
-          </div>
         </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">

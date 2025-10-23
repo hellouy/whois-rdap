@@ -31,15 +31,18 @@ export const useDomainPrice = () => {
       
       const data = await response.json();
       
+      // API返回的数据在data.data中
+      const apiData = data.data || data;
+      
       // 适配API返回的数据结构
       const priceInfo: DomainPrice = {
         domain,
-        isPremium: data.premium === true || data.isPremium === true || data.premium === 1,
-        registrationPrice: parseFloat(data.price || data.registrationPrice || data.register) || undefined,
-        renewalPrice: parseFloat(data.renewPrice || data.renewalPrice || data.renew) || undefined,
-        transferPrice: parseFloat(data.transferPrice || data.transfer) || undefined,
-        currency: data.currency || "CNY",
-        exchangeRate: data.currency === "CNY" ? 1 : 7.2,
+        isPremium: apiData.premium === "true" || apiData.premium === true || apiData.premium === 1,
+        registrationPrice: parseFloat(apiData.register || apiData.price || apiData.registrationPrice) || undefined,
+        renewalPrice: parseFloat(apiData.renew || apiData.renewPrice || apiData.renewalPrice) || undefined,
+        transferPrice: parseFloat(apiData.transfer || apiData.transferPrice) || undefined,
+        currency: "CNY",
+        exchangeRate: 1,
       };
       
       setPriceData(priceInfo);
