@@ -218,30 +218,50 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
     return { label: "状态未知", variant: "outline" };
   };
 
-  // 计算时间差
+  // 计算时间差 - 使用精确的日期计算
   const getTimeDifference = (startDate: string, endDate?: Date): string => {
     const start = new Date(startDate);
     const end = endDate || new Date();
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     // 如果少于1天，显示时分秒
-    if (diffDays < 1) {
+    if (diffTime < 24 * 60 * 60 * 1000) {
       const hours = Math.floor(diffTime / (1000 * 60 * 60));
       const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diffTime % (1000 * 60)) / 1000);
       return `${hours} 时 ${minutes} 分 ${seconds} 秒`;
     }
     
-    const years = Math.floor(diffDays / 365);
-    const months = Math.floor((diffDays % 365) / 30);
-    const days = Math.floor((diffDays % 365) % 30);
+    // 使用精确的年月日计算
+    let years = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth() - start.getMonth();
+    let days = end.getDate() - start.getDate();
     
-    if (years > 0) {
+    // 如果天数为负，从月份借位
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+    
+    // 如果月份为负，从年份借位
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    
+    // 格式化输出
+    if (years > 0 && months > 0) {
       return `${years} 年 ${months} 个月`;
     }
-    if (months > 0) {
+    if (years > 0) {
+      return `${years} 年`;
+    }
+    if (months > 0 && days > 0) {
       return `${months} 个月 ${days} 天`;
+    }
+    if (months > 0) {
+      return `${months} 个月`;
     }
     return `${days} 天`;
   };
@@ -361,7 +381,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-5 w-5 text-primary" />
                   <p className="text-base font-bold text-foreground">注册时间:</p>
-                  <p className="font-mono text-base text-foreground">{whoisData.creationDate}</p>
+                  <p className="font-mono text-base font-bold text-foreground">{whoisData.creationDate}</p>
                 </div>
                 <p className="absolute bottom-3 right-3 text-xs text-muted-foreground">
                   已注册：{getRegisteredTime(whoisData.creationDate)}
@@ -374,7 +394,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-5 w-5 text-primary" />
                   <p className="text-base font-bold text-foreground">过期时间:</p>
-                  <p className="font-mono text-base text-foreground">{whoisData.expirationDate}</p>
+                  <p className="font-mono text-base font-bold text-foreground">{whoisData.expirationDate}</p>
                 </div>
                 <p className="absolute bottom-3 right-3 text-xs text-muted-foreground">
                   距离过期：{getTimeUntilExpiry(whoisData.expirationDate)}
@@ -387,7 +407,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
                   <p className="text-base font-bold text-foreground">更新时间:</p>
-                  <p className="font-mono text-base text-foreground">{whoisData.updatedDate}</p>
+                  <p className="font-mono text-base font-bold text-foreground">{whoisData.updatedDate}</p>
                 </div>
               </div>
             )}
