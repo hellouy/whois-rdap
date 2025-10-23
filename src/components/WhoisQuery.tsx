@@ -218,19 +218,49 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
     return { label: "状态未知", variant: "outline" };
   };
 
-  // 计算域名年龄
-  const getDomainAge = (creationDate: string): string => {
-    const created = new Date(creationDate);
-    const today = new Date();
-    const diffTime = today.getTime() - created.getTime();
+  // 计算时间差
+  const getTimeDifference = (startDate: string, endDate?: Date): string => {
+    const start = new Date(startDate);
+    const end = endDate || new Date();
+    const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // 如果少于1天，显示时分秒
+    if (diffDays < 1) {
+      const hours = Math.floor(diffTime / (1000 * 60 * 60));
+      const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffTime % (1000 * 60)) / 1000);
+      return `${hours} 时 ${minutes} 分 ${seconds} 秒`;
+    }
+    
     const years = Math.floor(diffDays / 365);
     const months = Math.floor((diffDays % 365) / 30);
+    const days = Math.floor((diffDays % 365) % 30);
     
     if (years > 0) {
       return `${years} 年 ${months} 个月`;
     }
-    return `${months} 个月`;
+    if (months > 0) {
+      return `${months} 个月 ${days} 天`;
+    }
+    return `${days} 天`;
+  };
+
+  // 计算域名已注册时间
+  const getRegisteredTime = (creationDate: string): string => {
+    return getTimeDifference(creationDate);
+  };
+
+  // 计算距离过期时间
+  const getTimeUntilExpiry = (expirationDate: string): string => {
+    const expDate = new Date(expirationDate);
+    const now = new Date();
+    
+    if (expDate < now) {
+      return '已过期';
+    }
+    
+    return getTimeDifference(expirationDate, expDate);
   };
 
   return (
@@ -289,7 +319,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                 <FileText className="h-6 w-6 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0 pr-20">
                   {whoisData.domainName && (
-                    <p className="font-bold text-foreground mb-1 break-all">域名：{whoisData.domainName}</p>
+                    <p className="font-bold text-base text-foreground mb-1 break-all">域名：{whoisData.domainName}</p>
                   )}
                   {whoisData.dnssec && (
                     <p className="text-sm text-muted-foreground mt-2">DNSSEC：{whoisData.dnssec}</p>
@@ -309,7 +339,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <div className="flex items-start gap-4 p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <Building className="h-6 w-6 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground mb-1 break-all">注册商：{whoisData.registrar}</p>
+                  <p className="font-bold text-base text-foreground mb-1 break-all">注册商：{whoisData.registrar}</p>
                   <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
                     {whoisData.registrarIanaId && <p>IANA ID：{whoisData.registrarIanaId}</p>}
                     {(whoisData.registrarAbuseEmail || whoisData.registrarAbusePhone) && (
@@ -327,25 +357,28 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 3. 时间信息 */}
           <div className="grid sm:grid-cols-3 gap-4">
             {whoisData.creationDate && (
-              <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
+              <div className="relative p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">注册时间:</p>
-                  <p className="font-mono text-sm text-foreground">{whoisData.creationDate}</p>
+                  <p className="text-base font-bold text-foreground">注册时间:</p>
+                  <p className="font-mono text-base text-foreground">{whoisData.creationDate}</p>
                 </div>
-                <p className="text-xs text-muted-foreground ml-7">
-                  {getDomainAge(whoisData.creationDate)}
+                <p className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+                  已注册：{getRegisteredTime(whoisData.creationDate)}
                 </p>
               </div>
             )}
 
             {whoisData.expirationDate && (
-              <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-2">
+              <div className="relative p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+                <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">过期时间:</p>
-                  <p className="font-mono text-sm text-foreground">{whoisData.expirationDate}</p>
+                  <p className="text-base font-bold text-foreground">过期时间:</p>
+                  <p className="font-mono text-base text-foreground">{whoisData.expirationDate}</p>
                 </div>
+                <p className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+                  距离过期：{getTimeUntilExpiry(whoisData.expirationDate)}
+                </p>
               </div>
             )}
 
@@ -353,8 +386,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">更新时间:</p>
-                  <p className="font-mono text-sm text-foreground">{whoisData.updatedDate}</p>
+                  <p className="text-base font-bold text-foreground">更新时间:</p>
+                  <p className="font-mono text-base text-foreground">{whoisData.updatedDate}</p>
                 </div>
               </div>
             )}
@@ -366,7 +399,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                 <User className="h-6 w-6 text-primary mt-0.5" />
                 <div className="flex-1 min-w-0">
                   {whoisData.registrantOrg && (
-                    <p className="font-bold text-foreground mb-1 break-all">注册主体：{whoisData.registrantOrg}</p>
+                    <p className="font-bold text-base text-foreground mb-1 break-all">注册主体：{whoisData.registrantOrg}</p>
                   )}
                   {whoisData.registrantCountry && (
                     <p className="text-sm text-muted-foreground mt-2">国家/地区：{whoisData.registrantCountry}</p>
@@ -380,7 +413,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-center gap-2 mb-4">
                   <Server className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">名称服务器</p>
+                  <p className="text-base font-bold text-foreground">名称服务器</p>
                 </div>
                 <div className="space-y-2.5">
                   {whoisData.nameServers.map((ns, index) => (
@@ -395,7 +428,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-center gap-2 mb-4">
                   <Server className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">TLD权威服务器 (IANA)</p>
+                  <p className="text-base font-bold text-foreground">TLD权威服务器 (IANA)</p>
                 </div>
                 <div className="space-y-2.5">
                   {whoisData.tldServers.map((server, index) => (
@@ -412,7 +445,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                   <Badge className="h-5 w-5 p-0 bg-transparent hover:bg-transparent">
                     <CheckCircle2 className="h-5 w-5 text-primary" />
                   </Badge>
-                  <p className="text-sm font-bold text-foreground">域名状态</p>
+                  <p className="text-base font-bold text-foreground">域名状态</p>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                   {whoisData.status.map((status, index) => (
