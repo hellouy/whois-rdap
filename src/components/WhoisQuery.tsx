@@ -328,12 +328,12 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           <div className="grid sm:grid-cols-3 gap-4">
             {whoisData.creationDate && (
               <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">注册时间</p>
+                  <p className="text-sm font-bold text-foreground">注册时间:</p>
+                  <p className="font-mono text-sm text-foreground">{whoisData.creationDate}</p>
                 </div>
-                <p className="font-mono text-sm text-foreground">{whoisData.creationDate}</p>
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="text-xs text-muted-foreground ml-7">
                   {getDomainAge(whoisData.creationDate)}
                 </p>
               </div>
@@ -341,21 +341,21 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
             {whoisData.expirationDate && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">过期时间</p>
+                  <p className="text-sm font-bold text-foreground">过期时间:</p>
+                  <p className="font-mono text-sm text-foreground">{whoisData.expirationDate}</p>
                 </div>
-                <p className="font-mono text-sm text-foreground">{whoisData.expirationDate}</p>
               </div>
             )}
 
             {whoisData.updatedDate && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">更新时间</p>
+                  <p className="text-sm font-bold text-foreground">更新时间:</p>
+                  <p className="font-mono text-sm text-foreground">{whoisData.updatedDate}</p>
                 </div>
-                <p className="font-mono text-sm text-foreground">{whoisData.updatedDate}</p>
               </div>
             )}
           </div>
