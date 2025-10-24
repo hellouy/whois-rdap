@@ -332,40 +332,41 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
   return (
     <Card className="p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      <div className="flex flex-wrap items-center gap-3 mb-8">
-        <Button
-          onClick={() => fetchPrice(domain)}
-          disabled={isPriceLoading}
-          size="lg"
-          className="gap-2"
-        >
-          {isPriceLoading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              查询中...
-            </>
-          ) : (
-            <>
-              <DollarSign className="h-5 w-5" />
-              {priceData ? "价格" : "查询域名价格"}
-            </>
-          )}
-        </Button>
-        
-        {priceData && (
-          <>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => fetchPrice(domain)}
+            disabled={isPriceLoading}
+            variant="outline"
+            size="lg"
+            className="gap-2"
+          >
+            {isPriceLoading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                查询中...
+              </>
+            ) : (
+              <>
+                <DollarSign className="h-5 w-5" />
+                价格
+              </>
+            )}
+          </Button>
+          
+          {priceData && (
             <Badge variant={priceData.isPremium ? "destructive" : "default"} className="text-sm px-4 py-2">
               {priceData.isPremium ? "溢价域名" : "普通域名"}
             </Badge>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted-foreground">注册：</span>
-              <span className="font-bold text-foreground">{formatPrice(priceData.registrationPrice)}</span>
-              <span className="text-muted-foreground">续费：</span>
-              <span className="font-bold text-foreground">{formatPrice(priceData.renewalPrice)}</span>
-              <span className="text-muted-foreground">转移：</span>
-              <span className="font-bold text-foreground">{formatPrice(priceData.transferPrice)}</span>
-            </div>
-          </>
+          )}
+        </div>
+        
+        {priceData && (
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span className="text-muted-foreground">注册：<span className="font-bold text-foreground">{formatPrice(priceData.registrationPrice)}</span></span>
+            <span className="text-muted-foreground">续费：<span className="font-bold text-foreground">{formatPrice(priceData.renewalPrice)}</span></span>
+            <span className="text-muted-foreground">转移：<span className="font-bold text-foreground">{formatPrice(priceData.transferPrice)}</span></span>
+          </div>
         )}
       </div>
 
