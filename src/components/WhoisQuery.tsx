@@ -280,7 +280,54 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
       return '已过期';
     }
     
-    return getTimeDifference(expirationDate, expDate);
+    const diffTime = expDate.getTime() - now.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // 如果少于30天，显示剩余的天、时、分、秒
+    if (diffDays < 30) {
+      const days = diffDays;
+      const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffTime % (1000 * 60)) / 1000);
+      
+      if (days > 0) {
+        return `${days} 天 ${hours} 时 ${minutes} 分`;
+      }
+      return `${hours} 时 ${minutes} 分 ${seconds} 秒`;
+    }
+    
+    // 大于30天，使用年月日计算
+    let years = expDate.getFullYear() - now.getFullYear();
+    let months = expDate.getMonth() - now.getMonth();
+    let days = expDate.getDate() - now.getDate();
+    
+    // 如果天数为负，从月份借位
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(expDate.getFullYear(), expDate.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+    
+    // 如果月份为负，从年份借位
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    
+    // 格式化输出
+    if (years > 0 && months > 0) {
+      return `${years} 年 ${months} 个月`;
+    }
+    if (years > 0) {
+      return `${years} 年`;
+    }
+    if (months > 0 && days > 0) {
+      return `${months} 个月 ${days} 天`;
+    }
+    if (months > 0) {
+      return `${months} 个月`;
+    }
+    return `${days} 天`;
   };
 
   return (
