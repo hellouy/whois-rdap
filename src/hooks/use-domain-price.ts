@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { toast } from "@/hooks/use-toast";
 
 export interface DomainPrice {
   domain: string;
@@ -31,33 +30,31 @@ export const useDomainPrice = () => {
       
       const data = await response.json();
       
-      // API返回的数据在data.data中
+      // API返回的数据在data.data中，增强容错处理
       const apiData = data.data || data;
       
-      // 适配API返回的数据结构
+      // 增强价格解析的可靠性，支持多种数据格式
+      const parsePrice = (value: any): number | undefined => {
+        if (value === null || value === undefined || value === '') return undefined;
+        const parsed = parseFloat(String(value));
+        return isNaN(parsed) || parsed <= 0 ? undefined : parsed;
+      };
+      
+      // 适配API返回的数据结构，增强字段匹配
       const priceInfo: DomainPrice = {
         domain,
-        isPremium: apiData.premium === "true" || apiData.premium === true || apiData.premium === 1,
-        registrationPrice: parseFloat(apiData.register || apiData.price || apiData.registrationPrice) || undefined,
-        renewalPrice: parseFloat(apiData.renew || apiData.renewPrice || apiData.renewalPrice) || undefined,
-        transferPrice: parseFloat(apiData.transfer || apiData.transferPrice) || undefined,
+        isPremium: apiData.premium === "true" || apiData.premium === true || apiData.premium === 1 || apiData.isPremium === true,
+        registrationPrice: parsePrice(apiData.register || apiData.price || apiData.registrationPrice || apiData.registerPrice),
+        renewalPrice: parsePrice(apiData.renew || apiData.renewPrice || apiData.renewalPrice),
+        transferPrice: parsePrice(apiData.transfer || apiData.transferPrice),
         currency: "CNY",
         exchangeRate: 1,
       };
       
       setPriceData(priceInfo);
-      toast({
-        title: "价格查询成功",
-        description: `已获取 ${domain} 的价格信息`,
-      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "查询失败";
       setError(errorMessage);
-      toast({
-        title: "查询失败",
-        description: errorMessage,
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
