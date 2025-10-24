@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Lock, Calendar, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { Loader2, Shield, Lock, Calendar, AlertTriangle, CheckCircle2, Clock, FileText } from "lucide-react";
 import { useSslCertificate } from "@/hooks/use-ssl-certificate";
 
 interface SslCertQueryProps {
@@ -99,8 +99,11 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <p className="text-sm font-bold text-foreground mb-3">主题</p>
-            <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.subject}</p>
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <p className="text-sm font-bold text-foreground">域名：</p>
+              <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.subject}</p>
+            </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">

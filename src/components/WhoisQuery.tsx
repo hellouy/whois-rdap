@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, DollarSign } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
+import { useEffect } from "react";
 
 interface WhoisQueryProps {
   domain: string;
@@ -132,7 +133,12 @@ const translateDomainStatus = (status: string): string => {
 
 export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
-  const { priceData, isLoading: isPriceLoading, error, fetchPrice, formatPrice } = useDomainPrice();
+  const { priceData, isLoading: isPriceLoading, error, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
+
+  // 当域名改变时重置价格数据
+  useEffect(() => {
+    resetPrice();
+  }, [domain]);
 
   // 获取域名状态 - 增强判断逻辑
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
@@ -355,7 +361,7 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           </Button>
           
           {priceData && (
-            <Badge variant={priceData.isPremium ? "destructive" : "default"} className="text-sm px-4 py-2">
+            <Badge variant={priceData.isPremium ? "destructive" : "outline"} className="text-sm px-4 py-2 bg-background/80">
               {priceData.isPremium ? "溢价域名" : "普通域名"}
             </Badge>
           )}
@@ -405,13 +411,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                   <p className="font-bold text-base text-foreground mb-1 break-all">注册商：{whoisData.registrar}</p>
                   <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
                     {whoisData.registrarIanaId && <p>IANA ID：{whoisData.registrarIanaId}</p>}
-                    {(whoisData.registrarAbuseEmail || whoisData.registrarAbusePhone) && (
-                      <p className="break-all">
-                        Abuse：
-                        {whoisData.registrarAbuseEmail && <span className="ml-1">{whoisData.registrarAbuseEmail}</span>}
-                        {whoisData.registrarAbusePhone && <span className="ml-2">{whoisData.registrarAbusePhone}</span>}
-                      </p>
-                    )}
+                    {whoisData.registrarAbusePhone && <p className="break-all">电话：{whoisData.registrarAbusePhone}</p>}
+                    {whoisData.registrarAbuseEmail && <p className="break-all">邮箱：{whoisData.registrarAbuseEmail}</p>}
                   </div>
                 </div>
               </div>

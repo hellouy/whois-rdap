@@ -69,11 +69,17 @@ export const useDomainPrice = () => {
     return `${cnyPrice.toFixed(0)}元`;
   };
 
+  const resetPrice = () => {
+    setPriceData(null);
+    setError(null);
+  };
+
   return {
     priceData,
     isLoading,
     error,
     fetchPrice,
     formatPrice,
+    resetPrice,
   };
 };
