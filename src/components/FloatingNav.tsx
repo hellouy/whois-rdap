@@ -28,106 +28,106 @@ const navigationData: NavSection[] = [
     title: "Whois",
     icon: Search,
     items: [
-      { title: "RDAP查询", description: "新一代Whois协议" },
-      { title: "传统Whois", description: "经典域名查询" },
+      { title: "RDAP查询", description: "新一代Whois协议", url: "https://rdap.org" },
+      { title: "传统Whois", description: "经典域名查询", url: "https://whois.com" },
     ]
   },
   {
     title: "域名工具",
     icon: Grid3x3,
     items: [
-      { title: "Namebio", description: "国际市场域名交易行情" },
-      { title: "Dotdb", description: "域名关键字排名" },
-      { title: "Dnpedia", description: "每日域名" },
-      { title: "domainnamestat", description: "后缀注册总量统计" },
-      { title: "Ntldstats", description: "新顶级注册统计" },
-      { title: "Tld-list", description: "后缀注册比价" },
-      { title: "ExpiredDomains", description: "过期域名查询" },
-      { title: "Alter", description: "域名销售额前500名" },
-      { title: "Dnpric", description: "交易价格查询" },
-      { title: "可备案后缀", description: "国内可备案后缀查询" },
-      { title: "Deepl", description: "翻译" },
+      { title: "Namebio", description: "国际市场域名交易行情", url: "https://namebio.com" },
+      { title: "Dotdb", description: "域名关键字排名", url: "https://dotdb.com" },
+      { title: "Dnpedia", description: "每日域名", url: "https://dnpedia.com" },
+      { title: "domainnamestat", description: "后缀注册总量统计", url: "https://domainnamestat.com" },
+      { title: "Ntldstats", description: "新顶级注册统计", url: "https://ntldstats.com" },
+      { title: "Tld-list", description: "后缀注册比价", url: "https://tld-list.com" },
+      { title: "ExpiredDomains", description: "过期域名查询", url: "https://expireddomains.net" },
+      { title: "Alter", description: "域名销售额前500名", url: "https://alter.com" },
+      { title: "Dnpric", description: "交易价格查询", url: "https://dnpric.com" },
+      { title: "可备案后缀", description: "国内可备案后缀查询", url: "https://beian.miit.gov.cn" },
+      { title: "Deepl", description: "翻译", url: "https://deepl.com" },
     ]
   },
   {
     title: "域名停放",
     icon: Database,
     items: [
-      { title: "Dan", description: "国际域名停放销售平台" },
-      { title: "Sedo", description: "国际域名停放销售平台" },
-      { title: "4.cn", description: "国内域名停放销售平台" },
-      { title: "Flippa", description: "国际域名停放销售平台" },
-      { title: "Bodis", description: "国际域名停放销售平台" },
-      { title: "Escrow", description: "国际域名停放销售平台" },
-      { title: "Parklogic", description: "国际域名停放销售平台" },
-      { title: "Parkingcrew", description: "国际域名停放销售平台" },
-      { title: "Afternic", description: "国际域名停放销售平台" },
-      { title: "Efty", description: "国际域名停放销售平台" },
-      { title: "Oneword", description: "推荐可注册的好域名" },
+      { title: "Dan", description: "国际域名停放销售平台", url: "https://dan.com" },
+      { title: "Sedo", description: "国际域名停放销售平台", url: "https://sedo.com" },
+      { title: "4.cn", description: "国内域名停放销售平台", url: "https://4.cn" },
+      { title: "Flippa", description: "国际域名停放销售平台", url: "https://flippa.com" },
+      { title: "Bodis", description: "国际域名停放销售平台", url: "https://bodis.com" },
+      { title: "Escrow", description: "国际域名停放销售平台", url: "https://escrow.com" },
+      { title: "Parklogic", description: "国际域名停放销售平台", url: "https://parklogic.com" },
+      { title: "Parkingcrew", description: "国际域名停放销售平台", url: "https://parkingcrew.com" },
+      { title: "Afternic", description: "国际域名停放销售平台", url: "https://afternic.com" },
+      { title: "Efty", description: "国际域名停放销售平台", url: "https://efty.com" },
+      { title: "Oneword", description: "推荐可注册的好域名", url: "https://oneword.domains" },
     ]
   },
   {
     title: "域名抢注平台",
     icon: Webhook,
     items: [
-      { title: "Hexonet", description: "德国知名新后缀域名抢注商" },
-      { title: "西部数码", description: "国内米农喜欢的注册&交易平台" },
+      { title: "Hexonet", description: "德国知名新后缀域名抢注商", url: "https://hexonet.net" },
+      { title: "西部数码", description: "国内米农喜欢的注册&交易平台", url: "https://west.cn" },
     ]
   },
   {
     title: "域名资讯平台",
     icon: FileText,
     items: [
-      { title: "Dnjournal", description: "域名行业资讯以及交易新闻" },
-      { title: "Domaingang", description: "域名行业资讯以及交易新闻" },
-      { title: "Techcrunch", description: "高科技终端融资新闻" },
-      { title: "Techstars", description: "高科技终端融资新闻" },
-      { title: "500", description: "高科技终端融资新闻" },
-      { title: "Domainnamewire", description: "域名行业资讯以及交易新闻" },
-      { title: "Domaining", description: "https://www.domaining.com/" },
+      { title: "Dnjournal", description: "域名行业资讯以及交易新闻", url: "https://dnjournal.com" },
+      { title: "Domaingang", description: "域名行业资讯以及交易新闻", url: "https://domaingang.com" },
+      { title: "Techcrunch", description: "高科技终端融资新闻", url: "https://techcrunch.com" },
+      { title: "Techstars", description: "高科技终端融资新闻", url: "https://techstars.com" },
+      { title: "500", description: "高科技终端融资新闻", url: "https://500.co" },
+      { title: "Domainnamewire", description: "域名行业资讯以及交易新闻", url: "https://domainnamewire.com" },
+      { title: "Domaining", description: "域名行业综合资讯", url: "https://domaining.com" },
     ]
   },
   {
     title: "域名解析",
     icon: Server,
     items: [
-      { title: "dnspod", description: "免费智能DNS解析服务" },
-      { title: "帝恩思", description: "高防DNS域名解析服务商" },
-      { title: "华为云DNS", description: "华为云DNS" },
-      { title: "阿里云DNS", description: "阿里云DNS" },
-      { title: "DNS.LA", description: "免费智能DNS的解析" },
-      { title: "ZoneEdit", description: "美国著名的老牌免费域名DNS解析服务" },
-      { title: "HE.NET", description: "美国老牌IDC" },
-      { title: "FreeDNS", description: "美国的老牌DNS网站" },
+      { title: "dnspod", description: "免费智能DNS解析服务", url: "https://dnspod.cn" },
+      { title: "帝恩思", description: "高防DNS域名解析服务商", url: "https://dns.com" },
+      { title: "华为云DNS", description: "华为云DNS", url: "https://huaweicloud.com/product/dns.html" },
+      { title: "阿里云DNS", description: "阿里云DNS", url: "https://dns.aliyun.com" },
+      { title: "DNS.LA", description: "免费智能DNS的解析", url: "https://dns.la" },
+      { title: "ZoneEdit", description: "美国著名的老牌免费域名DNS解析服务", url: "https://zoneedit.com" },
+      { title: "HE.NET", description: "美国老牌IDC", url: "https://he.net" },
+      { title: "FreeDNS", description: "美国的老牌DNS网站", url: "https://freedns.afraid.org" },
     ]
   },
   {
     title: "域名注册平台",
     icon: Globe,
     items: [
-      { title: "阿里云", description: "国内终端最喜欢的域名注册+交易平台" },
-      { title: "中资源", description: "国内抢注新后缀域名成功率高" },
-      { title: "Porkbun", description: "全球米农公认的便宜注册商" },
-      { title: "Dynadot", description: "很受欢迎的国外域名注册商" },
-      { title: "Hexonet", description: "德国著名域名注册商" },
-      { title: "趣域网", description: "国内最全国别域名注册商" },
-      { title: "网维互联", description: "国内国别较全域名注册商" },
-      { title: "易名网", description: "国内知名主流后缀域名注册商" },
-      { title: "腾讯云", description: "国内优惠券最多的域名注册商" },
-      { title: "Godaddy", description: "历史悠久全球知名的域名注册商" },
-      { title: "Afriregister", description: "比较大的非洲国家后缀注册商" },
-      { title: "101domain", description: "全世界支持域名后缀最多的注册商" },
-      { title: "netim", description: "全世界支持域名后缀最多的注册商" },
-      { title: "Sav", description: "新后缀注册价格比较便宜的注册商" },
-      { title: "Namesilo", description: "去掉支付宝的国外知名域名注册商" },
-      { title: "Namecheap", description: "支持支付宝的国外知名域名注册商" },
+      { title: "阿里云", description: "国内终端最喜欢的域名注册+交易平台", url: "https://wanwang.aliyun.com" },
+      { title: "中资源", description: "国内抢注新后缀域名成功率高", url: "https://zzy.cn" },
+      { title: "Porkbun", description: "全球米农公认的便宜注册商", url: "https://porkbun.com" },
+      { title: "Dynadot", description: "很受欢迎的国外域名注册商", url: "https://dynadot.com" },
+      { title: "Hexonet", description: "德国著名域名注册商", url: "https://hexonet.net" },
+      { title: "趣域网", description: "国内最全国别域名注册商", url: "https://quyu.net" },
+      { title: "网维互联", description: "国内国别较全域名注册商", url: "https://www.nwidc.com" },
+      { title: "易名网", description: "国内知名主流后缀域名注册商", url: "https://ename.com" },
+      { title: "腾讯云", description: "国内优惠券最多的域名注册商", url: "https://dnspod.cloud.tencent.com" },
+      { title: "Godaddy", description: "历史悠久全球知名的域名注册商", url: "https://godaddy.com" },
+      { title: "Afriregister", description: "比较大的非洲国家后缀注册商", url: "https://afriregister.co.za" },
+      { title: "101domain", description: "全世界支持域名后缀最多的注册商", url: "https://101domain.com" },
+      { title: "netim", description: "全世界支持域名后缀最多的注册商", url: "https://netim.com" },
+      { title: "Sav", description: "新后缀注册价格比较便宜的注册商", url: "https://sav.com" },
+      { title: "Namesilo", description: "去掉支付宝的国外知名域名注册商", url: "https://namesilo.com" },
+      { title: "Namecheap", description: "支持支付宝的国外知名域名注册商", url: "https://namecheap.com" },
     ]
   },
   {
     title: "短语",
     icon: MessageSquare,
     items: [
-      { title: "常用短语", description: "域名相关常用短语" },
+      { title: "常用短语", description: "域名相关常用短语", url: "#" },
     ]
   },
 ];
@@ -195,12 +195,12 @@ export const FloatingNav = () => {
                       <button
                         key={index}
                         onClick={() => setSelectedSection(section)}
-                        className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border bg-card hover:bg-accent/50 transition-all duration-300 hover:shadow-md hover:scale-105 group"
+                        className="flex flex-col items-center justify-center gap-3 p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group"
                       >
-                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                        <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-all duration-300">
                           <Icon className="h-6 w-6 text-primary" />
                         </div>
-                        <span className="text-sm font-medium text-center">
+                        <span className="text-sm font-semibold text-center">
                           {section.title}
                         </span>
                       </button>
@@ -208,19 +208,22 @@ export const FloatingNav = () => {
                   })}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   {selectedSection.items.map((item, index) => (
-                    <div
+                    <a
                       key={index}
-                      className="p-4 rounded-xl border bg-card hover:bg-accent/50 transition-all duration-300 hover:shadow-md cursor-pointer group"
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-4 rounded-xl border bg-card hover:bg-accent/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] cursor-pointer group"
                     >
-                      <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors duration-300">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground line-clamp-2">
                         {item.description}
                       </p>
-                    </div>
+                    </a>
                   ))}
                 </div>
               )}
