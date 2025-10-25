@@ -109,58 +109,47 @@ const Index = () => {
       {/* Results Section */}
       {domain && (
         <div ref={resultsRef} className="container mx-auto px-4 py-6 md:py-12 max-w-full overflow-hidden">
-          <div className="mb-6 md:mb-10">
-            <div className="flex items-center gap-4 mb-4 md:mb-6">
-              <Activity className="h-7 w-7 text-primary" strokeWidth={1.8} />
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary">查询结果</h2>
-            </div>
-            <div className="inline-flex items-center gap-3 bg-card/60 backdrop-blur-sm border border-border px-6 py-3.5 rounded-xl shadow-sm">
-              <span className="text-muted-foreground text-sm font-medium">域名:</span>
-              <span className="font-mono text-lg text-foreground font-semibold tracking-wide">{domain}</span>
-            </div>
-          </div>
-
-          <Tabs defaultValue="whois" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6 md:mb-10 bg-card/40 backdrop-blur-sm border border-border p-1.5 h-auto rounded-xl shadow-md">
+          <Tabs defaultValue="whois" className="w-full animate-fade-in">
+            <TabsList className="grid w-full grid-cols-4 mb-6 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-2 h-auto rounded-2xl shadow-lg">
               <TabsTrigger 
                 value="whois" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-4 font-semibold transition-all duration-300 ease-in-out rounded-xl text-sm hover:bg-accent/40 hover:scale-[1.02]"
               >
                 Whois
               </TabsTrigger>
               <TabsTrigger 
                 value="dns" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-4 font-semibold transition-all duration-300 ease-in-out rounded-xl text-sm hover:bg-accent/40 hover:scale-[1.02]"
               >
                 DNS记录
               </TabsTrigger>
               <TabsTrigger 
                 value="map" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-4 font-semibold transition-all duration-300 ease-in-out rounded-xl text-sm hover:bg-accent/40 hover:scale-[1.02]"
               >
                 DNS映射
               </TabsTrigger>
               <TabsTrigger 
                 value="ssl" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md py-3.5 font-semibold transition-all rounded-lg text-sm hover:bg-accent/60"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-4 font-semibold transition-all duration-300 ease-in-out rounded-xl text-sm hover:bg-accent/40 hover:scale-[1.02]"
               >
                 SSL证书
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="whois" className="mt-0" forceMount>
+            <TabsContent value="whois" className="mt-0 transition-opacity duration-500" forceMount>
               <WhoisQuery domain={domain} />
             </TabsContent>
 
-            <TabsContent value="dns" className="mt-0" forceMount>
+            <TabsContent value="dns" className="mt-0 transition-opacity duration-500" forceMount>
               <DnsQuery domain={domain} />
             </TabsContent>
 
-            <TabsContent value="map" className="mt-0" forceMount>
+            <TabsContent value="map" className="mt-0 transition-opacity duration-500" forceMount>
               <DnsMap domain={domain} />
             </TabsContent>
 
-            <TabsContent value="ssl" className="mt-0" forceMount>
+            <TabsContent value="ssl" className="mt-0 transition-opacity duration-500" forceMount>
               <SslCertQuery domain={domain} />
             </TabsContent>
           </Tabs>

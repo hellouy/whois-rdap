@@ -109,9 +109,9 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-center gap-2 mb-3">
               <Lock className="h-5 w-5 text-primary" />
-              <p className="text-sm font-bold text-foreground">签名算法 (Algorithm)</p>
+              <p className="text-sm font-bold text-foreground">签名算法</p>
             </div>
-            <p className="font-mono text-sm text-foreground pl-7">{certData.algorithm}</p>
+            <p className="font-mono text-sm text-foreground pl-7 leading-relaxed">{certData.algorithm}</p>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
