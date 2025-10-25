@@ -148,19 +148,19 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="whois" className="mt-0">
+            <TabsContent value="whois" className="mt-0" forceMount>
               <WhoisQuery domain={domain} />
             </TabsContent>
 
-            <TabsContent value="dns" className="mt-0">
+            <TabsContent value="dns" className="mt-0" forceMount>
               <DnsQuery domain={domain} />
             </TabsContent>
 
-            <TabsContent value="map" className="mt-0">
+            <TabsContent value="map" className="mt-0" forceMount>
               <DnsMap domain={domain} />
             </TabsContent>
 
-            <TabsContent value="ssl" className="mt-0">
+            <TabsContent value="ssl" className="mt-0" forceMount>
               <SslCertQuery domain={domain} />
             </TabsContent>
           </Tabs>
