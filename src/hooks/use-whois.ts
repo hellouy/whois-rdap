@@ -166,10 +166,10 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 使用新的API
+        // 使用新的API，增加超时时间以支持特殊TLD（如.ge等）
         const url = `https://whois.233333.best/api/?domain=${encodeURIComponent(norm)}`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 增加到20秒
         
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timeoutId);
@@ -230,7 +230,11 @@ export function useWhois(domain: string) {
       } catch (err) {
         if (!mounted.current) return;
         const msg = err instanceof Error ? err.message : "查询失败";
-        setError(msg);
+        // 针对特殊TLD提供更友好的错误提示
+        const errorMessage = msg.includes("abort") || msg.includes("timeout")
+          ? "查询超时，该域名后缀可能响应较慢或暂不支持"
+          : msg;
+        setError(errorMessage);
         setIsLoading(false);
         console.error("Whois查询错误:", msg);
       }
