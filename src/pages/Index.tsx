@@ -4,6 +4,7 @@ import { DnsQuery } from "@/components/DnsQuery";
 import { WhoisQuery } from "@/components/WhoisQuery";
 import { SslCertQuery } from "@/components/SslCertQuery";
 import { DnsMap } from "@/components/DnsMap";
+import { FloatingNav } from "@/components/FloatingNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Globe, Activity } from "lucide-react";
 
@@ -164,6 +165,9 @@ const Index = () => {
           </p>
         </div>
       </footer>
+
+      {/* Floating Navigation */}
+      <FloatingNav />
     </div>
   );
 };
