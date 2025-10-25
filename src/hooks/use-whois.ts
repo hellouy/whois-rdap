@@ -167,7 +167,7 @@ export function useWhois(domain: string) {
 
       try {
         // 使用新的API，增加超时时间以支持特殊TLD（如.ge等）
-        const url = `https://whois.233333.best/api/?domain=${encodeURIComponent(norm)}`;
+        const url = `https://whois.nic.bn/api/?domain=${encodeURIComponent(norm)}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 20000); // 增加到20秒
         
