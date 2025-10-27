@@ -22,7 +22,6 @@ const translateDomainStatus = (status: string): string => {
   
   const statusMap: Record<string, string> = {
     // 申请和审核状态
-    'Live': '正常',
     'applicationpending': '申请待审核',
     'pending': '待处理',
     'pendingapplication': '申请待审核',
@@ -63,6 +62,7 @@ const translateDomainStatus = (status: string): string => {
     'pendingdeletescheduled': '删除待执行期',
     
     // Hold 状态
+    'Live': '正常',
     'hold': '域名暂停',
     'registrarhold': '注册商暂停',
     'registryhold': '注册局暂停',
