@@ -21,6 +21,14 @@ const translateDomainStatus = (status: string): string => {
     .toLowerCase();
   
   const statusMap: Record<string, string> = {
+    // 申请和审核状态
+    'applicationpending': '申请待审核',
+    'pending': '待处理',
+    'pendingapplication': '申请待审核',
+    'underevaluation': '评估中',
+    'underreview': '审核中',
+    'awaitingapproval': '等待批准',
+    
     // EPP 客户端禁止操作状态
     'clientdeleteprohibited': '禁止删除 (客户端)',
     'clienttransferprohibited': '禁止转移 (客户端)',
@@ -79,6 +87,9 @@ const translateDomainStatus = (status: string): string => {
     'expired': '已过期',
     'suspended': '已暂停',
     'terminated': '已终止',
+    'available': '可注册',
+    'unavailable': '不可注册',
+    'notfound': '未找到',
     
     // 删除相关
     'deleteprohibited': '禁止删除',
@@ -113,6 +124,9 @@ const translateDomainStatus = (status: string): string => {
     'abusehold': '滥用暂停',
     'privacyprotect': '隐私保护',
     'proxy': '代理注册',
+    'quarantine': '隔离期',
+    'blocked': '已屏蔽',
+    'frozen': '已冻结',
   };
   
   // 如果找到精确匹配，返回映射值
@@ -149,8 +163,20 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
       return { label: "未注册", variant: "outline" };
     }
     
-    // 2. 检查域名状态字符串
+    // 2. 检查域名状态字符串（必须在检查registered之前）
     const statusString = whoisData.status?.join(' ').toLowerCase() || '';
+    const rawStatusString = whoisData.status?.join(' ') || '';
+    
+    // 2.0 申请待审核状态（优先级最高）
+    if (statusString.includes('application') && statusString.includes('pending')) {
+      return { label: "申请待审核", variant: "secondary" };
+    }
+    if (statusString.includes('pending') && !statusString.includes('delete') && !statusString.includes('transfer')) {
+      // 如果只是pending，且没有创建日期，可能是申请中
+      if (!whoisData.creationDate) {
+        return { label: "待处理", variant: "secondary" };
+      }
+    }
     
     // 2.1 赎回期（即将删除，但还可以恢复）
     if (statusString.includes('redemption')) {
@@ -167,7 +193,18 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
       return { label: "注册局保留", variant: "secondary" };
     }
     
-    // 2.4 暂停状态（各种 hold）
+    // 2.4 隔离、冻结、屏蔽状态
+    if (statusString.includes('quarantine')) {
+      return { label: "隔离期", variant: "destructive" };
+    }
+    if (statusString.includes('frozen')) {
+      return { label: "已冻结", variant: "destructive" };
+    }
+    if (statusString.includes('blocked')) {
+      return { label: "已屏蔽", variant: "destructive" };
+    }
+    
+    // 2.5 暂停状态（各种 hold）
     if (statusString.includes('hold')) {
       if (statusString.includes('registrar')) {
         return { label: "注册商暂停", variant: "destructive" };
@@ -175,14 +212,35 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
       if (statusString.includes('registry')) {
         return { label: "注册局暂停", variant: "destructive" };
       }
+      if (statusString.includes('legal')) {
+        return { label: "法律暂停", variant: "destructive" };
+      }
+      if (statusString.includes('dispute')) {
+        return { label: "争议暂停", variant: "destructive" };
+      }
+      if (statusString.includes('fraud')) {
+        return { label: "欺诈暂停", variant: "destructive" };
+      }
+      if (statusString.includes('abuse')) {
+        return { label: "滥用暂停", variant: "destructive" };
+      }
       return { label: "域名暂停", variant: "destructive" };
     }
     
-    // 2.5 转移中状态
-    if (statusString.includes('pendingtransfer') || statusString.includes('transfer')) {
-      if (statusString.includes('pending') || statusString.includes('started')) {
-        return { label: "转移中", variant: "secondary" };
-      }
+    // 2.6 转移中状态
+    if (statusString.includes('pendingtransfer') || (statusString.includes('transfer') && statusString.includes('pending'))) {
+      return { label: "转移处理中", variant: "secondary" };
+    }
+    if (statusString.includes('transferstarted')) {
+      return { label: "转移已启动", variant: "secondary" };
+    }
+    
+    // 2.7 已暂停、已终止
+    if (statusString.includes('suspended')) {
+      return { label: "已暂停", variant: "destructive" };
+    }
+    if (statusString.includes('terminated')) {
+      return { label: "已终止", variant: "destructive" };
     }
     
     // 3. 检查过期日期
@@ -206,8 +264,8 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
       }
     }
     
-    // 4. 有创建日期或明确注册状态，说明已正常注册
-    if (whoisData.creationDate || whoisData.registered === true) {
+    // 4. 有创建日期，说明已正常注册
+    if (whoisData.creationDate) {
       // 检查是否有 "ok" 状态
       if (statusString.includes('ok') || statusString === '') {
         return { label: "正常", variant: "default" };
@@ -215,12 +273,20 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
       return { label: "已注册", variant: "default" };
     }
     
-    // 5. 如果有注册商信息，大概率是已注册
+    // 5. registered === true 但没有创建日期（可能是特殊状态）
+    if (whoisData.registered === true) {
+      // 如果有状态信息，显示为已注册
+      if (whoisData.status && whoisData.status.length > 0) {
+        return { label: "已注册", variant: "default" };
+      }
+    }
+    
+    // 6. 如果有注册商信息，大概率是已注册
     if (whoisData.registrar) {
       return { label: "已注册", variant: "default" };
     }
     
-    // 6. 都没有，返回未知
+    // 7. 都没有，返回未知
     return { label: "状态未知", variant: "outline" };
   };
 
