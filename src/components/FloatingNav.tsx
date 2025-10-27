@@ -28,8 +28,11 @@ const navigationData: NavSection[] = [
     title: "Whois",
     icon: Search,
     items: [
-      { title: "RDAP查询", description: "新一代Whois协议", url: "https://rdap.org" },
-      { title: "传统Whois", description: "经典域名查询", url: "https://whois.com" },
+      { title: "whois.ls", description: "推荐Whois查询", url: "https://whois.ls" },
+      { title: "tian.hu", description: "推荐Whois查询", url: "https://tian.hu" },
+      { title: "who.cx", description: "推荐Whois查询", url: "https://who.cx" },
+      { title: "rdapis.com", description: "推荐Whois查询", url: "https://rdapis.com" },
+      { title: "w.is", description: "推荐Whois查询", url: "https://w.is" },
     ]
   },
   {
@@ -47,6 +50,29 @@ const navigationData: NavSection[] = [
       { title: "Dnpric", description: "交易价格查询", url: "https://dnpric.com" },
       { title: "可备案后缀", description: "国内可备案后缀查询", url: "https://beian.miit.gov.cn" },
       { title: "Deepl", description: "翻译", url: "https://deepl.com" },
+      { title: "玩米网", description: "玩米网", url: "https://wanmi.cc" },
+      { title: "笨米网", description: "笨米网域名综合查询工具", url: "https://benmi.com" },
+      { title: "Completedns", description: "域名注册历史查询", url: "https://completedns.com" },
+      { title: "哪煮米", description: "哪里煮米便宜", url: "https://www.nazhumi.com" },
+      { title: "Securitytrails", description: "域名绑定主机历史查询", url: "https://securitytrails.com" },
+      { title: "Crunchbase", description: "终端相关信息查询", url: "https://crunchbase.com" },
+      { title: "Snovio", description: "终端联系方式查询", url: "https://snov.io" },
+      { title: "Rocketreach", description: "终端联系方式查询", url: "https://rocketreach.co" },
+      { title: "GGCX", description: "域名综合信息查询", url: "https://ggcx.com" },
+      { title: "Iana", description: "域名注册局联系方式", url: "https://iana.org" },
+      { title: "Domcomp", description: "注册续费转入价格比价", url: "https://domcomp.com" },
+      { title: "Trademarkia", description: "域名商标查询", url: "https://trademarkia.com" },
+      { title: "WIPO", description: "域名仲裁查询", url: "https://wipo.int" },
+      { title: "UDRP", description: "域名仲裁查询", url: "https://udrp.com" },
+      { title: "WHTOP", description: "国别域名注册商查询", url: "https://whtop.com" },
+      { title: "Domainhacks", description: "hacks查询", url: "https://domainhacks.info" },
+      { title: "Morewords", description: "创意单词组合域名挖掘", url: "https://morewords.com" },
+      { title: "Hunter", description: "查看终端的联系方式", url: "https://hunter.io" },
+      { title: "Archive", description: "查询域名的建站历史", url: "https://archive.org" },
+      { title: "DomainR", description: "域名注册信息查询", url: "https://domainr.com" },
+      { title: "Domainbasics", description: "域名基础知识", url: "https://domainbasics.com" },
+      { title: "Domainleads", description: "域名匹配终端", url: "https://domainleads.com" },
+      { title: "Oneword", description: "推荐可注册的好域名", url: "https://oneword.domains" },
     ]
   },
   {
@@ -63,7 +89,6 @@ const navigationData: NavSection[] = [
       { title: "Parkingcrew", description: "国际域名停放销售平台", url: "https://parkingcrew.com" },
       { title: "Afternic", description: "国际域名停放销售平台", url: "https://afternic.com" },
       { title: "Efty", description: "国际域名停放销售平台", url: "https://efty.com" },
-      { title: "Oneword", description: "推荐可注册的好域名", url: "https://oneword.domains" },
     ]
   },
   {
@@ -71,7 +96,29 @@ const navigationData: NavSection[] = [
     icon: Webhook,
     items: [
       { title: "Hexonet", description: "德国知名新后缀域名抢注商", url: "https://hexonet.net" },
-      { title: "西部数码", description: "国内米农喜欢的注册&交易平台", url: "https://west.cn" },
+      { title: "西部数码", description: "国内米农喜欢的注册交易抢注平台", url: "https://west.cn" },
+      { title: "中资源", description: "国内抢注新后缀域名成功率高", url: "https://zzy.cn" },
+      { title: "Catched", description: "无需充值就可以抢注域名的注册商", url: "https://catched.net" },
+      { title: "Dynadot", description: "知名域名抢注服务商", url: "https://dynadot.com" },
+      { title: "Sav", description: "新后缀注册价格比较便宜的注册商", url: "https://sav.com" },
+      { title: "Rrpproxy", description: "无需竞价的域名抢注服务", url: "https://rrpproxy.com" },
+      { title: "Istanco", description: ".ax .rs 域名抢注先到先得", url: "https://istanco.com" },
+      { title: "park", description: "抢注国别域名比较厉害的注册商", url: "https://park.io" },
+      { title: "聚名网", description: "国内知名主流后缀域名抢注商", url: "https://juming.com" },
+      { title: "Nicsell", description: ".de .li .se .eu 域名抢注服务", url: "https://nicsell.com" },
+      { title: "AI注册局", description: "ai后缀域名抢注商", url: "https://nic.ai" },
+      { title: "CatchClub", description: "域名抢注服务商", url: "https://catchclub.com" },
+      { title: "Snapnames", description: "国际知名主流后缀域名抢注商", url: "https://snapnames.com" },
+      { title: "Namejet", description: "国际知名主流后缀域名抢注商", url: "https://namejet.com" },
+      { title: "Dropcatch", description: "国际知名主流后缀域名抢注商", url: "https://dropcatch.com" },
+      { title: "EE注册局", description: ".ee后缀域名抢注商", url: "https://internet.ee" },
+      { title: "RU注册局", description: ".ru后缀域名抢注商", url: "https://nic.ru" },
+      { title: "Docky", description: "小众国别域名抢注商", url: "https://docky.com" },
+      { title: "Expireddomains", description: ".nz后缀域名抢注商", url: "https://expireddomains.co.nz" },
+      { title: "Rymdweb", description: ".se.nu后缀域名抢注商", url: "https://rymdweb.se" },
+      { title: "Nidoma", description: ".it后缀域名抢注商", url: "https://nidoma.com" },
+      { title: "Catchtiger", description: ".li后缀域名抢注商", url: "https://catchtiger.com" },
+      { title: "Namecase", description: ".it后缀域名抢注商", url: "https://namecase.com" },
     ]
   },
   {
@@ -99,6 +146,8 @@ const navigationData: NavSection[] = [
       { title: "ZoneEdit", description: "美国著名的老牌免费域名DNS解析服务", url: "https://zoneedit.com" },
       { title: "HE.NET", description: "美国老牌IDC", url: "https://he.net" },
       { title: "FreeDNS", description: "美国的老牌DNS网站", url: "https://freedns.afraid.org" },
+      { title: "Cloudflare", description: "强大的国外免费CDN和DNS服务", url: "https://cloudflare.com" },
+      { title: "coudns", description: "coudns", url: "https://coudns.net" },
     ]
   },
   {
@@ -119,8 +168,9 @@ const navigationData: NavSection[] = [
       { title: "101domain", description: "全世界支持域名后缀最多的注册商", url: "https://101domain.com" },
       { title: "netim", description: "全世界支持域名后缀最多的注册商", url: "https://netim.com" },
       { title: "Sav", description: "新后缀注册价格比较便宜的注册商", url: "https://sav.com" },
-      { title: "Namesilo", description: "去掉支付宝的国外知名域名注册商", url: "https://namesilo.com" },
-      { title: "Namecheap", description: "支持支付宝的国外知名域名注册商", url: "https://namecheap.com" },
+      { title: "Namesilo", description: "支持支付宝的国外知名域名注册商", url: "https://namesilo.com" },
+      { title: "Namecheap", description: "国际知名服务优秀的域名注册商", url: "https://namecheap.com" },
+      { title: "Uniregistry", description: "方便批量查询新后缀域名的注册商", url: "https://uniregistry.com" },
     ]
   },
   {
