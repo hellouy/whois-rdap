@@ -8,6 +8,7 @@ export interface DomainPrice {
   transferPrice?: number;
   currency: string;
   exchangeRate?: number;
+  meaning?: string; // 域名含义
 }
 
 export const useDomainPrice = () => {
@@ -20,35 +21,37 @@ export const useDomainPrice = () => {
     setError(null);
     
     try {
+      // 使用新的API v2
       const response = await fetch(
-        `https://api.tian.hu/whois.php?domain=${encodeURIComponent(domain)}&action=checkPrice`
+        `https://api-v2.tian.hu/domains/pricing/${encodeURIComponent(domain)}`
       );
       
       if (!response.ok) {
         throw new Error("获取价格信息失败");
       }
       
-      const data = await response.json();
+      const result = await response.json();
       
-      // API返回的数据在data.data中，增强容错处理
-      const apiData = data.data || data;
+      // 新API返回的数据结构
+      const data = result.data || result;
       
-      // 增强价格解析的可靠性，支持多种数据格式
+      // 增强价格解析的可靠性
       const parsePrice = (value: any): number | undefined => {
         if (value === null || value === undefined || value === '') return undefined;
         const parsed = parseFloat(String(value));
         return isNaN(parsed) || parsed <= 0 ? undefined : parsed;
       };
       
-      // 适配API返回的数据结构，增强字段匹配
+      // 适配新API返回的数据结构
       const priceInfo: DomainPrice = {
         domain,
-        isPremium: apiData.premium === "true" || apiData.premium === true || apiData.premium === 1 || apiData.isPremium === true,
-        registrationPrice: parsePrice(apiData.register || apiData.price || apiData.registrationPrice || apiData.registerPrice),
-        renewalPrice: parsePrice(apiData.renew || apiData.renewPrice || apiData.renewalPrice),
-        transferPrice: parsePrice(apiData.transfer || apiData.transferPrice),
-        currency: "CNY",
-        exchangeRate: 1,
+        isPremium: data.premium === "true" || data.premium === true || data.premium === 1 || data.isPremium === true,
+        registrationPrice: parsePrice(data.register || data.price || data.registrationPrice || data.registerPrice),
+        renewalPrice: parsePrice(data.renew || data.renewPrice || data.renewalPrice),
+        transferPrice: parsePrice(data.transfer || data.transferPrice),
+        currency: data.currency || "CNY",
+        exchangeRate: parseFloat(data.exchangeRate || "1") || 1,
+        meaning: data.meaning || data.description || undefined, // 域名含义
       };
       
       setPriceData(priceInfo);

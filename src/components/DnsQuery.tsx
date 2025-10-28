@@ -7,6 +7,8 @@ interface DnsRecord {
   type: string;
   value: string;
   ttl?: number;
+  location?: string; // 位置信息
+  provider?: string; // 服务商信息
 }
 
 interface DnsQueryProps {
@@ -16,6 +18,24 @@ interface DnsQueryProps {
 export const DnsQuery = ({ domain }: DnsQueryProps) => {
   const [records, setRecords] = useState<DnsRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 查询IP的地理位置和服务商信息
+  const fetchIpInfo = async (ip: string): Promise<{ location?: string; provider?: string }> => {
+    try {
+      const response = await fetch(`https://ipapi.co/${ip}/json/`);
+      if (!response.ok) return {};
+      const data = await response.json();
+      
+      const locationParts = [data.city, data.region, data.country_name].filter(Boolean);
+      const location = locationParts.length > 0 ? locationParts.join(', ') : undefined;
+      const provider = data.org || data.asn || undefined;
+      
+      return { location, provider };
+    } catch (err) {
+      console.error('IP信息查询失败:', err);
+      return {};
+    }
+  };
 
   const queryDns = async () => {
     setIsLoading(true);
@@ -51,13 +71,22 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
           const data = await response.json();
 
           if (data.Answer) {
-            data.Answer.forEach((answer: any) => {
-              allRecords.push({
+            for (const answer of data.Answer) {
+              const record: DnsRecord = {
                 type: type,
                 value: answer.data,
                 ttl: answer.TTL,
-              });
-            });
+              };
+
+              // 如果是A记录或AAAA记录，查询IP信息
+              if ((type === 'A' || type === 'AAAA') && answer.data) {
+                const ipInfo = await fetchIpInfo(answer.data);
+                record.location = ipInfo.location;
+                record.provider = ipInfo.provider;
+              }
+
+              allRecords.push(record);
+            }
           }
         } catch (err) {
           console.error(`Error querying ${type}:`, err);
@@ -116,21 +145,40 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
           {records.map((record, index) => (
             <div
               key={index}
-              className="flex items-start gap-5 p-6 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
+              className="p-6 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
             >
-              <div className="flex-shrink-0">
-                <Badge className="min-w-[75px] justify-center px-4 py-2 bg-primary text-primary-foreground text-sm font-bold shadow-md">
-                  {record.type}
-                </Badge>
-              </div>
-              <div className="flex-1 min-w-0 pt-0.5">
-                <p className="font-mono text-sm break-all text-foreground mb-2 leading-relaxed">{record.value}</p>
-                {record.ttl && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>TTL: {record.ttl}s</span>
+              <div className="flex items-start gap-5">
+                <div className="flex-shrink-0">
+                  <Badge className="min-w-[75px] justify-center px-4 py-2 bg-primary text-primary-foreground text-sm font-bold shadow-md">
+                    {record.type}
+                  </Badge>
+                </div>
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1 font-medium">解析地址</p>
+                    <p className="font-mono text-sm break-all text-foreground leading-relaxed">{record.value}</p>
                   </div>
-                )}
+                  
+                  {record.location && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1 font-medium flex items-center gap-1">
+                        <Globe className="h-3 w-3" />
+                        位置/服务商
+                      </p>
+                      <p className="text-sm text-foreground">{record.location}</p>
+                      {record.provider && (
+                        <p className="text-sm text-muted-foreground mt-0.5">{record.provider}</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {record.ttl && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>TTL: {record.ttl}s</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}

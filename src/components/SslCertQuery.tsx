@@ -71,53 +71,49 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-center gap-2 mb-3">
               <Shield className="h-5 w-5 text-primary" />
-              <p className="text-sm font-bold text-foreground">颁发者 (Issuer)</p>
+              <p className="text-xs text-muted-foreground">颁发者 (Issuer)</p>
             </div>
             <p className="font-mono text-sm text-foreground leading-relaxed break-all pl-7">{certData.issuer}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">生效日期</p>
-                </div>
-                <p className="font-mono text-sm text-foreground">{certData.validFrom}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <p className="text-xs text-muted-foreground">生效日期</p>
               </div>
+              <p className="font-mono text-sm text-foreground pl-7">{certData.validFrom}</p>
             </div>
 
             <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <p className="text-sm font-bold text-foreground">过期日期</p>
-                </div>
-                <p className="font-mono text-sm text-foreground">{certData.validTo}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <p className="text-xs text-muted-foreground">过期日期</p>
               </div>
+              <p className="font-mono text-sm text-foreground pl-7">{certData.validTo}</p>
             </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              <p className="text-sm font-bold text-foreground">域名：</p>
-              <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.subject}</p>
+              <p className="text-xs text-muted-foreground">域名</p>
+              <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.subject || '未知'}</p>
             </div>
-          </div>
-
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-2 mb-3">
-              <Lock className="h-5 w-5 text-primary" />
-              <p className="text-sm font-bold text-foreground">签名算法</p>
-            </div>
-            <p className="font-mono text-sm text-foreground pl-7 leading-relaxed">{certData.algorithm}</p>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-center gap-2 mb-3">
               <Shield className="h-5 w-5 text-primary" />
-              <p className="text-sm font-bold text-foreground">证书指纹 (Fingerprint)</p>
+              <p className="text-xs text-muted-foreground">签名算法</p>
+            </div>
+            <p className="font-mono text-sm text-foreground pl-7 leading-relaxed">{certData.algorithm || '未知'}</p>
+          </div>
+
+          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="h-5 w-5 text-primary" />
+              <p className="text-xs text-muted-foreground">证书指纹 (Fingerprint)</p>
             </div>
             <p className="font-mono text-xs text-foreground break-all leading-relaxed pl-7">{certData.fingerprint}</p>
           </div>
