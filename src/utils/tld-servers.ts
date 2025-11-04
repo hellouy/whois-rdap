@@ -962,22 +962,6 @@ export const TLD_SERVERS: Record<string, string[]> = {
     "a.nic.lc",
     "b.nic.lc"
   ],
-  "ls": [
-    "ns1.alidns.com",
-    "ns2.alidns.com"
-  ],
-  "bm": [
-    "a.nic.bm",
-    "b.nic.bm"
-  ],
-  "ky": [
-    "a.nic.ky",
-    "b.nic.ky"
-  ],
-  "vg": [
-    "a.nic.vg",
-    "b.nic.vg"
-  ],
   
   // 更多亚洲ccTLD
   "kz": [

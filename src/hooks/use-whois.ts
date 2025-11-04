@@ -166,48 +166,63 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 使用增强的 RDAP 查询，支持多个 RDAP 服务器
-        const tld = norm.split('.').pop() || '';
-        const rdapServers = [
-          `https://rdap.org/domain/${encodeURIComponent(norm)}`,
-          `https://rdap.iana.org/domain/${encodeURIComponent(norm)}`,
-          `https://rdap-bootstrap.arin.net/bootstrap/domain/${encodeURIComponent(norm)}`,
-        ];
-
-        let rdapData: AnyObj | null = null;
-        let lastError: Error | null = null;
-
-        // 尝试多个 RDAP 服务器
-        for (const serverUrl of rdapServers) {
-          try {
-            const text = await fetchText(serverUrl, 10000);
-            const parsed = safeParseJson(text);
-            if (parsed && typeof parsed === 'object') {
-              rdapData = parsed;
-              break;
-            }
-          } catch (err) {
-            lastError = err instanceof Error ? err : new Error(String(err));
-            continue;
-          }
-        }
-
-        if (!mounted.current) return;
-
-        if (!rdapData) {
-          throw lastError || new Error('无法从 RDAP 服务器获取数据');
-        }
-
-        // 解析 RDAP 数据
-        const fromRdap = parseRdap(rdapData);
+        // 使用新的API，增加超时时间以支持特殊TLD（如.ge等）
+        const url = `https://whois.nic.bn/api/?domain=${encodeURIComponent(norm)}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 增加到20秒
         
-        // 从 IANA 获取 TLD 权威服务器
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (!mounted.current) return;
+        
+        // 新API返回 { code, msg, data: { whoisData, rdapData, ... } }
+        const payload: AnyObj = result?.data ?? result ?? {};
+        
+        // 尝试从 RDAP 解析结构化信息
+        const rdapObj = typeof payload.rdapData === "string" ? safeParseJson(payload.rdapData) : payload.rdapData;
+        const fromRdap = rdapObj ? parseRdap(rdapObj) : ({} as WhoisData);
+        
+        // 从 whois 文本里兜底提取 NS
+        let ns: string[] = fromRdap.nameServers || payload.nameServers || payload.name_servers || payload.nameservers || [];
+        if ((!ns || ns.length === 0) && typeof payload.whoisData === "string") {
+          const matches = payload.whoisData.match(/Name Server:\s*([^\r\n]+)/gi) || [];
+          ns = matches.map((m: string) => m.split(":")[1].trim()).filter(Boolean);
+        }
+        
+        // 兼容 status 为对象数组或字符串数组
+        let status: string[] = Array.isArray(fromRdap.status) && fromRdap.status.length > 0
+          ? fromRdap.status
+          : Array.isArray(payload.status)
+            ? (typeof payload.status[0] === "string" ? payload.status : (payload.status as AnyObj[]).map((s: AnyObj) => s.text).filter(Boolean))
+            : payload.status ? [payload.status] : [];
+        
+        // 从IANA获取TLD权威服务器
         const tldServers = getTLDServers(norm);
         
         const whoisData: WhoisData = {
-          ...fromRdap,
+          domainName: fromRdap.domainName || payload.domain || payload.domain_name || payload.domainName || norm,
+          registrar: fromRdap.registrar || payload.registrar || payload.registrar_name,
+          registrarIanaId: fromRdap.registrarIanaId || payload.registrarIanaId || payload.registrar_iana_id || payload.registrar_id,
+          registrarAbuseEmail: fromRdap.registrarAbuseEmail || payload.registrar_abuse_contact_email || payload.abuse_email,
+          registrarAbusePhone: fromRdap.registrarAbusePhone || payload.registrar_abuse_contact_phone || payload.abuse_phone,
+          registrantOrg: fromRdap.registrantOrg,
+          registrantCountry: fromRdap.registrantCountry,
+          creationDate: fromRdap.creationDate || formatDate(payload.creationDateISO8601 || payload.creationDate || payload.created_date || payload.creation_date),
+          expirationDate: fromRdap.expirationDate || formatDate(payload.expirationDateISO8601 || payload.expirationDate || payload.expiry_date || payload.expiration_date),
+          updatedDate: fromRdap.updatedDate || formatDate(payload.updatedDateISO8601 || payload.updatedDate || payload.last_updated || payload.updated_date),
+          nameServers: ns,
           tldServers: tldServers || undefined,
-          raw: JSON.stringify(rdapData, null, 2),
+          status,
+          dnssec: fromRdap.dnssec || payload.dnssec,
+          registered: payload.registered,
+          raw: payload.whoisData || payload.raw || JSON.stringify(payload, null, 2),
         };
         
         setData(whoisData);
@@ -215,6 +230,7 @@ export function useWhois(domain: string) {
       } catch (err) {
         if (!mounted.current) return;
         const msg = err instanceof Error ? err.message : "查询失败";
+        // 针对特殊TLD提供更友好的错误提示
         const errorMessage = msg.includes("abort") || msg.includes("timeout")
           ? "查询超时，该域名后缀可能响应较慢或暂不支持"
           : msg;
