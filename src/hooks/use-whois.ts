@@ -166,111 +166,48 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 使用 tian.hu API v2，支持 1400+ TLD 后缀
-        const url = `https://api-v2.tian.hu/whois/${encodeURIComponent(norm)}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25秒超时
-        
-        const response = await fetch(url, { 
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
+        // 使用增强的 RDAP 查询，支持多个 RDAP 服务器
+        const tld = norm.split('.').pop() || '';
+        const rdapServers = [
+          `https://rdap.org/domain/${encodeURIComponent(norm)}`,
+          `https://rdap.iana.org/domain/${encodeURIComponent(norm)}`,
+          `https://rdap-bootstrap.arin.net/bootstrap/domain/${encodeURIComponent(norm)}`,
+        ];
+
+        let rdapData: AnyObj | null = null;
+        let lastError: Error | null = null;
+
+        // 尝试多个 RDAP 服务器
+        for (const serverUrl of rdapServers) {
+          try {
+            const text = await fetchText(serverUrl, 10000);
+            const parsed = safeParseJson(text);
+            if (parsed && typeof parsed === 'object') {
+              rdapData = parsed;
+              break;
+            }
+          } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+            continue;
           }
-        });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
         }
-        
-        const result = await response.json();
-        
+
         if (!mounted.current) return;
-        
-        // API 返回格式: { code, message, data: { domain, whois_text, rdap_data, ... } }
-        if (result.code !== 200) {
-          throw new Error(result.message || '查询失败');
+
+        if (!rdapData) {
+          throw lastError || new Error('无法从 RDAP 服务器获取数据');
         }
+
+        // 解析 RDAP 数据
+        const fromRdap = parseRdap(rdapData);
         
-        const payload: AnyObj = result?.data ?? {};
-        
-        // 尝试从 RDAP 解析结构化信息
-        const rdapObj = typeof payload.rdap_data === "string" 
-          ? safeParseJson(payload.rdap_data) 
-          : (payload.rdap_data || payload.rdapData);
-        const fromRdap = rdapObj ? parseRdap(rdapObj) : ({} as WhoisData);
-        
-        // 从 whois 文本里兜底提取 NS
-        let ns: string[] = fromRdap.nameServers 
-          || payload.name_servers 
-          || payload.nameServers 
-          || payload.nameservers 
-          || [];
-        
-        const whoisText = payload.whois_text || payload.whoisData || payload.raw || '';
-        if ((!ns || ns.length === 0) && typeof whoisText === "string") {
-          const matches = whoisText.match(/(?:Name Server|nserver|Nameserver):\s*([^\r\n]+)/gi) || [];
-          ns = matches.map((m: string) => m.split(":")[1].trim().toLowerCase()).filter(Boolean);
-        }
-        
-        // 兼容 status 为对象数组或字符串数组
-        let status: string[] = Array.isArray(fromRdap.status) && fromRdap.status.length > 0
-          ? fromRdap.status
-          : Array.isArray(payload.status)
-            ? (typeof payload.status[0] === "string" ? payload.status : (payload.status as AnyObj[]).map((s: AnyObj) => s.text || s.status).filter(Boolean))
-            : payload.status ? [String(payload.status)] : [];
-        
-        // 如果从RDAP没有获取到状态，尝试从原始文本提取
-        if (status.length === 0 && whoisText) {
-          const statusMatches = whoisText.match(/(?:Domain Status|Status):\s*([^\r\n]+)/gi) || [];
-          status = statusMatches.map((m: string) => m.split(":")[1].trim()).filter(Boolean);
-        }
-        
-        // 从IANA获取TLD权威服务器
+        // 从 IANA 获取 TLD 权威服务器
         const tldServers = getTLDServers(norm);
         
         const whoisData: WhoisData = {
-          domainName: fromRdap.domainName 
-            || payload.domain 
-            || payload.domain_name 
-            || payload.domainName 
-            || norm,
-          registrar: fromRdap.registrar 
-            || payload.registrar 
-            || payload.registrar_name,
-          registrarIanaId: fromRdap.registrarIanaId 
-            || payload.registrar_iana_id 
-            || payload.registrarIanaId 
-            || payload.registrar_id,
-          registrarAbuseEmail: fromRdap.registrarAbuseEmail 
-            || payload.registrar_abuse_contact_email 
-            || payload.registrar_abuse_email
-            || payload.abuse_email,
-          registrarAbusePhone: fromRdap.registrarAbusePhone 
-            || payload.registrar_abuse_contact_phone 
-            || payload.registrar_abuse_phone
-            || payload.abuse_phone,
-          registrantOrg: fromRdap.registrantOrg 
-            || payload.registrant_organization
-            || payload.registrant_org,
-          registrantCountry: fromRdap.registrantCountry 
-            || payload.registrant_country,
-          creationDate: fromRdap.creationDate 
-            || formatDate(payload.creation_date || payload.created_date || payload.creationDate || payload.creationDateISO8601),
-          expirationDate: fromRdap.expirationDate 
-            || formatDate(payload.expiration_date || payload.expiry_date || payload.expirationDate || payload.expirationDateISO8601),
-          updatedDate: fromRdap.updatedDate 
-            || formatDate(payload.updated_date || payload.last_updated || payload.updatedDate || payload.updatedDateISO8601),
-          nameServers: ns,
+          ...fromRdap,
           tldServers: tldServers || undefined,
-          status,
-          dnssec: fromRdap.dnssec 
-            || payload.dnssec 
-            || payload.dnssec_status,
-          registered: payload.registered !== undefined 
-            ? payload.registered 
-            : (payload.is_registered !== undefined ? payload.is_registered : undefined),
-          raw: whoisText || JSON.stringify(payload, null, 2),
+          raw: JSON.stringify(rdapData, null, 2),
         };
         
         setData(whoisData);
@@ -278,7 +215,6 @@ export function useWhois(domain: string) {
       } catch (err) {
         if (!mounted.current) return;
         const msg = err instanceof Error ? err.message : "查询失败";
-        // 针对特殊TLD提供更友好的错误提示
         const errorMessage = msg.includes("abort") || msg.includes("timeout")
           ? "查询超时，该域名后缀可能响应较慢或暂不支持"
           : msg;
