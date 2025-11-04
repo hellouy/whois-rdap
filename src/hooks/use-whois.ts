@@ -166,12 +166,17 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 使用新的API，增加超时时间以支持特殊TLD（如.ge等）
-        const url = `https://whois.nic.bn/api/?domain=${encodeURIComponent(norm)}`;
+        // 使用 tian.hu API v2，支持 1400+ TLD 后缀
+        const url = `https://api-v2.tian.hu/whois/${encodeURIComponent(norm)}`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 增加到20秒
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25秒超时
         
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetch(url, { 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
         clearTimeout(timeoutId);
         
         if (!response.ok) {
@@ -182,47 +187,90 @@ export function useWhois(domain: string) {
         
         if (!mounted.current) return;
         
-        // 新API返回 { code, msg, data: { whoisData, rdapData, ... } }
-        const payload: AnyObj = result?.data ?? result ?? {};
+        // API 返回格式: { code, message, data: { domain, whois_text, rdap_data, ... } }
+        if (result.code !== 200) {
+          throw new Error(result.message || '查询失败');
+        }
+        
+        const payload: AnyObj = result?.data ?? {};
         
         // 尝试从 RDAP 解析结构化信息
-        const rdapObj = typeof payload.rdapData === "string" ? safeParseJson(payload.rdapData) : payload.rdapData;
+        const rdapObj = typeof payload.rdap_data === "string" 
+          ? safeParseJson(payload.rdap_data) 
+          : (payload.rdap_data || payload.rdapData);
         const fromRdap = rdapObj ? parseRdap(rdapObj) : ({} as WhoisData);
         
         // 从 whois 文本里兜底提取 NS
-        let ns: string[] = fromRdap.nameServers || payload.nameServers || payload.name_servers || payload.nameservers || [];
-        if ((!ns || ns.length === 0) && typeof payload.whoisData === "string") {
-          const matches = payload.whoisData.match(/Name Server:\s*([^\r\n]+)/gi) || [];
-          ns = matches.map((m: string) => m.split(":")[1].trim()).filter(Boolean);
+        let ns: string[] = fromRdap.nameServers 
+          || payload.name_servers 
+          || payload.nameServers 
+          || payload.nameservers 
+          || [];
+        
+        const whoisText = payload.whois_text || payload.whoisData || payload.raw || '';
+        if ((!ns || ns.length === 0) && typeof whoisText === "string") {
+          const matches = whoisText.match(/(?:Name Server|nserver|Nameserver):\s*([^\r\n]+)/gi) || [];
+          ns = matches.map((m: string) => m.split(":")[1].trim().toLowerCase()).filter(Boolean);
         }
         
         // 兼容 status 为对象数组或字符串数组
         let status: string[] = Array.isArray(fromRdap.status) && fromRdap.status.length > 0
           ? fromRdap.status
           : Array.isArray(payload.status)
-            ? (typeof payload.status[0] === "string" ? payload.status : (payload.status as AnyObj[]).map((s: AnyObj) => s.text).filter(Boolean))
-            : payload.status ? [payload.status] : [];
+            ? (typeof payload.status[0] === "string" ? payload.status : (payload.status as AnyObj[]).map((s: AnyObj) => s.text || s.status).filter(Boolean))
+            : payload.status ? [String(payload.status)] : [];
+        
+        // 如果从RDAP没有获取到状态，尝试从原始文本提取
+        if (status.length === 0 && whoisText) {
+          const statusMatches = whoisText.match(/(?:Domain Status|Status):\s*([^\r\n]+)/gi) || [];
+          status = statusMatches.map((m: string) => m.split(":")[1].trim()).filter(Boolean);
+        }
         
         // 从IANA获取TLD权威服务器
         const tldServers = getTLDServers(norm);
         
         const whoisData: WhoisData = {
-          domainName: fromRdap.domainName || payload.domain || payload.domain_name || payload.domainName || norm,
-          registrar: fromRdap.registrar || payload.registrar || payload.registrar_name,
-          registrarIanaId: fromRdap.registrarIanaId || payload.registrarIanaId || payload.registrar_iana_id || payload.registrar_id,
-          registrarAbuseEmail: fromRdap.registrarAbuseEmail || payload.registrar_abuse_contact_email || payload.abuse_email,
-          registrarAbusePhone: fromRdap.registrarAbusePhone || payload.registrar_abuse_contact_phone || payload.abuse_phone,
-          registrantOrg: fromRdap.registrantOrg,
-          registrantCountry: fromRdap.registrantCountry,
-          creationDate: fromRdap.creationDate || formatDate(payload.creationDateISO8601 || payload.creationDate || payload.created_date || payload.creation_date),
-          expirationDate: fromRdap.expirationDate || formatDate(payload.expirationDateISO8601 || payload.expirationDate || payload.expiry_date || payload.expiration_date),
-          updatedDate: fromRdap.updatedDate || formatDate(payload.updatedDateISO8601 || payload.updatedDate || payload.last_updated || payload.updated_date),
+          domainName: fromRdap.domainName 
+            || payload.domain 
+            || payload.domain_name 
+            || payload.domainName 
+            || norm,
+          registrar: fromRdap.registrar 
+            || payload.registrar 
+            || payload.registrar_name,
+          registrarIanaId: fromRdap.registrarIanaId 
+            || payload.registrar_iana_id 
+            || payload.registrarIanaId 
+            || payload.registrar_id,
+          registrarAbuseEmail: fromRdap.registrarAbuseEmail 
+            || payload.registrar_abuse_contact_email 
+            || payload.registrar_abuse_email
+            || payload.abuse_email,
+          registrarAbusePhone: fromRdap.registrarAbusePhone 
+            || payload.registrar_abuse_contact_phone 
+            || payload.registrar_abuse_phone
+            || payload.abuse_phone,
+          registrantOrg: fromRdap.registrantOrg 
+            || payload.registrant_organization
+            || payload.registrant_org,
+          registrantCountry: fromRdap.registrantCountry 
+            || payload.registrant_country,
+          creationDate: fromRdap.creationDate 
+            || formatDate(payload.creation_date || payload.created_date || payload.creationDate || payload.creationDateISO8601),
+          expirationDate: fromRdap.expirationDate 
+            || formatDate(payload.expiration_date || payload.expiry_date || payload.expirationDate || payload.expirationDateISO8601),
+          updatedDate: fromRdap.updatedDate 
+            || formatDate(payload.updated_date || payload.last_updated || payload.updatedDate || payload.updatedDateISO8601),
           nameServers: ns,
           tldServers: tldServers || undefined,
           status,
-          dnssec: fromRdap.dnssec || payload.dnssec,
-          registered: payload.registered,
-          raw: payload.whoisData || payload.raw || JSON.stringify(payload, null, 2),
+          dnssec: fromRdap.dnssec 
+            || payload.dnssec 
+            || payload.dnssec_status,
+          registered: payload.registered !== undefined 
+            ? payload.registered 
+            : (payload.is_registered !== undefined ? payload.is_registered : undefined),
+          raw: whoisText || JSON.stringify(payload, null, 2),
         };
         
         setData(whoisData);
