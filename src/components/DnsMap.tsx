@@ -31,9 +31,9 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
       }
 
       // 查询多种DNS记录类型，增强准确性
-      const types = ['A', 'AAAA', 'MX', 'NS', 'CNAME', 'TXT'];
+      const types = ['A', 'AAAA', 'MX', 'NS', 'CNAME'];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       
       // 并行查询所有记录类型
       const queries = types.map(async (type) => {
@@ -53,8 +53,15 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
           const data = await response.json();
           
           if (data.Answer) {
-            data.Answer.forEach((record: any) => {
-              // 去重：检查是否已存在相同的记录
+            // 批量处理以减少API调用
+            const ipRecords = data.Answer.filter((record: any) => 
+              (type === 'A' || type === 'AAAA') && 
+              record.data && 
+              !record.data.includes('@')
+            );
+            
+            // 为A和AAAA记录获取位置信息
+            for (const record of ipRecords) {
               const exists = newNodes.some(
                 node => node.name === record.name && 
                         node.type === type && 
@@ -62,12 +69,33 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
               );
               
               if (!exists) {
+                const location = await fetchIpLocation(record.data);
                 newNodes.push({
                   name: record.name,
                   type: type,
                   ip: record.data,
-                  location: getLocationFromIP(record.data),
+                  location: location,
                 });
+              }
+            }
+            
+            // 处理非IP记录
+            data.Answer.forEach((record: any) => {
+              if (type !== 'A' && type !== 'AAAA') {
+                const exists = newNodes.some(
+                  node => node.name === record.name && 
+                          node.type === type && 
+                          node.ip === record.data
+                );
+                
+                if (!exists) {
+                  newNodes.push({
+                    name: record.name,
+                    type: type,
+                    ip: record.data,
+                    location: type === 'MX' || type === 'CNAME' ? '邮件/别名记录' : undefined,
+                  });
+                }
               }
             });
           }
@@ -88,10 +116,35 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
     }
   };
 
-  // 增强的IP位置和服务商识别
-  const getLocationFromIP = (ip: string): string => {
+  // 使用API查询IP详细信息，增强准确性
+  const fetchIpLocation = async (ip: string): Promise<string> => {
     if (!ip || ip.includes('@')) return "未知";
     
+    try {
+      const response = await fetch(`https://ipapi.co/${ip}/json/`);
+      if (!response.ok) return getLocationFallback(ip);
+      
+      const data = await response.json();
+      const locationParts = [data.city, data.region, data.country_name].filter(Boolean);
+      const location = locationParts.length > 0 ? locationParts.join(', ') : undefined;
+      const provider = data.org || data.asn || undefined;
+      
+      if (location && provider) {
+        return `${location} - ${provider}`;
+      } else if (location) {
+        return location;
+      } else if (provider) {
+        return provider;
+      }
+    } catch (err) {
+      console.error('IP位置查询失败:', err);
+    }
+    
+    return getLocationFallback(ip);
+  };
+
+  // 备用的本地IP识别
+  const getLocationFallback = (ip: string): string => {
     // IPv6 识别
     if (ip.includes(':')) {
       if (ip.startsWith('2001:4860')) return "Google CDN (IPv6)";
