@@ -10,6 +10,69 @@ interface WhoisQueryProps {
   domain: string;
 }
 
+// 国家代码映射到中文名称
+const getCountryName = (countryCode: string): string => {
+  const countryMap: Record<string, string> = {
+    'GY': '圭亚那',
+    'CN': '中国',
+    'US': '美国',
+    'UK': '英国',
+    'GB': '英国',
+    'JP': '日本',
+    'KR': '韩国',
+    'DE': '德国',
+    'FR': '法国',
+    'CA': '加拿大',
+    'AU': '澳大利亚',
+    'NZ': '新西兰',
+    'SG': '新加坡',
+    'HK': '中国香港',
+    'TW': '中国台湾',
+    'MO': '中国澳门',
+    'IN': '印度',
+    'RU': '俄罗斯',
+    'BR': '巴西',
+    'MX': '墨西哥',
+    'AR': '阿根廷',
+    'CL': '智利',
+    'CO': '哥伦比亚',
+    'PE': '秘鲁',
+    'VE': '委内瑞拉',
+    'IT': '意大利',
+    'ES': '西班牙',
+    'PT': '葡萄牙',
+    'NL': '荷兰',
+    'BE': '比利时',
+    'CH': '瑞士',
+    'AT': '奥地利',
+    'SE': '瑞典',
+    'NO': '挪威',
+    'DK': '丹麦',
+    'FI': '芬兰',
+    'PL': '波兰',
+    'CZ': '捷克',
+    'GR': '希腊',
+    'TR': '土耳其',
+    'IL': '以色列',
+    'SA': '沙特阿拉伯',
+    'AE': '阿联酋',
+    'EG': '埃及',
+    'ZA': '南非',
+    'NG': '尼日利亚',
+    'KE': '肯尼亚',
+    'TH': '泰国',
+    'VN': '越南',
+    'ID': '印度尼西亚',
+    'MY': '马来西亚',
+    'PH': '菲律宾',
+    'PK': '巴基斯坦',
+    'BD': '孟加拉国',
+  };
+  
+  const code = countryCode.toUpperCase();
+  return countryMap[code] || countryCode;
+};
+
 // 域名状态映射到中文 - 增强版
 const translateDomainStatus = (status: string): string => {
   // 移除 IANA URL、多余空格和特殊字符
@@ -464,49 +527,55 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 1. 域名信息 */}
           {(whoisData.domainName || whoisData.dnssec) && (
               <div className="relative p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-4">
-                  <FileText className="h-5 w-5 text-primary flex-shrink-0" />
-                  <div className="flex-1 min-w-0 pr-28 space-y-3">
-                    {whoisData.domainName && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">域名</p>
+                <div className="space-y-3">
+                  {whoisData.domainName && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">域名:</p>
                         <p className="font-bold text-base text-foreground break-all">{whoisData.domainName}</p>
                       </div>
-                    )}
-                    {whoisData.dnssec && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">DNSSEC</p>
+                    </div>
+                  )}
+                  {whoisData.dnssec && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">DNSSEC:</p>
                         <p className="text-sm text-foreground">{whoisData.dnssec}</p>
                       </div>
-                    )}
-                  </div>
-                  <Badge 
-                    variant={getDomainStatus().variant} 
-                    className="absolute top-4 right-4 text-xs font-semibold px-3 py-1"
-                  >
-                    {getDomainStatus().label}
-                  </Badge>
+                    </div>
+                  )}
                 </div>
+                <Badge 
+                  variant={getDomainStatus().variant} 
+                  className="absolute top-4 right-4 text-xs font-semibold px-3 py-1"
+                >
+                  {getDomainStatus().label}
+                </Badge>
               </div>
             )}
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-4">
-                  <Building className="h-5 w-5 text-primary flex-shrink-0" />
-                  <div className="flex-1 grid gap-3 min-w-0">
-                    <div className="flex items-baseline gap-3">
-                      <p className="text-sm text-muted-foreground w-20 flex-shrink-0">注册商</p>
-                      <p className="font-bold text-base text-foreground break-all flex-1">{whoisData.registrar}</p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Building className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-muted-foreground mb-1">注册商:</p>
+                      <p className="font-bold text-base text-foreground break-all">{whoisData.registrar}</p>
                     </div>
-                    {whoisData.registrarIanaId && (
-                      <div className="flex items-baseline gap-3">
-                        <p className="text-sm text-muted-foreground w-20 flex-shrink-0">IANA ID</p>
+                  </div>
+                  {whoisData.registrarIanaId && (
+                    <div className="flex items-start gap-3">
+                      <Building className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">IANA ID:</p>
                         <p className="text-sm text-foreground">{whoisData.registrarIanaId}</p>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -514,16 +583,12 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 3. 时间信息 */}
           {whoisData.creationDate && (
             <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3">
                 <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-baseline gap-3">
-                    <p className="text-sm text-muted-foreground w-20 flex-shrink-0">注册时间</p>
-                    <p className="font-mono text-base font-bold text-foreground">{whoisData.creationDate}</p>
-                  </div>
-                  <div className="pl-[5.75rem]">
-                    <p className="text-xs text-muted-foreground">已注册 {getRegisteredTime(whoisData.creationDate)}</p>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground mb-1">注册时间:</p>
+                  <p className="font-mono text-base font-bold text-foreground">{whoisData.creationDate}</p>
+                  <p className="text-xs text-muted-foreground mt-1">已注册 {getRegisteredTime(whoisData.creationDate)}</p>
                 </div>
               </div>
             </div>
@@ -531,16 +596,12 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
           {whoisData.expirationDate && (
             <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3">
                 <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-baseline gap-3">
-                    <p className="text-sm text-muted-foreground w-20 flex-shrink-0">过期时间</p>
-                    <p className="font-mono text-base font-bold text-foreground">{whoisData.expirationDate}</p>
-                  </div>
-                  <div className="pl-[5.75rem]">
-                    <p className="text-xs text-muted-foreground">距离过期 {getTimeUntilExpiry(whoisData.expirationDate)}</p>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground mb-1">过期时间:</p>
+                  <p className="font-mono text-base font-bold text-foreground">{whoisData.expirationDate}</p>
+                  <p className="text-xs text-muted-foreground mt-1">距离过期 {getTimeUntilExpiry(whoisData.expirationDate)}</p>
                 </div>
               </div>
             </div>
@@ -548,13 +609,11 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
           {whoisData.updatedDate && (
             <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-4">
-                <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-3">
-                    <p className="text-sm text-muted-foreground w-20 flex-shrink-0">更新时间</p>
-                    <p className="font-mono text-base font-bold text-foreground">{whoisData.updatedDate}</p>
-                  </div>
+              <div className="flex items-start gap-3">
+                <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground mb-1">更新时间:</p>
+                  <p className="font-mono text-base font-bold text-foreground">{whoisData.updatedDate}</p>
                 </div>
               </div>
             </div>
@@ -563,22 +622,25 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 4. 注册人信息 */}
           {(whoisData.registrantOrg || whoisData.registrantCountry) && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-4">
-                  <User className="h-5 w-5 text-primary flex-shrink-0" />
-                  <div className="flex-1 grid gap-3 min-w-0">
-                    {whoisData.registrantOrg && (
-                      <div className="flex items-baseline gap-3">
-                        <p className="text-sm text-muted-foreground w-20 flex-shrink-0">注册主体</p>
-                        <p className="font-bold text-base text-foreground break-all flex-1">{whoisData.registrantOrg}</p>
+                <div className="space-y-3">
+                  {whoisData.registrantOrg && (
+                    <div className="flex items-start gap-3">
+                      <User className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">注册主体:</p>
+                        <p className="font-bold text-base text-foreground break-all">{whoisData.registrantOrg}</p>
                       </div>
-                    )}
-                    {whoisData.registrantCountry && (
-                      <div className="flex items-baseline gap-3">
-                        <p className="text-sm text-muted-foreground w-20 flex-shrink-0">国家/地区</p>
-                        <p className="text-sm text-foreground">{whoisData.registrantCountry}</p>
+                    </div>
+                  )}
+                  {whoisData.registrantCountry && (
+                    <div className="flex items-start gap-3">
+                      <User className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">国家/地区:</p>
+                        <p className="text-sm text-foreground">{getCountryName(whoisData.registrantCountry)}</p>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -586,10 +648,10 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 5. 域名NS */}
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-start gap-4">
-                  <Server className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                <div className="flex items-start gap-3">
+                  <Server className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground mb-3">名称服务器</p>
+                    <p className="text-sm text-muted-foreground mb-2">名称服务器:</p>
                     <div className="space-y-2">
                       {whoisData.nameServers.map((ns, index) => (
                         <p key={index} className="font-mono text-sm text-foreground break-all">{ns}</p>
@@ -603,14 +665,16 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 6. TLD权威服务器 */}
           {whoisData.tldServers && whoisData.tldServers.length > 0 && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <Server className="h-5 w-5 text-primary" />
-                  <p className="text-xs text-muted-foreground">TLD权威服务器 (IANA)</p>
-                </div>
-                <div className="space-y-2">
-                  {whoisData.tldServers.map((server, index) => (
-                    <p key={index} className="font-mono text-sm text-foreground break-all pl-7">{server}</p>
-                  ))}
+                <div className="flex items-start gap-3">
+                  <Server className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-muted-foreground mb-2">TLD权威服务器 (IANA):</p>
+                    <div className="space-y-2">
+                      {whoisData.tldServers.map((server, index) => (
+                        <p key={index} className="font-mono text-sm text-foreground break-all">{server}</p>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -618,19 +682,21 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {/* 7. 域名状态 */}
           {whoisData.status && whoisData.status.length > 0 && (
               <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <p className="text-xs text-muted-foreground">域名状态</p>
-                </div>
-                <div className="flex flex-wrap gap-2.5 pl-7">
-                  {whoisData.status.map((status, index) => (
-                    <span
-                      key={index}
-                      className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
-                    >
-                      {translateDomainStatus(status)}
-                    </span>
-                  ))}
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-muted-foreground mb-2">域名状态:</p>
+                    <div className="flex flex-wrap gap-2.5">
+                      {whoisData.status.map((status, index) => (
+                        <span
+                          key={index}
+                          className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
+                        >
+                          {translateDomainStatus(status)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

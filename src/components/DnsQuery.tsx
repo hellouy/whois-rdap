@@ -155,7 +155,7 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
                 </div>
                 <div className="flex-1 min-w-0 space-y-3">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1 font-medium">解析地址</p>
+                    <p className="text-xs text-muted-foreground mb-1 font-medium">解析地址:</p>
                     <p className="font-mono text-sm break-all text-foreground leading-relaxed">{record.value}</p>
                   </div>
                   
@@ -163,7 +163,7 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
                     <div>
                       <p className="text-xs text-muted-foreground mb-1 font-medium flex items-center gap-1">
                         <Globe className="h-3 w-3" />
-                        位置/服务商
+                        位置/服务商:
                       </p>
                       <p className="text-sm text-foreground">{record.location}</p>
                       {record.provider && (
@@ -175,7 +175,7 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
                   {record.ttl && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                       <Clock className="h-3.5 w-3.5" />
-                      <span>TTL: {record.ttl}s</span>
+                      <span>TTL: {record.ttl}秒</span>
                     </div>
                   )}
                 </div>

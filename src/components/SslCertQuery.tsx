@@ -69,61 +69,61 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
           )}
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-4">
-              <Shield className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 flex items-center gap-4 min-w-0">
-                <p className="text-sm text-muted-foreground w-24 flex-shrink-0">颁发者</p>
-                <p className="font-mono text-sm text-foreground leading-relaxed break-all flex-1">{certData.issuer}</p>
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mb-1">颁发者:</p>
+                <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.issuer}</p>
               </div>
             </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-4">
-              <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 flex items-center gap-4">
-                <p className="text-sm text-muted-foreground w-24 flex-shrink-0">生效日期</p>
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mb-1">生效日期:</p>
                 <p className="font-mono text-sm text-foreground">{certData.validFrom}</p>
               </div>
             </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-4">
-              <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 flex items-center gap-4">
-                <p className="text-sm text-muted-foreground w-24 flex-shrink-0">过期日期</p>
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mb-1">过期日期:</p>
                 <p className="font-mono text-sm text-foreground">{certData.validTo}</p>
               </div>
             </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-4">
-              <FileText className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 flex items-center gap-4 min-w-0">
-                <p className="text-sm text-muted-foreground w-24 flex-shrink-0">证书域名</p>
-                <p className="font-mono text-sm text-foreground leading-relaxed break-all flex-1">{certData.subject || '未知'}</p>
+            <div className="flex items-start gap-3">
+              <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mb-1">证书域名:</p>
+                <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.subject || '未知'}</p>
               </div>
             </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-4">
-              <Lock className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 flex items-center gap-4 min-w-0">
-                <p className="text-sm text-muted-foreground w-24 flex-shrink-0">签名算法</p>
-                <p className="font-mono text-sm text-foreground leading-relaxed flex-1">{certData.algorithm || '未知'}</p>
+            <div className="flex items-start gap-3">
+              <Lock className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mb-1">签名算法:</p>
+                <p className="font-mono text-sm text-foreground leading-relaxed">{certData.algorithm || '未知'}</p>
               </div>
             </div>
           </div>
 
           <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-center gap-4">
-              <Shield className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 flex items-center gap-4 min-w-0">
-                <p className="text-sm text-muted-foreground w-24 flex-shrink-0">证书指纹</p>
-                <p className="font-mono text-xs text-foreground break-all leading-relaxed flex-1">{certData.fingerprint}</p>
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-muted-foreground mb-1">证书指纹:</p>
+                <p className="font-mono text-xs text-foreground break-all leading-relaxed">{certData.fingerprint}</p>
               </div>
             </div>
           </div>
