@@ -227,7 +227,7 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
           {nodes.map((node, index) => (
             <div
               key={index}
-              className="flex items-start gap-5 p-6 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
+              className="flex items-start gap-5 p-5 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
             >
               <div className="flex-shrink-0">
                 <Badge className="min-w-[75px] justify-center px-4 py-2 bg-primary text-primary-foreground text-sm font-bold shadow-md">

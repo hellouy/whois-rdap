@@ -145,7 +145,7 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
           {records.map((record, index) => (
             <div
               key={index}
-              className="p-6 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
+              className="p-5 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
             >
               <div className="flex items-start gap-5">
                 <div className="flex-shrink-0">
