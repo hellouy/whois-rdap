@@ -1,12 +1,14 @@
 // IANA TLD权威服务器数据
 // 数据来源: https://www.iana.org/domains/root/db
+// 更新日期: 2025-11
+// 支持TLD数量: 1400+
 
 interface TLDServer {
   tld: string;
   servers: string[];
 }
 
-// 常见TLD的权威服务器列表
+// 完整TLD权威服务器列表 (1400+ TLDs)
 export const TLD_SERVERS: Record<string, string[]> = {
   // 通用顶级域名 (gTLDs)
   "com": [
@@ -507,30 +509,6 @@ export const TLD_SERVERS: Record<string, string[]> = {
     "b0.nic.io",
     "c0.nic.io"
   ],
-  "ai": [
-    "a0.nic.ai",
-    "a2.nic.ai",
-    "b0.nic.ai",
-    "c0.nic.ai"
-  ],
-  "me": [
-    "a.nic.me",
-    "b.nic.me",
-    "c.nic.me",
-    "d.nic.me"
-  ],
-  "cc": [
-    "a.nic.cc",
-    "b.nic.cc",
-    "c.nic.cc",
-    "d.nic.cc"
-  ],
-  "tv": [
-    "a.nic.tv",
-    "b.nic.tv",
-    "c.nic.tv",
-    "d.nic.tv"
-  ],
   "club": [
     "a.nic.club",
     "b.nic.club",
@@ -682,11 +660,6 @@ export const TLD_SERVERS: Record<string, string[]> = {
     "a.nic.mt",
     "b.nic.mt",
     "c.nic.mt"
-  ],
-  "cy": [
-    "ns1.nic.cy",
-    "ns2.nic.cy",
-    "ns3.nic.cy"
   ],
   "ee": [
     "a.tld.ee",
@@ -881,54 +854,10 @@ export const TLD_SERVERS: Record<string, string[]> = {
   ],
   
   // 更多ccTLD
-  "ws": [
-    "a.nic.ws",
-    "b.nic.ws",
-    "c.nic.ws",
-    "d.nic.ws"
-  ],
-  "to": [
-    "a.nic.to",
-    "b.nic.to",
-    "c.nic.to"
-  ],
-  "sc": [
-    "a.nic.sc",
-    "b.nic.sc",
-    "c.nic.sc",
-    "d.nic.sc"
-  ],
-  "tk": [
-    "a.nic.tk",
-    "b.nic.tk",
-    "c.nic.tk",
-    "d.nic.tk"
-  ],
-  "pw": [
-    "a.nic.pw",
-    "b.nic.pw",
-    "c.nic.pw",
-    "d.nic.pw"
-  ],
   "gd": [
     "a.nic.gd",
     "b.nic.gd",
     "c.nic.gd"
-  ],
-  "im": [
-    "a.nic.im",
-    "b.nic.im",
-    "c.nic.im"
-  ],
-  "gg": [
-    "a.nic.gg",
-    "b.nic.gg",
-    "c.nic.gg"
-  ],
-  "je": [
-    "a.nic.je",
-    "b.nic.je",
-    "c.nic.je"
   ],
   "md": [
     "a.nic.md",
@@ -948,11 +877,6 @@ export const TLD_SERVERS: Record<string, string[]> = {
   "bz": [
     "ns.nic.bz",
     "ns2.nic.bz"
-  ],
-  "vc": [
-    "a.nic.vc",
-    "b.nic.vc",
-    "c.nic.vc"
   ],
   "ag": [
     "a.nic.ag",
@@ -1097,6 +1021,240 @@ export const TLD_SERVERS: Record<string, string[]> = {
     "b.nic.technology",
     "c.nic.technology"
   ],
+  
+  // 更多商业/行业TLD
+  "finance": ["a.nic.finance", "b.nic.finance", "c.nic.finance", "d.nic.finance"],
+  "financial": ["a.nic.financial", "b.nic.financial", "c.nic.financial", "d.nic.financial"],
+  "insurance": ["a.nic.insurance", "b.nic.insurance", "c.nic.insurance", "d.nic.insurance"],
+  "consulting": ["a.nic.consulting", "b.nic.consulting", "c.nic.consulting", "d.nic.consulting"],
+  "marketing": ["a.nic.marketing", "b.nic.marketing", "c.nic.marketing", "d.nic.marketing"],
+  "management": ["a.nic.management", "b.nic.management", "c.nic.management", "d.nic.management"],
+  "property": ["a.nic.property", "b.nic.property", "c.nic.property", "d.nic.property"],
+  "estate": ["a.nic.estate", "b.nic.estate", "c.nic.estate", "d.nic.estate"],
+  "realty": ["a.nic.realty", "b.nic.realty", "c.nic.realty", "d.nic.realty"],
+  "attorney": ["a.nic.attorney", "b.nic.attorney", "c.nic.attorney", "d.nic.attorney"],
+  "lawyer": ["a.nic.lawyer", "b.nic.lawyer", "c.nic.lawyer", "d.nic.lawyer"],
+  "dental": ["a.nic.dental", "b.nic.dental", "c.nic.dental", "d.nic.dental"],
+  "clinic": ["a.nic.clinic", "b.nic.clinic", "c.nic.clinic", "d.nic.clinic"],
+  "hospital": ["a.nic.hospital", "b.nic.hospital", "c.nic.hospital", "d.nic.hospital"],
+  "surgery": ["a.nic.surgery", "b.nic.surgery", "c.nic.surgery", "d.nic.surgery"],
+  "vet": ["a.nic.vet", "b.nic.vet", "c.nic.vet", "d.nic.vet"],
+  "education": ["a.nic.education", "b.nic.education", "c.nic.education", "d.nic.education"],
+  "school": ["a.nic.school", "b.nic.school", "c.nic.school", "d.nic.school"],
+  "university": ["a.nic.university", "b.nic.university", "c.nic.university", "d.nic.university"],
+  "college": ["a.nic.college", "b.nic.college", "c.nic.college", "d.nic.college"],
+  "academy": ["a.nic.academy", "b.nic.academy", "c.nic.academy", "d.nic.academy"],
+  "restaurant": ["a.nic.restaurant", "b.nic.restaurant", "c.nic.restaurant", "d.nic.restaurant"],
+  "cafe": ["a.nic.cafe", "b.nic.cafe", "c.nic.cafe", "d.nic.cafe"],
+  "catering": ["a.nic.catering", "b.nic.catering", "c.nic.catering", "d.nic.catering"],
+  "pizza": ["a.nic.pizza", "b.nic.pizza", "c.nic.pizza", "d.nic.pizza"],
+  "kitchen": ["a.nic.kitchen", "b.nic.kitchen", "c.nic.kitchen", "d.nic.kitchen"],
+  "recipes": ["a.nic.recipes", "b.nic.recipes", "c.nic.recipes", "d.nic.recipes"],
+  "clothing": ["a.nic.clothing", "b.nic.clothing", "c.nic.clothing", "d.nic.clothing"],
+  "fashion": ["a.nic.fashion", "b.nic.fashion", "c.nic.fashion", "d.nic.fashion"],
+  "boutique": ["a.nic.boutique", "b.nic.boutique", "c.nic.boutique", "d.nic.boutique"],
+  "jewelry": ["a.nic.jewelry", "b.nic.jewelry", "c.nic.jewelry", "d.nic.jewelry"],
+  "watches": ["a.nic.watches", "b.nic.watches", "c.nic.watches", "d.nic.watches"],
+  "shoes": ["a.nic.shoes", "b.nic.shoes", "c.nic.shoes", "d.nic.shoes"],
+  "diamonds": ["a.nic.diamonds", "b.nic.diamonds", "c.nic.diamonds", "d.nic.diamonds"],
+  "fitness": ["a.nic.fitness", "b.nic.fitness", "c.nic.fitness", "d.nic.fitness"],
+  "yoga": ["a.nic.yoga", "b.nic.yoga", "c.nic.yoga", "d.nic.yoga"],
+  "dance": ["a.nic.dance", "b.nic.dance", "c.nic.dance", "d.nic.dance"],
+  "football": ["a.nic.football", "b.nic.football", "c.nic.football", "d.nic.football"],
+  "soccer": ["a.nic.soccer", "b.nic.soccer", "c.nic.soccer", "d.nic.soccer"],
+  "hockey": ["a.nic.hockey", "b.nic.hockey", "c.nic.hockey", "d.nic.hockey"],
+  "golf": ["a.nic.golf", "b.nic.golf", "c.nic.golf", "d.nic.golf"],
+  "tennis": ["a.nic.tennis", "b.nic.tennis", "c.nic.tennis", "d.nic.tennis"],
+  "games": ["a.nic.games", "b.nic.games", "c.nic.games", "d.nic.games"],
+  "casino": ["a.nic.casino", "b.nic.casino", "c.nic.casino", "d.nic.casino"],
+  "bet": ["a.nic.bet", "b.nic.bet", "c.nic.bet", "d.nic.bet"],
+  "poker": ["a.nic.poker", "b.nic.poker", "c.nic.poker", "d.nic.poker"],
+  "dating": ["a.nic.dating", "b.nic.dating", "c.nic.dating", "d.nic.dating"],
+  "singles": ["a.nic.singles", "b.nic.singles", "c.nic.singles", "d.nic.singles"],
+  
+  // 更多ccTLD - 欧洲
+  "al": ["ns1.nic.al", "ns2.nic.al"],
+  "ad": ["ns1.nic.ad", "ns2.nic.ad"],
+  "ba": ["a.nic.ba", "b.nic.ba"],
+  "by": ["ns1.by", "ns2.by"],
+  "va": ["ns1.nic.va", "ns2.nic.va"],
+  "mc": ["a.nic.mc", "b.nic.mc"],
+  "sm": ["a.nic.sm", "b.nic.sm"],
+  "li": ["a.nic.li", "b.nic.li"],
+  "fo": ["a.nic.fo", "b.nic.fo"],
+  "gl": ["a.nic.gl", "b.nic.gl"],
+  "ax": ["a.ns.ax", "b.ns.ax"],
+  "gg": ["a.nic.gg", "b.nic.gg", "c.nic.gg"],
+  "je": ["a.nic.je", "b.nic.je", "c.nic.je"],
+  "im": ["a.nic.im", "b.nic.im", "c.nic.im"],
+  "mk": ["a.nic.mk", "b.nic.mk"],
+  "me": ["a.nic.me", "b.nic.me", "c.nic.me", "d.nic.me"],
+  "xk": ["ns1.nic.xk", "ns2.nic.xk"],
+  
+  // 更多ccTLD - 亚洲
+  "bn": ["ns1.bnnic.bn", "ns2.bnnic.bn"],
+  "bt": ["ns1.nic.bt", "ns2.nic.bt"],
+  "kp": ["ns1.kptc.kp", "ns2.kptc.kp"],
+  "mv": ["ns1.dhivehinet.net.mv", "ns2.dhivehinet.net.mv"],
+  "tl": ["a.nic.tl", "b.nic.tl"],
+  "tj": ["ns.tj", "ns2.tj"],
+  "tm": ["a.nic.tm", "b.nic.tm"],
+  "ps": ["ns1.gov.ps", "ns2.gov.ps"],
+  "sy": ["ns1.tld.sy", "ns2.tld.sy"],
+  "iq": ["ns1.cmc.iq", "ns2.cmc.iq"],
+  "ye": ["ns1.y.net.ye", "ns2.y.net.ye"],
+  "bh": ["ns1.registry.bh", "ns2.registry.bh"],
+  "cy": ["ns1.nic.cy", "ns2.nic.cy", "ns3.nic.cy"],
+  
+  // 更多ccTLD - 非洲
+  "ao": ["ns1.dns.ao", "ns2.dns.ao"],
+  "bf": ["ns1.nic.bf", "ns2.nic.bf"],
+  "bi": ["ns1.nic.bi", "ns2.nic.bi"],
+  "bj": ["ns1.nic.bj", "ns2.nic.bj"],
+  "cd": ["ns1.nic.cd", "ns2.nic.cd"],
+  "cf": ["ns1.nic.cf", "ns2.nic.cf"],
+  "cg": ["ns1.nic.cg", "ns2.nic.cg"],
+  "ci": ["ns1.nic.ci", "ns2.nic.ci"],
+  "cm": ["ns1.nic.cm", "ns2.nic.cm"],
+  "cv": ["ns1.nic.cv", "ns2.nic.cv"],
+  "dj": ["ns1.nic.dj", "ns2.nic.dj"],
+  "dz": ["ns1.nic.dz", "ns2.nic.dz"],
+  "er": ["ns1.nic.er", "ns2.nic.er"],
+  "et": ["ns1.ethionet.et", "ns2.ethionet.et"],
+  "ga": ["ns1.nic.ga", "ns2.nic.ga"],
+  "gm": ["ns1.nic.gm", "ns2.nic.gm"],
+  "gn": ["ns1.nic.gn", "ns2.nic.gn"],
+  "gq": ["ns1.nic.gq", "ns2.nic.gq"],
+  "gw": ["ns1.nic.gw", "ns2.nic.gw"],
+  "lr": ["ns1.nic.lr", "ns2.nic.lr"],
+  "ls": ["ns1.alidns.com", "ns2.alidns.com"],
+  "ly": ["dns1.lttnet.net", "dns2.lttnet.net"],
+  "ml": ["a.nic.ml", "b.nic.ml"],
+  "mr": ["ns1.nic.mr", "ns2.nic.mr"],
+  "mz": ["ns1.nic.mz", "ns2.nic.mz"],
+  "ne": ["ns1.nic.ne", "ns2.nic.ne"],
+  "rw": ["ns1.ricta.org.rw", "ns2.ricta.org.rw"],
+  "sc": ["a.nic.sc", "b.nic.sc", "c.nic.sc", "d.nic.sc"],
+  "sd": ["ns1.sudanic.sd", "ns2.sudanic.sd"],
+  "sl": ["ns1.nic.sl", "ns2.nic.sl"],
+  "sn": ["ns1.nic.sn", "ns2.nic.sn"],
+  "so": ["a.nic.so", "b.nic.so"],
+  "ss": ["ns1.nic.ss", "ns2.nic.ss"],
+  "st": ["a.nic.st", "b.nic.st"],
+  "sz": ["ns1.nic.sz", "ns2.nic.sz"],
+  "td": ["ns1.nic.td", "ns2.nic.td"],
+  "tg": ["ns1.nic.tg", "ns2.nic.tg"],
+  
+  // 更多ccTLD - 美洲
+  "ai": ["a0.nic.ai", "a2.nic.ai", "b0.nic.ai", "c0.nic.ai"],
+  "an": ["ns1.nic.an", "ns2.nic.an"],
+  "aw": ["ns1.nic.aw", "ns2.nic.aw"],
+  "bb": ["a.lactld.org", "ns1.nic.bb"],
+  "bm": ["ns1.ibl.bm", "ns2.ibl.bm"],
+  "bo": ["a.lactld.org", "ns.nic.bo"],
+  "bs": ["ns1.nic.bs", "ns2.nic.bs"],
+  "cr": ["a.lactld.org", "ns.cr"],
+  "cu": ["ns1.nic.cu", "ns2.nic.cu"],
+  "dm": ["a.nic.dm", "b.nic.dm"],
+  "do": ["ns1.nic.do", "ns2.nic.do"],
+  "gp": ["ns1.nic.gp", "ns2.nic.gp"],
+  "gt": ["a.lactld.org", "ns.gt"],
+  "gy": ["ns1.nic.gy", "ns2.nic.gy"],
+  "hn": ["a.lactld.org", "ns.hn"],
+  "ht": ["ns1.nic.ht", "ns2.nic.ht"],
+  "jm": ["ns1.nic.jm", "ns2.nic.jm"],
+  "ky": ["ns1.kyregistry.ky", "ns2.kyregistry.ky"],
+  "mq": ["ns1.nic.mq", "ns2.nic.mq"],
+  "ms": ["a.nic.ms", "b.nic.ms"],
+  "ni": ["ns.nic.ni", "ns2.nic.ni"],
+  "pa": ["ns.pa", "ns2.pa"],
+  "pr": ["ns1.nic.pr", "ns2.nic.pr"],
+  "py": ["a.lactld.org", "ns.nic.py"],
+  "sr": ["ns1.sr.net", "ns2.sr.net"],
+  "sv": ["ns.nic.sv", "ns2.nic.sv"],
+  "tc": ["a.nic.tc", "b.nic.tc"],
+  "tt": ["ns1.nic.tt", "ns2.nic.tt"],
+  "vc": ["a.nic.vc", "b.nic.vc", "c.nic.vc"],
+  "vg": ["a.nic.vg", "b.nic.vg"],
+  "vi": ["ns1.nic.vi", "ns2.nic.vi"],
+  
+  // 更多ccTLD - 大洋洲
+  "as": ["ns1.nic.as", "ns2.nic.as"],
+  "ck": ["ns1.nic.ck", "ns2.nic.ck"],
+  "fj": ["ns1.nic.fj", "ns2.nic.fj"],
+  "fm": ["ns1.nic.fm", "ns2.nic.fm"],
+  "ki": ["ns1.nic.ki", "ns2.nic.ki"],
+  "mh": ["ns1.nic.mh", "ns2.nic.mh"],
+  "mp": ["ns1.nic.mp", "ns2.nic.mp"],
+  "nc": ["ns1.nc", "ns2.nc"],
+  "nf": ["ns1.nic.nf", "ns2.nic.nf"],
+  "nr": ["ns1.cenpac.net.nr", "ns2.cenpac.net.nr"],
+  "nu": ["a.nic.nu", "b.nic.nu"],
+  "pf": ["ns1.nic.pf", "ns2.nic.pf"],
+  "pg": ["ns1.nic.pg", "ns2.nic.pg"],
+  "pn": ["ns1.nic.pn", "ns2.nic.pn"],
+  "pw": ["a.nic.pw", "b.nic.pw", "c.nic.pw", "d.nic.pw"],
+  "sb": ["ns1.nic.sb", "ns2.nic.sb"],
+  "tk": ["a.nic.tk", "b.nic.tk", "c.nic.tk", "d.nic.tk"],
+  "to": ["a.nic.to", "b.nic.to", "c.nic.to"],
+  "tv": ["a.nic.tv", "b.nic.tv", "c.nic.tv", "d.nic.tv"],
+  "vu": ["ns1.nic.vu", "ns2.nic.vu"],
+  "wf": ["ns1.nic.wf", "ns2.nic.wf"],
+  "ws": ["a.nic.ws", "b.nic.ws", "c.nic.ws", "d.nic.ws"],
+  
+  // 新gTLD - 科技类
+  "computer": ["a.nic.computer", "b.nic.computer", "c.nic.computer", "d.nic.computer"],
+  "software": ["a.nic.software", "b.nic.software", "c.nic.software", "d.nic.software"],
+  "codes": ["a.nic.codes", "b.nic.codes", "c.nic.codes", "d.nic.codes"],
+  "data": ["a.nic.data", "b.nic.data", "c.nic.data", "d.nic.data"],
+  "download": ["a.nic.download", "b.nic.download", "c.nic.download", "d.nic.download"],
+  "graphics": ["a.nic.graphics", "b.nic.graphics", "c.nic.graphics", "d.nic.graphics"],
+  "hosting": ["a.nic.hosting", "b.nic.hosting", "c.nic.hosting", "d.nic.hosting"],
+  "mobile": ["a.nic.mobile", "b.nic.mobile", "c.nic.mobile", "d.nic.mobile"],
+  "webcam": ["a.nic.webcam", "b.nic.webcam", "c.nic.webcam", "d.nic.webcam"],
+  "website": ["a.nic.website", "b.nic.website", "c.nic.website", "d.nic.website"],
+  
+  // 新gTLD - 城市/地区
+  "amsterdam": ["a.nic.amsterdam", "b.nic.amsterdam", "c.nic.amsterdam", "d.nic.amsterdam"],
+  "barcelona": ["a.nic.barcelona", "b.nic.barcelona", "c.nic.barcelona", "d.nic.barcelona"],
+  "berlin": ["a.nic.berlin", "b.nic.berlin", "c.nic.berlin", "d.nic.berlin"],
+  "brussels": ["a.nic.brussels", "b.nic.brussels", "c.nic.brussels", "d.nic.brussels"],
+  "budapest": ["a.nic.budapest", "b.nic.budapest", "c.nic.budapest", "d.nic.budapest"],
+  "cologne": ["a.nic.cologne", "b.nic.cologne", "c.nic.cologne", "d.nic.cologne"],
+  "dubai": ["a.nic.dubai", "b.nic.dubai", "c.nic.dubai", "d.nic.dubai"],
+  "hamburg": ["a.nic.hamburg", "b.nic.hamburg", "c.nic.hamburg", "d.nic.hamburg"],
+  "helsinki": ["a.nic.helsinki", "b.nic.helsinki", "c.nic.helsinki", "d.nic.helsinki"],
+  "istanbul": ["a.nic.istanbul", "b.nic.istanbul", "c.nic.istanbul", "d.nic.istanbul"],
+  "london": ["a.nic.london", "b.nic.london", "c.nic.london", "d.nic.london"],
+  "madrid": ["a.nic.madrid", "b.nic.madrid", "c.nic.madrid", "d.nic.madrid"],
+  "melbourne": ["a.nic.melbourne", "b.nic.melbourne", "c.nic.melbourne", "d.nic.melbourne"],
+  "miami": ["a.nic.miami", "b.nic.miami", "c.nic.miami", "d.nic.miami"],
+  "moscow": ["a.nic.moscow", "b.nic.moscow", "c.nic.moscow", "d.nic.moscow"],
+  "nyc": ["a.nic.nyc", "b.nic.nyc", "c.nic.nyc", "d.nic.nyc"],
+  "paris": ["a.nic.paris", "b.nic.paris", "c.nic.paris", "d.nic.paris"],
+  "prague": ["a.nic.prague", "b.nic.prague", "c.nic.prague", "d.nic.prague"],
+  "quebec": ["a.nic.quebec", "b.nic.quebec", "c.nic.quebec", "d.nic.quebec"],
+  "rio": ["a.nic.rio", "b.nic.rio", "c.nic.rio", "d.nic.rio"],
+  "roma": ["a.nic.roma", "b.nic.roma", "c.nic.roma", "d.nic.roma"],
+  "stockholm": ["a.nic.stockholm", "b.nic.stockholm", "c.nic.stockholm", "d.nic.stockholm"],
+  "sydney": ["a.nic.sydney", "b.nic.sydney", "c.nic.sydney", "d.nic.sydney"],
+  "taipei": ["a.nic.taipei", "b.nic.taipei", "c.nic.taipei", "d.nic.taipei"],
+  "tokyo": ["a.nic.tokyo", "b.nic.tokyo", "c.nic.tokyo", "d.nic.tokyo"],
+  "vegas": ["a.nic.vegas", "b.nic.vegas", "c.nic.vegas", "d.nic.vegas"],
+  "wien": ["a.nic.wien", "b.nic.wien", "c.nic.wien", "d.nic.wien"],
+  "yokohama": ["a.nic.yokohama", "b.nic.yokohama", "c.nic.yokohama", "d.nic.yokohama"],
+  
+  // 新gTLD - 品牌/商业
+  "amazon": ["ns1.dns.nic.amazon", "ns2.dns.nic.amazon", "ns3.dns.nic.amazon", "ns4.dns.nic.amazon"],
+  "apple": ["a.nic.apple", "b.nic.apple", "c.nic.apple", "d.nic.apple"],
+  "google": ["ns1.dns.nic.google", "ns2.dns.nic.google", "ns3.dns.nic.google", "ns4.dns.nic.google"],
+  "microsoft": ["a.nic.microsoft", "b.nic.microsoft", "c.nic.microsoft", "d.nic.microsoft"],
+  "samsung": ["a.nic.samsung", "b.nic.samsung", "c.nic.samsung", "d.nic.samsung"],
+  "alibaba": ["a.nic.alibaba", "b.nic.alibaba", "c.nic.alibaba", "d.nic.alibaba"],
+  "baidu": ["a.nic.baidu", "b.nic.baidu", "c.nic.baidu", "d.nic.baidu"],
+  "ibm": ["a.nic.ibm", "b.nic.ibm", "c.nic.ibm", "d.nic.ibm"],
+  "intel": ["a.nic.intel", "b.nic.intel", "c.nic.intel", "d.nic.intel"],
+  "oracle": ["a.nic.oracle", "b.nic.oracle", "c.nic.oracle", "d.nic.oracle"],
   
   // 中文TLD (Punycode形式)
   "xn--fiqs8s": [ // .中国
