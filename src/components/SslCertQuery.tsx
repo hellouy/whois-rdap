@@ -52,7 +52,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
       ) : certData ? (
         <div className="space-y-4">
           {certData.isValid && certData.validTo && (
-            <div className="p-5 bg-primary/10 backdrop-blur-sm rounded-xl border border-primary/30 shadow-md">
+            <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
               <div className="flex items-center gap-3 mb-2">
                 <Clock className="h-5 w-5 text-primary" />
                 <p className="text-sm font-bold text-foreground">证书有效期</p>
@@ -68,7 +68,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           )}
 
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-start gap-3">
               <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -78,7 +78,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           </div>
 
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-start gap-3">
               <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -88,7 +88,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           </div>
 
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-start gap-3">
               <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           </div>
 
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-start gap-3">
               <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -108,7 +108,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           </div>
 
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-start gap-3">
               <Lock className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -118,7 +118,7 @@ export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
             </div>
           </div>
 
-          <div className="p-5 bg-background/50 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
             <div className="flex items-start gap-3">
               <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
