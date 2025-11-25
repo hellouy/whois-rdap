@@ -529,21 +529,17 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <div className="relative p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {whoisData.domainName && (
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-muted-foreground mb-1">域名:</p>
-                        <p className="font-bold text-base text-foreground break-all">{whoisData.domainName}</p>
-                      </div>
+                    <div className="flex items-baseline gap-3">
+                      <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-sm text-muted-foreground">域名:</p>
+                      <p className="font-bold text-base text-foreground break-all">{whoisData.domainName}</p>
                     </div>
                   )}
                   {whoisData.dnssec && (
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-muted-foreground mb-1">DNSSEC:</p>
-                        <p className="text-sm text-foreground">{whoisData.dnssec}</p>
-                      </div>
+                    <div className="flex items-baseline gap-3">
+                      <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-sm text-muted-foreground">DNSSEC:</p>
+                      <p className="text-sm text-foreground">{whoisData.dnssec}</p>
                     </div>
                   )}
                 </div>
@@ -560,20 +556,16 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {whoisData.registrar && (
               <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Building className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-muted-foreground mb-1">注册商:</p>
-                      <p className="font-bold text-base text-foreground break-all">{whoisData.registrar}</p>
-                    </div>
+                  <div className="flex items-baseline gap-3">
+                    <Building className="h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground">注册商:</p>
+                    <p className="font-bold text-base text-foreground break-all">{whoisData.registrar}</p>
                   </div>
                   {whoisData.registrarIanaId && (
-                    <div className="flex items-start gap-3">
-                      <Building className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-muted-foreground mb-1">IANA ID:</p>
-                        <p className="text-sm text-foreground">{whoisData.registrarIanaId}</p>
-                      </div>
+                    <div className="flex items-baseline gap-3">
+                      <Building className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-sm text-muted-foreground">IANA ID:</p>
+                      <p className="text-sm text-foreground">{whoisData.registrarIanaId}</p>
                     </div>
                   )}
                 </div>
@@ -622,21 +614,17 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
               <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {whoisData.registrantOrg && (
-                    <div className="flex items-start gap-3">
-                      <User className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-muted-foreground mb-1">注册主体:</p>
-                        <p className="font-bold text-base text-foreground break-all">{whoisData.registrantOrg}</p>
-                      </div>
+                    <div className="flex items-baseline gap-3">
+                      <User className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-sm text-muted-foreground">注册主体:</p>
+                      <p className="font-bold text-base text-foreground break-all">{whoisData.registrantOrg}</p>
                     </div>
                   )}
                   {whoisData.registrantCountry && (
-                    <div className="flex items-start gap-3">
-                      <User className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-muted-foreground mb-1">国家/地区:</p>
-                        <p className="text-sm text-foreground">{getCountryName(whoisData.registrantCountry)}</p>
-                      </div>
+                    <div className="flex items-baseline gap-3">
+                      <User className="h-5 w-5 text-primary flex-shrink-0" />
+                      <p className="text-sm text-muted-foreground">国家/地区:</p>
+                      <p className="text-sm text-foreground">{getCountryName(whoisData.registrantCountry)}</p>
                     </div>
                   )}
                 </div>
@@ -647,14 +635,12 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
               <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-start gap-3">
-                  <Server className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground mb-2">名称服务器:</p>
-                    <div className="space-y-2">
-                      {whoisData.nameServers.map((ns, index) => (
-                        <p key={index} className="font-mono text-sm text-foreground break-all">{ns}</p>
-                      ))}
-                    </div>
+                  <Server className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                  <p className="text-sm text-muted-foreground whitespace-nowrap">名称服务器:</p>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    {whoisData.nameServers.map((ns, index) => (
+                      <p key={index} className="font-mono text-sm text-foreground break-all">{ns}</p>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -664,19 +650,17 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {whoisData.status && whoisData.status.length > 0 && (
               <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground mb-2">域名状态:</p>
-                    <div className="flex flex-wrap gap-2.5">
-                      {whoisData.status.map((status, index) => (
-                        <span
-                          key={index}
-                          className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
-                        >
-                          {translateDomainStatus(status)}
-                        </span>
-                      ))}
-                    </div>
+                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                  <p className="text-sm text-muted-foreground whitespace-nowrap">域名状态:</p>
+                  <div className="flex-1 min-w-0 flex flex-wrap gap-2.5">
+                    {whoisData.status.map((status, index) => (
+                      <span
+                        key={index}
+                        className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
+                      >
+                        {translateDomainStatus(status)}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
