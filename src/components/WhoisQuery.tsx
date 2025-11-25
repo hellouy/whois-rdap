@@ -582,39 +582,37 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
 
           {/* 3. 时间信息 */}
           {whoisData.creationDate && (
-            <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted-foreground mb-1">注册时间:</p>
-                  <p className="font-mono text-base font-bold text-foreground">{whoisData.creationDate}</p>
-                  <p className="text-xs text-muted-foreground mt-1">已注册 {getRegisteredTime(whoisData.creationDate)}</p>
-                </div>
+            <div className="relative p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8">
+              <div className="flex items-baseline gap-3">
+                <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="text-sm text-muted-foreground">注册时间:</p>
+                <p className="font-mono text-base font-bold text-foreground">{whoisData.creationDate}</p>
               </div>
+              <p className="absolute bottom-3 right-4 text-xs text-muted-foreground">
+                已注册 {getRegisteredTime(whoisData.creationDate)}
+              </p>
             </div>
           )}
 
           {whoisData.expirationDate && (
-            <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted-foreground mb-1">过期时间:</p>
-                  <p className="font-mono text-base font-bold text-foreground">{whoisData.expirationDate}</p>
-                  <p className="text-xs text-muted-foreground mt-1">距离过期 {getTimeUntilExpiry(whoisData.expirationDate)}</p>
-                </div>
+            <div className="relative p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8">
+              <div className="flex items-baseline gap-3">
+                <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="text-sm text-muted-foreground">过期时间:</p>
+                <p className="font-mono text-base font-bold text-foreground">{whoisData.expirationDate}</p>
               </div>
+              <p className="absolute bottom-3 right-4 text-xs text-muted-foreground">
+                距离过期 {getTimeUntilExpiry(whoisData.expirationDate)}
+              </p>
             </div>
           )}
 
           {whoisData.updatedDate && (
             <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted-foreground mb-1">更新时间:</p>
-                  <p className="font-mono text-base font-bold text-foreground">{whoisData.updatedDate}</p>
-                </div>
+              <div className="flex items-baseline gap-3">
+                <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
+                <p className="text-sm text-muted-foreground">更新时间:</p>
+                <p className="font-mono text-base font-bold text-foreground">{whoisData.updatedDate}</p>
               </div>
             </div>
           )}
