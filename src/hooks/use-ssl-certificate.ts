@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { toASCII, toUnicode, isIDN } from "@/utils/tld-servers";
 
 export interface CertData {
   issuer?: string;
@@ -201,13 +202,18 @@ export function useSslCertificate(domain: string) {
   }, []);
 
   const run = async () => {
-    const normDomain = domain.trim().toLowerCase();
-    if (!normDomain) {
+    const rawDomain = domain.trim().toLowerCase();
+    if (!rawDomain) {
       setCertData(null);
       setIsLoading(false);
       setError(null);
       return;
     }
+    
+    // IDN域名转换为Punycode进行查询
+    const normDomain = toASCII(rawDomain);
+    const displayDomain = isIDN(rawDomain) ? toUnicode(normDomain) : rawDomain;
+    
     setIsLoading(true);
     setError(null);
     setCertData(null);
@@ -226,11 +232,20 @@ export function useSslCertificate(domain: string) {
         if (res && mounted.current) {
           anySuccess = true;
           current = mergeCerts(current, res);
+          
+          // 将Punycode域名转回Unicode显示
+          let subjectDisplay = current.subject ?? displayDomain;
+          if (subjectDisplay && subjectDisplay.includes('xn--')) {
+            try {
+              subjectDisplay = toUnicode(subjectDisplay);
+            } catch {}
+          }
+          
           const merged: CertData = {
             issuer: current.issuer ?? "未知",
             validFrom: current.validFrom ?? "未知",
             validTo: current.validTo ?? "未知",
-            subject: current.subject ?? normDomain,
+            subject: subjectDisplay,
             algorithm: current.algorithm ?? "未知",
             fingerprint: current.fingerprint ?? "未知",
             isValid: typeof current.isValid !== "undefined" ? current.isValid : undefined,

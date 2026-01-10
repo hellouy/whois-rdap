@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Network, MapPin, Globe2 } from "lucide-react";
+import { Loader2, Network, MapPin, Globe2, AlertTriangle } from "lucide-react";
+import { toASCII, toUnicode, isIDN } from "@/utils/tld-servers";
 
 interface DnsMapProps {
   domain: string;
@@ -17,9 +18,12 @@ interface DnsNode {
 export const DnsMap = ({ domain }: DnsMapProps) => {
   const [nodes, setNodes] = useState<DnsNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [displayDomain, setDisplayDomain] = useState<string>("");
 
   const queryDnsMap = async () => {
     setIsLoading(true);
+    setError(null);
     const newNodes: DnsNode[] = [];
     
     try {
@@ -30,16 +34,23 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
         return;
       }
 
+      // IDN域名转换为Punycode
+      const asciiDomain = toASCII(normalizedDomain);
+      const unicodeDomain = isIDN(normalizedDomain) ? toUnicode(asciiDomain) : normalizedDomain;
+      setDisplayDomain(unicodeDomain !== asciiDomain ? `${unicodeDomain} (${asciiDomain})` : normalizedDomain);
+
       // 查询多种DNS记录类型，增强准确性
       const types = ['A', 'AAAA', 'MX', 'NS', 'CNAME'];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let hasServerError = false;
+      let serverErrorMsg = "";
       
       // 并行查询所有记录类型
       const queries = types.map(async (type) => {
         try {
           const response = await fetch(
-            `https://dns.google/resolve?name=${encodeURIComponent(normalizedDomain)}&type=${type}&do=1`,
+            `https://dns.google/resolve?name=${encodeURIComponent(asciiDomain)}&type=${type}&do=1`,
             { 
               signal: controller.signal,
               headers: {
@@ -51,6 +62,15 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
           if (!response.ok) return;
           
           const data = await response.json();
+
+          // 检查DNS服务器错误
+          if (data.Status === 2) {
+            hasServerError = true;
+            if (data.Comment) {
+              serverErrorMsg = data.Comment;
+            }
+            return;
+          }
           
           if (data.Answer) {
             // 批量处理以减少API调用
@@ -62,8 +82,16 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
             
             // 为A和AAAA记录获取位置信息
             for (const record of ipRecords) {
+              // 将Punycode域名转回Unicode显示
+              let displayName = record.name;
+              if (displayName && displayName.includes('xn--')) {
+                try {
+                  displayName = toUnicode(displayName.replace(/\.$/, ''));
+                } catch {}
+              }
+
               const exists = newNodes.some(
-                node => node.name === record.name && 
+                node => node.name === displayName && 
                         node.type === type && 
                         node.ip === record.data
               );
@@ -71,7 +99,7 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
               if (!exists) {
                 const location = await fetchIpLocation(record.data);
                 newNodes.push({
-                  name: record.name,
+                  name: displayName,
                   type: type,
                   ip: record.data,
                   location: location,
@@ -82,17 +110,31 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
             // 处理非IP记录
             data.Answer.forEach((record: any) => {
               if (type !== 'A' && type !== 'AAAA') {
+                // 将Punycode域名转回Unicode显示
+                let displayName = record.name;
+                let displayIp = record.data;
+                if (displayName && displayName.includes('xn--')) {
+                  try {
+                    displayName = toUnicode(displayName.replace(/\.$/, ''));
+                  } catch {}
+                }
+                if (displayIp && typeof displayIp === 'string' && displayIp.includes('xn--')) {
+                  try {
+                    displayIp = toUnicode(displayIp.replace(/\.$/, ''));
+                  } catch {}
+                }
+
                 const exists = newNodes.some(
-                  node => node.name === record.name && 
+                  node => node.name === displayName && 
                           node.type === type && 
-                          node.ip === record.data
+                          node.ip === displayIp
                 );
                 
                 if (!exists) {
                   newNodes.push({
-                    name: record.name,
+                    name: displayName,
                     type: type,
-                    ip: record.data,
+                    ip: displayIp,
                     location: type === 'MX' || type === 'CNAME' ? '邮件/别名记录' : undefined,
                   });
                 }
@@ -106,10 +148,15 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
       
       await Promise.allSettled(queries);
       clearTimeout(timeoutId);
+
+      if (newNodes.length === 0 && hasServerError) {
+        setError(`DNS服务器未响应: ${serverErrorMsg || '域名服务器可能无法访问'}`);
+      }
       
       setNodes(newNodes);
     } catch (error) {
       console.error("DNS映射查询错误:", error);
+      setError("DNS映射查询失败");
       setNodes([]);
     } finally {
       setIsLoading(false);
@@ -224,6 +271,13 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
         </div>
       ) : nodes.length > 0 ? (
         <div className="space-y-4">
+          {displayDomain && (
+            <div className="p-3 bg-muted/50 rounded-lg border border-border mb-4">
+              <p className="text-sm text-muted-foreground">
+                查询域名: <span className="font-mono text-foreground">{displayDomain}</span>
+              </p>
+            </div>
+          )}
           {nodes.map((node, index) => (
             <div
               key={index}
@@ -264,10 +318,22 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
             </div>
           ))}
         </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-yellow-500 opacity-70" />
+          <p className="text-muted-foreground mb-2">DNS映射查询异常</p>
+          <p className="text-sm text-muted-foreground/70 max-w-md mx-auto">{error}</p>
+          {displayDomain && (
+            <p className="text-xs text-muted-foreground/50 mt-4 font-mono">{displayDomain}</p>
+          )}
+        </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
           <Network className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>暂无DNS映射</p>
+          {displayDomain && (
+            <p className="text-xs text-muted-foreground/50 mt-2 font-mono">{displayDomain}</p>
+          )}
         </div>
       )}
     </Card>
