@@ -6,6 +6,7 @@ import { toASCII, toUnicode, isIDN } from "@/utils/tld-servers";
 
 interface DnsMapProps {
   domain: string;
+  displayDomain?: string;
 }
 
 interface DnsNode {
@@ -15,11 +16,12 @@ interface DnsNode {
   location?: string;
 }
 
-export const DnsMap = ({ domain }: DnsMapProps) => {
+export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps) => {
   const [nodes, setNodes] = useState<DnsNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [displayDomain, setDisplayDomain] = useState<string>("");
+  // 使用传入的displayDomain或自动转换
+  const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
   const queryDnsMap = async () => {
     setIsLoading(true);
@@ -36,8 +38,6 @@ export const DnsMap = ({ domain }: DnsMapProps) => {
 
       // IDN域名转换为Punycode
       const asciiDomain = toASCII(normalizedDomain);
-      const unicodeDomain = isIDN(normalizedDomain) ? toUnicode(asciiDomain) : normalizedDomain;
-      setDisplayDomain(unicodeDomain !== asciiDomain ? `${unicodeDomain} (${asciiDomain})` : normalizedDomain);
 
       // 查询多种DNS记录类型，增强准确性
       const types = ['A', 'AAAA', 'MX', 'NS', 'CNAME'];

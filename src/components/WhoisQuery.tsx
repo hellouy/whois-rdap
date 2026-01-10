@@ -46,6 +46,7 @@ const formatDisplayValue = (value: string | undefined, defaultText: string = "�
 
 interface WhoisQueryProps {
   domain: string;
+  displayDomain?: string;
 }
 
 // 国家代码映射到中文名称
@@ -247,9 +248,12 @@ const translateDomainStatus = (status: string): string => {
   return status.replace(/\s*https?:\/\/[^\s]+/gi, '').trim();
 };
 
-export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
+export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
+  
+  // 使用传入的displayDomain或使用toUnicode转换
+  const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
   // 当域名改变时重置价格数据
   useEffect(() => {
@@ -564,15 +568,23 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
         <div className="space-y-6">
           {/* 1. 域名信息 */}
           {(whoisData.domainName || whoisData.dnssec) && (
-              <div className="relative p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {(whoisData.domainName || domain) && (
-                    <div className="flex items-baseline gap-3">
-                      <FileText className="h-5 w-5 text-primary flex-shrink-0" />
-                      <p className="text-sm text-muted-foreground">域名:</p>
-                      <p className="font-bold text-base text-foreground break-all">
-                        {isIDN(domain) ? toUnicode(domain) : domain}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-muted-foreground flex-shrink-0">域名:</p>
+                      <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
+                        <p className="font-bold text-base text-foreground break-all">
+                          {displayDomain}
+                        </p>
+                        <Badge 
+                          variant={getDomainStatus().variant} 
+                          className="text-xs font-semibold px-3 py-1 flex-shrink-0"
+                        >
+                          {getDomainStatus().label}
+                        </Badge>
+                      </div>
                     </div>
                   )}
                   {whoisData.dnssec && (
@@ -583,12 +595,6 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                     </div>
                   )}
                 </div>
-                <Badge 
-                  variant={getDomainStatus().variant} 
-                  className="absolute top-4 right-4 text-xs font-semibold px-3 py-1"
-                >
-                  {getDomainStatus().label}
-                </Badge>
               </div>
             )}
 

@@ -10,14 +10,16 @@ import { Globe, Activity } from "lucide-react";
 
 const Index = () => {
   const [domain, setDomain] = useState("");
+  const [displayDomain, setDisplayDomain] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<number | null>(null);
   const userInteractedRef = useRef(false);
 
-  const handleQuery = async (queryDomain: string) => {
+  const handleQuery = async (queryDomain: string, originalDomain: string) => {
     setIsQuerying(true);
     setDomain(queryDomain);
+    setDisplayDomain(originalDomain);
     userInteractedRef.current = false;
     
     setTimeout(() => {
@@ -139,19 +141,19 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="whois" className="mt-0 transition-opacity duration-500" forceMount>
-              <WhoisQuery domain={domain} />
+              <WhoisQuery domain={domain} displayDomain={displayDomain} />
             </TabsContent>
 
             <TabsContent value="dns" className="mt-0 transition-opacity duration-500" forceMount>
-              <DnsQuery domain={domain} />
+              <DnsQuery domain={domain} displayDomain={displayDomain} />
             </TabsContent>
 
             <TabsContent value="map" className="mt-0 transition-opacity duration-500" forceMount>
-              <DnsMap domain={domain} />
+              <DnsMap domain={domain} displayDomain={displayDomain} />
             </TabsContent>
 
             <TabsContent value="ssl" className="mt-0 transition-opacity duration-500" forceMount>
-              <SslCertQuery domain={domain} />
+              <SslCertQuery domain={domain} displayDomain={displayDomain} />
             </TabsContent>
           </Tabs>
         </div>

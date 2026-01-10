@@ -3,12 +3,17 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Lock, Calendar, AlertTriangle, CheckCircle2, Clock, FileText } from "lucide-react";
 import { useSslCertificate } from "@/hooks/use-ssl-certificate";
 
+import { toUnicode, isIDN } from "@/utils/tld-servers";
+
 interface SslCertQueryProps {
   domain: string;
+  displayDomain?: string;
 }
 
-export const SslCertQuery = ({ domain }: SslCertQueryProps) => {
+export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCertQueryProps) => {
   const { certData, isLoading } = useSslCertificate(domain);
+  // 使用传入的displayDomain或自动转换
+  const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
   // 计算证书剩余天数
   const getDaysRemaining = (validTo: string): number => {
