@@ -340,7 +340,6 @@ export const TLD_SERVERS: Record<string, string[]> = {
   "systems": ["a.nic.systems", "b.nic.systems", "c.nic.systems", "d.nic.systems"],
   "technology": ["a.nic.technology", "b.nic.technology", "c.nic.technology", "d.nic.technology"],
   "digital": ["a.nic.digital", "b.nic.digital", "c.nic.digital", "d.nic.digital"],
-  "ai": ["a.nic.ai", "b.nic.ai", "c.nic.ai", "d.nic.ai"],
   
   // ========== 新通用顶级域名 - 商业类 ==========
   "company": ["a.nic.company", "b.nic.company", "c.nic.company", "d.nic.company"],
@@ -718,13 +717,11 @@ export const TLD_SERVERS: Record<string, string[]> = {
   "pink": ["a.nic.pink", "b.nic.pink", "c.nic.pink", "d.nic.pink"],
   "gold": ["a.nic.gold", "b.nic.gold", "c.nic.gold", "d.nic.gold"],
   "black": ["a.nic.black", "b.nic.black", "c.nic.black", "d.nic.black"],
-  "green": ["a.nic.green", "b.nic.green", "c.nic.green", "d.nic.green"],
   "orange": ["a.nic.orange", "b.nic.orange", "c.nic.orange", "d.nic.orange"],
   "domains": ["a.nic.domains", "b.nic.domains", "c.nic.domains", "d.nic.domains"],
   "zone": ["a.nic.zone", "b.nic.zone", "c.nic.zone", "d.nic.zone"],
   "city": ["a.nic.city", "b.nic.city", "c.nic.city", "d.nic.city"],
   "town": ["a.nic.town", "b.nic.town", "c.nic.town", "d.nic.town"],
-  "land": ["a.nic.land", "b.nic.land", "c.nic.land", "d.nic.land"],
   "earth": ["a.nic.earth", "b.nic.earth", "c.nic.earth", "d.nic.earth"],
   "global": ["a.nic.global", "b.nic.global", "c.nic.global", "d.nic.global"],
   "international": ["a.nic.international", "b.nic.international", "c.nic.international", "d.nic.international"],
