@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Server, Globe, Clock } from "lucide-react";
+import { Loader2, Server, Globe, Clock, AlertTriangle } from "lucide-react";
+import { toASCII, toUnicode, isIDN } from "@/utils/tld-servers";
 
 interface DnsRecord {
   type: string;
@@ -18,6 +19,8 @@ interface DnsQueryProps {
 export const DnsQuery = ({ domain }: DnsQueryProps) => {
   const [records, setRecords] = useState<DnsRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [displayDomain, setDisplayDomain] = useState<string>("");
 
   // 查询IP的地理位置和服务商信息
   const fetchIpInfo = async (ip: string): Promise<{ location?: string; provider?: string }> => {
@@ -39,6 +42,7 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
 
   const queryDns = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const normalizedDomain = domain.trim().toLowerCase();
       if (!normalizedDomain) {
@@ -47,17 +51,24 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
         return;
       }
 
+      // IDN域名转换为Punycode
+      const asciiDomain = toASCII(normalizedDomain);
+      const unicodeDomain = isIDN(normalizedDomain) ? toUnicode(asciiDomain) : normalizedDomain;
+      setDisplayDomain(unicodeDomain !== asciiDomain ? `${unicodeDomain} (${asciiDomain})` : normalizedDomain);
+
       // 使用Google DNS over HTTPS API，增强安全性和准确性
       const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'CAA'];
       const allRecords: DnsRecord[] = [];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let hasServerError = false;
+      let serverErrorMsg = "";
 
       // 并行查询所有记录类型
       const queries = recordTypes.map(async (type) => {
         try {
           const response = await fetch(
-            `https://dns.google/resolve?name=${encodeURIComponent(normalizedDomain)}&type=${type}&do=1`,
+            `https://dns.google/resolve?name=${encodeURIComponent(asciiDomain)}&type=${type}&do=1`,
             { 
               signal: controller.signal,
               headers: {
@@ -70,11 +81,28 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
           
           const data = await response.json();
 
+          // 检查DNS服务器错误（Status 2 = SERVFAIL）
+          if (data.Status === 2) {
+            hasServerError = true;
+            if (data.Comment) {
+              serverErrorMsg = data.Comment;
+            }
+            return;
+          }
+
           if (data.Answer) {
             for (const answer of data.Answer) {
+              // 将Punycode域名转回Unicode显示
+              let displayValue = answer.data;
+              if (displayValue && typeof displayValue === 'string' && displayValue.includes('xn--')) {
+                try {
+                  displayValue = toUnicode(displayValue);
+                } catch {}
+              }
+
               const record: DnsRecord = {
                 type: type,
-                value: answer.data,
+                value: displayValue,
                 ttl: answer.TTL,
               };
 
@@ -96,9 +124,14 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
       await Promise.allSettled(queries);
       clearTimeout(timeoutId);
 
+      if (allRecords.length === 0 && hasServerError) {
+        setError(`DNS服务器未响应: ${serverErrorMsg || '域名服务器可能无法访问'}`);
+      }
+
       setRecords(allRecords);
     } catch (error) {
       console.error("DNS查询错误:", error);
+      setError("DNS查询失败");
       setRecords([]);
     } finally {
       setIsLoading(false);
@@ -142,6 +175,13 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
         </div>
       ) : records.length > 0 ? (
         <div className="space-y-4">
+          {displayDomain && (
+            <div className="p-3 bg-muted/50 rounded-lg border border-border mb-4">
+              <p className="text-sm text-muted-foreground">
+                查询域名: <span className="font-mono text-foreground">{displayDomain}</span>
+              </p>
+            </div>
+          )}
           {records.map((record, index) => (
             <div
               key={index}
@@ -183,10 +223,22 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
             </div>
           ))}
         </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-yellow-500 opacity-70" />
+          <p className="text-muted-foreground mb-2">DNS查询异常</p>
+          <p className="text-sm text-muted-foreground/70 max-w-md mx-auto">{error}</p>
+          {displayDomain && (
+            <p className="text-xs text-muted-foreground/50 mt-4 font-mono">{displayDomain}</p>
+          )}
+        </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
           <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>暂无DNS记录</p>
+          {displayDomain && (
+            <p className="text-xs text-muted-foreground/50 mt-2 font-mono">{displayDomain}</p>
+          )}
         </div>
       )}
     </Card>
