@@ -5,6 +5,44 @@ import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, Doll
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { useEffect } from "react";
+import { toUnicode, isIDN } from "@/utils/tld-servers";
+
+// 检查是否为隐私保护或空信息
+const isPrivacyRedacted = (value: string | undefined): boolean => {
+  if (!value) return false;
+  const privacyPatterns = [
+    /redacted/i,
+    /privacy/i,
+    /protected/i,
+    /withheld/i,
+    /not disclosed/i,
+    /data protected/i,
+    /gdpr/i,
+    /private/i,
+    /contact privacy/i,
+    /whoisguard/i,
+    /domains by proxy/i,
+    /perfect privacy/i,
+    /proxy/i,
+    /masked/i,
+    /hidden/i,
+    /confidential/i,
+    /n\/a/i,
+    /not available/i,
+    /not shown/i,
+    /registry customer/i,
+    /domain administrator/i,
+  ];
+  return privacyPatterns.some(pattern => pattern.test(value));
+};
+
+// 格式化显示值，处理隐私保护
+const formatDisplayValue = (value: string | undefined, defaultText: string = "所有者选择隐藏信息"): string => {
+  if (!value || isPrivacyRedacted(value)) {
+    return defaultText;
+  }
+  return value;
+};
 
 interface WhoisQueryProps {
   domain: string;
@@ -528,11 +566,13 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
           {(whoisData.domainName || whoisData.dnssec) && (
               <div className="relative p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
-                  {whoisData.domainName && (
+                  {(whoisData.domainName || domain) && (
                     <div className="flex items-baseline gap-3">
                       <FileText className="h-5 w-5 text-primary flex-shrink-0" />
                       <p className="text-sm text-muted-foreground">域名:</p>
-                      <p className="font-bold text-base text-foreground break-all">{whoisData.domainName}</p>
+                      <p className="font-bold text-base text-foreground break-all">
+                        {isIDN(domain) ? toUnicode(domain) : domain}
+                      </p>
                     </div>
                   )}
                   {whoisData.dnssec && (
@@ -617,7 +657,9 @@ export const WhoisQuery = ({ domain }: WhoisQueryProps) => {
                     <div className="flex items-baseline gap-3">
                       <User className="h-5 w-5 text-primary flex-shrink-0" />
                       <p className="text-sm text-muted-foreground">注册主体:</p>
-                      <p className="font-bold text-base text-foreground break-all">{whoisData.registrantOrg}</p>
+                      <p className={`font-bold text-base break-all ${isPrivacyRedacted(whoisData.registrantOrg) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                        {formatDisplayValue(whoisData.registrantOrg)}
+                      </p>
                     </div>
                   )}
                   {whoisData.registrantCountry && (
