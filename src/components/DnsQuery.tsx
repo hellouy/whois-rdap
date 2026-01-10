@@ -14,13 +14,15 @@ interface DnsRecord {
 
 interface DnsQueryProps {
   domain: string;
+  displayDomain?: string;
 }
 
-export const DnsQuery = ({ domain }: DnsQueryProps) => {
+export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryProps) => {
   const [records, setRecords] = useState<DnsRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [displayDomain, setDisplayDomain] = useState<string>("");
+  // 使用传入的displayDomain或自动转换
+  const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
   // 查询IP的地理位置和服务商信息
   const fetchIpInfo = async (ip: string): Promise<{ location?: string; provider?: string }> => {
@@ -53,8 +55,6 @@ export const DnsQuery = ({ domain }: DnsQueryProps) => {
 
       // IDN域名转换为Punycode
       const asciiDomain = toASCII(normalizedDomain);
-      const unicodeDomain = isIDN(normalizedDomain) ? toUnicode(asciiDomain) : normalizedDomain;
-      setDisplayDomain(unicodeDomain !== asciiDomain ? `${unicodeDomain} (${asciiDomain})` : normalizedDomain);
 
       // 使用Google DNS over HTTPS API，增强安全性和准确性
       const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'CAA'];

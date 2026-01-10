@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { normalizeDomain } from "@/utils/tld-servers";
 
 interface QueryInputProps {
-  onQuery: (domain: string) => void;
+  onQuery: (domain: string, displayDomain: string) => void;
   isLoading?: boolean;
   placeholder?: string;
 }
@@ -19,7 +19,8 @@ export const QueryInput = ({ onQuery, isLoading, placeholder = "输入域名查�
     if (domain.trim()) {
       // 标准化域名（支持中文域名转换）
       const normalized = normalizeDomain(domain.trim());
-      onQuery(normalized);
+      // 传递标准化域名和原始显示域名
+      onQuery(normalized, domain.trim());
     }
   };
 
