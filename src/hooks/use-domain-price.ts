@@ -21,12 +21,12 @@ export const useDomainPrice = () => {
     setError(null);
     
     try {
-      // 使用优化的API v2，增强准确性和可靠性
+      // 使用 tian.hu API 查询价格
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
       
       const response = await fetch(
-        `https://api-v2.tian.hu/domains/pricing/${encodeURIComponent(domain)}`,
+        `https://api.tian.hu/pricing/${encodeURIComponent(domain)}`,
         { 
           signal: controller.signal,
           headers: {
@@ -41,55 +41,42 @@ export const useDomainPrice = () => {
         throw new Error(`获取价格信息失败 (HTTP ${response.status})`);
       }
       
-      const result = await response.json();
-      
-      // 处理API返回的数据结构，增强容错性
-      const data = result.data || result;
+      const data = await response.json();
       
       // 增强价格解析的可靠性和精准度
       const parsePrice = (value: any): number | undefined => {
         if (value === null || value === undefined || value === '') return undefined;
-        // 处理字符串和数字
         const str = String(value).trim();
         const parsed = parseFloat(str);
         return isNaN(parsed) || parsed <= 0 ? undefined : parsed;
       };
       
-      // 增强溢价状态判断
-      const isPremium = Boolean(
-        data.premium === "true" || 
-        data.premium === true || 
-        data.premium === 1 || 
-        data.isPremium === true ||
-        data.is_premium === true
-      );
+      // 溢价状态判断
+      const isPremium = Boolean(data.premium === true || data.premium === "true");
       
-      // 适配新API返回的多种数据结构
+      // 按 API 返回结构解析
       const priceInfo: DomainPrice = {
         domain,
         isPremium,
-        registrationPrice: parsePrice(
-          data.register || 
-          data.price || 
-          data.registrationPrice || 
-          data.registerPrice ||
-          data.registration_price
-        ),
-        renewalPrice: parsePrice(
-          data.renew || 
-          data.renewPrice || 
-          data.renewalPrice ||
-          data.renewal_price
-        ),
-        transferPrice: parsePrice(
-          data.transfer || 
-          data.transferPrice ||
-          data.transfer_price
-        ),
-        currency: data.currency || data.curr || "CNY",
-        exchangeRate: parseFloat(data.exchangeRate || data.exchange_rate || "1") || 1,
-        meaning: data.meaning || data.description || data.desc || undefined,
+        registrationPrice: parsePrice(data.register),
+        renewalPrice: parsePrice(data.renew),
+        transferPrice: parsePrice(data.transfer),
+        currency: "CNY",
+        exchangeRate: 1,
+        meaning: data.meaning || undefined,
       };
+      
+      // 如果有美元价格但没有人民币价格，使用美元价格
+      if (!priceInfo.registrationPrice && data.register_usd) {
+        priceInfo.registrationPrice = parsePrice(data.register_usd);
+        priceInfo.currency = "USD";
+        priceInfo.exchangeRate = 7.2;
+      }
+      if (!priceInfo.renewalPrice && data.renew_usd) {
+        priceInfo.renewalPrice = parsePrice(data.renew_usd);
+        priceInfo.currency = "USD";
+        priceInfo.exchangeRate = 7.2;
+      }
       
       // 验证至少有一个价格信息
       if (!priceInfo.registrationPrice && !priceInfo.renewalPrice) {
