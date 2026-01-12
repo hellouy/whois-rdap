@@ -602,15 +602,15 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
           {whoisData.registrar && (
               <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
-                  <div className="flex items-baseline gap-3">
-                    <Building className="h-5 w-5 text-primary flex-shrink-0" />
-                    <p className="text-sm text-muted-foreground">注册商:</p>
+                  <div className="flex items-start gap-3">
+                    <Building className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册商:</p>
                     <p className="font-bold text-base text-foreground break-all">{whoisData.registrar}</p>
                   </div>
                   {whoisData.registrarIanaId && (
-                    <div className="flex items-baseline gap-3">
-                      <Building className="h-5 w-5 text-primary flex-shrink-0" />
-                      <p className="text-sm text-muted-foreground">IANA ID:</p>
+                    <div className="flex items-start gap-3">
+                      <Building className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">IANA ID:</p>
                       <p className="text-sm text-foreground">{whoisData.registrarIanaId}</p>
                     </div>
                   )}
@@ -684,7 +684,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
               <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="flex items-start gap-3">
                   <Server className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
-                  <p className="text-sm text-muted-foreground whitespace-nowrap">名称服务器:</p>
+                  <p className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">名称服务器:</p>
                   <div className="flex-1 min-w-0 space-y-1">
                     {whoisData.nameServers.map((ns, index) => (
                       <p key={index} className="font-mono text-sm text-foreground break-all">{ns}</p>
