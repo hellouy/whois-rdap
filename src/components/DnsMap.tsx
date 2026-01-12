@@ -252,14 +252,14 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
   };
 
   return (
-    <Card className="p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Network className="h-7 w-7 text-primary" />
-          <h2 className="text-3xl font-bold text-foreground">DNS映射</h2>
+    <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Network className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">DNS映射</h2>
         </div>
         {nodes.length > 0 && !isLoading && (
-          <Badge variant="secondary" className="text-sm px-4 py-1.5">
+          <Badge variant="secondary" className="text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5 self-start sm:self-auto">
             共 {nodes.length} 个节点
           </Badge>
         )}
@@ -270,46 +270,46 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
           <Loader2 className="h-8 w-8 animate-spin text-foreground" />
         </div>
       ) : nodes.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {displayDomain && (
-            <div className="p-3 bg-muted/50 rounded-lg border border-border mb-4">
-              <p className="text-sm text-muted-foreground">
-                查询域名: <span className="font-mono text-foreground">{displayDomain}</span>
+            <div className="p-2 sm:p-3 bg-muted/50 rounded-lg border border-border mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                查询域名: <span className="font-mono text-foreground break-all">{displayDomain}</span>
               </p>
             </div>
           )}
           {nodes.map((node, index) => (
             <div
               key={index}
-              className="flex items-start gap-5 p-5 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
+              className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-5 p-3 sm:p-5 rounded-xl border border-border bg-card/60 backdrop-blur-md shadow-md transition-all hover:shadow-lg hover:border-primary/40"
             >
               <div className="flex-shrink-0">
-                <Badge className="min-w-[75px] justify-center px-4 py-2 bg-primary text-primary-foreground text-sm font-bold shadow-md">
+                <Badge className="min-w-[60px] sm:min-w-[75px] justify-center px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground text-xs sm:text-sm font-bold shadow-md">
                   {node.type}
                 </Badge>
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
-                <div className="mb-3">
-                  <span className="font-mono text-sm font-semibold text-foreground break-all leading-relaxed">
+                <div className="mb-2 sm:mb-3">
+                  <span className="font-mono text-xs sm:text-sm font-semibold text-foreground break-all leading-relaxed">
                     {node.name}
                   </span>
                 </div>
                 <div className="space-y-2">
                   {node.ip && (
                     <div className="flex items-start gap-2">
-                      <Globe2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground mb-0.5">解析地址</p>
-                        <p className="font-mono text-sm text-foreground break-all">{node.ip}</p>
+                        <p className="font-mono text-xs sm:text-sm text-foreground break-all">{node.ip}</p>
                       </div>
                     </div>
                   )}
                   {node.location && (
                     <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground mb-0.5">位置/服务商</p>
-                        <p className="font-medium text-sm text-foreground">{node.location}</p>
+                        <p className="font-medium text-xs sm:text-sm text-foreground break-all">{node.location}</p>
                       </div>
                     </div>
                   )}
@@ -319,20 +319,20 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
           ))}
         </div>
       ) : error ? (
-        <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-yellow-500 opacity-70" />
-          <p className="text-muted-foreground mb-2">DNS映射查询异常</p>
-          <p className="text-sm text-muted-foreground/70 max-w-md mx-auto">{error}</p>
+        <div className="text-center py-8 sm:py-12">
+          <AlertTriangle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-yellow-500 opacity-70" />
+          <p className="text-sm sm:text-base text-muted-foreground mb-2">DNS映射查询异常</p>
+          <p className="text-xs sm:text-sm text-muted-foreground/70 max-w-md mx-auto px-4">{error}</p>
           {displayDomain && (
-            <p className="text-xs text-muted-foreground/50 mt-4 font-mono">{displayDomain}</p>
+            <p className="text-xs text-muted-foreground/50 mt-4 font-mono break-all px-4">{displayDomain}</p>
           )}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <Network className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>暂无DNS映射</p>
+        <div className="text-center py-8 sm:py-12 text-muted-foreground">
+          <Network className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 opacity-50" />
+          <p className="text-sm sm:text-base">暂无DNS映射</p>
           {displayDomain && (
-            <p className="text-xs text-muted-foreground/50 mt-2 font-mono">{displayDomain}</p>
+            <p className="text-xs text-muted-foreground/50 mt-2 font-mono break-all px-4">{displayDomain}</p>
           )}
         </div>
       )}

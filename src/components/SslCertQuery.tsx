@@ -24,25 +24,25 @@ export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCe
   };
 
   return (
-    <Card className="p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Shield className="h-7 w-7 text-primary" />
-          <h2 className="text-3xl font-bold text-foreground">SSL证书</h2>
+    <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Shield className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">SSL证书</h2>
         </div>
         {certData && !isLoading && (
           <Badge 
             variant={certData.isValid ? "default" : "destructive"} 
-            className="text-sm px-4 py-1.5 shadow-md"
+            className="text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-1.5 shadow-md self-start sm:self-auto"
           >
             {certData.isValid ? (
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5" />
+                <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 有效证书
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5" />
+                <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 证书异常
               </span>
             )}
@@ -55,15 +55,15 @@ export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCe
           <Loader2 className="h-8 w-8 animate-spin text-foreground" />
         </div>
       ) : certData ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {certData.isValid && certData.validTo && (
-            <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-3 mb-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <p className="text-sm font-bold text-foreground">证书有效期</p>
+            <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <p className="text-xs sm:text-sm font-bold text-foreground">证书有效期</p>
               </div>
-              <div className="pl-8">
-                <p className="text-2xl font-bold text-primary mb-1">
+              <div className="pl-6 sm:pl-8">
+                <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
                   {getDaysRemaining(certData.validTo)} 天
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -73,70 +73,70 @@ export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCe
             </div>
           )}
 
-          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mb-1">颁发者:</p>
-                <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.issuer}</p>
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-muted-foreground">颁发者:</p>
               </div>
+              <p className="font-mono text-xs sm:text-sm text-foreground leading-relaxed break-all pl-6 sm:pl-0">{certData.issuer}</p>
             </div>
           </div>
 
-          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mb-1">生效日期:</p>
-                <p className="font-mono text-sm text-foreground">{certData.validFrom}</p>
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-muted-foreground">生效日期:</p>
               </div>
+              <p className="font-mono text-xs sm:text-sm text-foreground pl-6 sm:pl-0">{certData.validFrom}</p>
             </div>
           </div>
 
-          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mb-1">过期日期:</p>
-                <p className="font-mono text-sm text-foreground">{certData.validTo}</p>
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-muted-foreground">过期日期:</p>
               </div>
+              <p className="font-mono text-xs sm:text-sm text-foreground pl-6 sm:pl-0">{certData.validTo}</p>
             </div>
           </div>
 
-          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mb-1">证书域名:</p>
-                <p className="font-mono text-sm text-foreground leading-relaxed break-all">{certData.subject || '未知'}</p>
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-muted-foreground">证书域名:</p>
               </div>
+              <p className="font-mono text-xs sm:text-sm text-foreground leading-relaxed break-all pl-6 sm:pl-0">{certData.subject || '未知'}</p>
             </div>
           </div>
 
-          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-start gap-3">
-              <Lock className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mb-1">签名算法:</p>
-                <p className="font-mono text-sm text-foreground leading-relaxed">{certData.algorithm || '未知'}</p>
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-muted-foreground">签名算法:</p>
               </div>
+              <p className="font-mono text-xs sm:text-sm text-foreground leading-relaxed pl-6 sm:pl-0">{certData.algorithm || '未知'}</p>
             </div>
           </div>
 
-          <div className="p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground mb-1">证书指纹:</p>
-                <p className="font-mono text-xs text-foreground break-all leading-relaxed">{certData.fingerprint}</p>
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-muted-foreground">证书指纹:</p>
               </div>
+              <p className="font-mono text-xs text-foreground break-all leading-relaxed pl-6 sm:pl-0">{certData.fingerprint}</p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>暂无证书信息</p>
+        <div className="text-center py-8 sm:py-12 text-muted-foreground">
+          <Shield className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 opacity-50" />
+          <p className="text-sm sm:text-base">暂无证书信息</p>
         </div>
       )}
     </Card>
