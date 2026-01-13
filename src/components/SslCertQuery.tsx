@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Lock, Calendar, AlertTriangle, CheckCircle2, Clock, FileText } from "lucide-react";
 import { useSslCertificate } from "@/hooks/use-ssl-certificate";
-
 import { toUnicode, isIDN } from "@/utils/tld-servers";
 
 interface SslCertQueryProps {
@@ -12,10 +11,8 @@ interface SslCertQueryProps {
 
 export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCertQueryProps) => {
   const { certData, isLoading } = useSslCertificate(domain);
-  // 使用传入的displayDomain或自动转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
-  // 计算证书剩余天数
   const getDaysRemaining = (validTo: string): number => {
     const expiryDate = new Date(validTo);
     const today = new Date();
@@ -58,78 +55,61 @@ export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCe
         <div className="space-y-3 sm:space-y-4">
           {certData.isValid && certData.validTo && (
             <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                <p className="text-xs sm:text-sm font-bold text-foreground">证书有效期</p>
-              </div>
-              <div className="pl-6 sm:pl-8">
-                <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">证书有效期:</span>
+                <span className="font-bold text-sm sm:text-base text-foreground">
                   {getDaysRemaining(certData.validTo)} 天
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  距离过期还有 {getDaysRemaining(certData.validTo)} 天
-                </p>
+                </span>
               </div>
             </div>
           )}
 
           <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-muted-foreground">颁发者:</p>
-              </div>
-              <p className="font-mono text-xs sm:text-sm text-foreground leading-relaxed break-all pl-6 sm:pl-0">{certData.issuer}</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">颁发者:</span>
+              <span className="font-mono font-bold text-sm sm:text-base text-foreground leading-relaxed break-all">{certData.issuer}</span>
             </div>
           </div>
 
           <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-muted-foreground">生效日期:</p>
-              </div>
-              <p className="font-mono text-xs sm:text-sm text-foreground pl-6 sm:pl-0">{certData.validFrom}</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">生效日期:</span>
+              <span className="font-mono font-bold text-sm sm:text-base text-foreground">{certData.validFrom}</span>
             </div>
           </div>
 
           <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-muted-foreground">过期日期:</p>
-              </div>
-              <p className="font-mono text-xs sm:text-sm text-foreground pl-6 sm:pl-0">{certData.validTo}</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">过期日期:</span>
+              <span className="font-mono font-bold text-sm sm:text-base text-foreground">{certData.validTo}</span>
             </div>
           </div>
 
           <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-muted-foreground">证书域名:</p>
-              </div>
-              <p className="font-mono text-xs sm:text-sm text-foreground leading-relaxed break-all pl-6 sm:pl-0">{certData.subject || '未知'}</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">证书域名:</span>
+              <span className="font-mono font-bold text-sm sm:text-base text-foreground leading-relaxed break-all">{certData.subject || '未知'}</span>
             </div>
           </div>
 
           <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-muted-foreground">签名算法:</p>
-              </div>
-              <p className="font-mono text-xs sm:text-sm text-foreground leading-relaxed pl-6 sm:pl-0">{certData.algorithm || '未知'}</p>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">签名算法:</span>
+              <span className="font-mono font-bold text-sm sm:text-base text-foreground leading-relaxed">{certData.algorithm || '未知'}</span>
             </div>
           </div>
 
           <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-muted-foreground">证书指纹:</p>
-              </div>
-              <p className="font-mono text-xs text-foreground break-all leading-relaxed pl-6 sm:pl-0">{certData.fingerprint}</p>
+            <div className="flex items-start gap-2 sm:gap-3">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">证书指纹:</span>
+              <span className="font-mono font-bold text-xs sm:text-sm text-foreground break-all leading-relaxed">{certData.fingerprint}</span>
             </div>
           </div>
         </div>
