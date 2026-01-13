@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, DollarSign } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
@@ -255,9 +254,12 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
   // 使用传入的displayDomain或使用toUnicode转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
-  // 当域名改变时重置价格数据
+  // 当域名改变时自动查询价格
   useEffect(() => {
     resetPrice();
+    if (domain) {
+      fetchPrice(domain);
+    }
   }, [domain]);
 
   // 获取域名状态 - 增强判断逻辑
@@ -510,55 +512,49 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
 
   return (
     <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
-          <Button
-            onClick={() => fetchPrice(domain)}
-            disabled={isPriceLoading}
-            variant="outline"
-            size="default"
-            className="gap-2"
-          >
-            {isPriceLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                <span className="text-sm">查询中...</span>
-              </>
-            ) : (
-              <>
-                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-sm">价格</span>
-              </>
-            )}
-          </Button>
-          
-          {priceData && (
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <Badge variant={priceData.isPremium ? "destructive" : "outline"} className="text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 bg-background/80">
-                {priceData.isPremium ? "溢价域名" : "普通域名"}
-              </Badge>
-              {priceData.meaning && (
-                <span className="text-xs sm:text-sm text-muted-foreground">
-                  含义：<span className="text-foreground font-medium">{priceData.meaning}</span>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {priceData && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
-            <div className="p-2 sm:p-3 rounded-lg bg-background/50 border border-border">
-              <p className="text-xs text-muted-foreground mb-1">注册</p>
-              <p className="font-bold text-sm sm:text-base text-foreground">{formatPrice(priceData.registrationPrice)}</p>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-background/50 border border-border">
-              <p className="text-xs text-muted-foreground mb-1">续费</p>
-              <p className="font-bold text-sm sm:text-base text-foreground">{formatPrice(priceData.renewalPrice)}</p>
-            </div>
+      {/* 价格信息 */}
+      {isPriceLoading ? (
+        <div className="mb-4 sm:mb-6 p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-xs sm:text-sm text-muted-foreground">正在查询价格...</span>
           </div>
-        )}
-      </div>
+        </div>
+      ) : priceData ? (
+        <div className="mb-4 sm:mb-6 p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-baseline gap-2 sm:gap-3">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册价格:</span>
+              <span className="font-bold text-sm sm:text-base text-foreground">{formatPrice(priceData.registrationPrice)}</span>
+            </div>
+            <div className="flex items-baseline gap-2 sm:gap-3">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">续费价格:</span>
+              <span className="font-bold text-sm sm:text-base text-foreground">{formatPrice(priceData.renewalPrice)}</span>
+            </div>
+            {priceData.isPremium && (
+              <div className="flex items-center gap-2 sm:gap-3 pt-1">
+                <Badge variant="destructive" className="text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1">
+                  溢价
+                </Badge>
+                {priceData.meaning && (
+                  <span className="text-xs sm:text-sm text-muted-foreground">
+                    含义: <span className="text-foreground font-medium">{priceData.meaning}</span>
+                  </span>
+                )}
+              </div>
+            )}
+            {!priceData.isPremium && priceData.meaning && (
+              <div className="flex items-baseline gap-2 sm:gap-3">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 opacity-0" />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">含义:</span>
+                <span className="text-xs sm:text-sm text-foreground">{priceData.meaning}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
