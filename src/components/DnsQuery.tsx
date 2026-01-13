@@ -8,8 +8,8 @@ interface DnsRecord {
   type: string;
   value: string;
   ttl?: number;
-  location?: string; // 位置信息
-  provider?: string; // 服务商信息
+  location?: string;
+  provider?: string;
 }
 
 interface DnsQueryProps {
@@ -21,10 +21,8 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
   const [records, setRecords] = useState<DnsRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 使用传入的displayDomain或自动转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
-  // 查询IP的地理位置和服务商信息
   const fetchIpInfo = async (ip: string): Promise<{ location?: string; provider?: string }> => {
     try {
       const response = await fetch(`https://ipapi.co/${ip}/json/`);
@@ -53,10 +51,7 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
         return;
       }
 
-      // IDN域名转换为Punycode
       const asciiDomain = toASCII(normalizedDomain);
-
-      // 使用Google DNS over HTTPS API，增强安全性和准确性
       const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA', 'CAA'];
       const allRecords: DnsRecord[] = [];
       const controller = new AbortController();
@@ -64,7 +59,6 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
       let hasServerError = false;
       let serverErrorMsg = "";
 
-      // 并行查询所有记录类型
       const queries = recordTypes.map(async (type) => {
         try {
           const response = await fetch(
@@ -81,7 +75,6 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
           
           const data = await response.json();
 
-          // 检查DNS服务器错误（Status 2 = SERVFAIL）
           if (data.Status === 2) {
             hasServerError = true;
             if (data.Comment) {
@@ -92,7 +85,6 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
 
           if (data.Answer) {
             for (const answer of data.Answer) {
-              // 将Punycode域名转回Unicode显示
               let displayValue = answer.data;
               if (displayValue && typeof displayValue === 'string' && displayValue.includes('xn--')) {
                 try {
@@ -106,7 +98,6 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
                 ttl: answer.TTL,
               };
 
-              // 如果是A记录或AAAA记录，查询IP信息
               if ((type === 'A' || type === 'AAAA') && answer.data) {
                 const ipInfo = await fetchIpInfo(answer.data);
                 record.location = ipInfo.location;
@@ -138,7 +129,6 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
     }
   };
 
-  // 自动查询
   useEffect(() => {
     queryDns();
   }, [domain]);
@@ -177,9 +167,10 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
         <div className="space-y-3 sm:space-y-4">
           {displayDomain && (
             <div className="p-2 sm:p-3 bg-muted/50 rounded-lg border border-border mb-3 sm:mb-4">
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                查询域名: <span className="font-mono text-foreground break-all">{displayDomain}</span>
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">查询域名:</span>
+                <span className="font-mono font-bold text-sm sm:text-base text-foreground break-all">{displayDomain}</span>
+              </div>
             </div>
           )}
           {records.map((record, index) => (
@@ -194,28 +185,32 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
                   </Badge>
                 </div>
                 <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1 font-medium">解析地址:</p>
-                    <p className="font-mono text-xs sm:text-sm break-all text-foreground leading-relaxed">{record.value}</p>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">解析地址:</span>
+                    <span className="font-mono font-bold text-sm sm:text-base text-foreground break-all leading-relaxed">{record.value}</span>
                   </div>
                   
                   {record.location && (
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1 font-medium flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
-                        位置/服务商:
-                      </p>
-                      <p className="text-xs sm:text-sm text-foreground">{record.location}</p>
-                      {record.provider && (
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 break-all">{record.provider}</p>
-                      )}
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <Globe className="h-3 w-3 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">位置:</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground">{record.location}</span>
+                    </div>
+                  )}
+                  
+                  {record.provider && (
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Server className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">服务商:</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground break-all">{record.provider}</span>
                     </div>
                   )}
                   
                   {record.ttl && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                      <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                      <span>TTL: {record.ttl}秒</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">TTL:</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground">{record.ttl}秒</span>
                     </div>
                   )}
                 </div>

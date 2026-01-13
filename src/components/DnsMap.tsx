@@ -20,7 +20,6 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
   const [nodes, setNodes] = useState<DnsNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 使用传入的displayDomain或自动转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
 
   const queryDnsMap = async () => {
@@ -36,17 +35,13 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
         return;
       }
 
-      // IDN域名转换为Punycode
       const asciiDomain = toASCII(normalizedDomain);
-
-      // 查询多种DNS记录类型，增强准确性
       const types = ['A', 'AAAA', 'MX', 'NS', 'CNAME'];
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       let hasServerError = false;
       let serverErrorMsg = "";
       
-      // 并行查询所有记录类型
       const queries = types.map(async (type) => {
         try {
           const response = await fetch(
@@ -63,7 +58,6 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
           
           const data = await response.json();
 
-          // 检查DNS服务器错误
           if (data.Status === 2) {
             hasServerError = true;
             if (data.Comment) {
@@ -73,16 +67,13 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
           }
           
           if (data.Answer) {
-            // 批量处理以减少API调用
             const ipRecords = data.Answer.filter((record: any) => 
               (type === 'A' || type === 'AAAA') && 
               record.data && 
               !record.data.includes('@')
             );
             
-            // 为A和AAAA记录获取位置信息
             for (const record of ipRecords) {
-              // 将Punycode域名转回Unicode显示
               let displayName = record.name;
               if (displayName && displayName.includes('xn--')) {
                 try {
@@ -107,10 +98,8 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
               }
             }
             
-            // 处理非IP记录
             data.Answer.forEach((record: any) => {
               if (type !== 'A' && type !== 'AAAA') {
-                // 将Punycode域名转回Unicode显示
                 let displayName = record.name;
                 let displayIp = record.data;
                 if (displayName && displayName.includes('xn--')) {
@@ -163,7 +152,6 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
     }
   };
 
-  // 使用API查询IP详细信息，增强准确性
   const fetchIpLocation = async (ip: string): Promise<string> => {
     if (!ip || ip.includes('@')) return "未知";
     
@@ -190,9 +178,7 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
     return getLocationFallback(ip);
   };
 
-  // 备用的本地IP识别
   const getLocationFallback = (ip: string): string => {
-    // IPv6 识别
     if (ip.includes(':')) {
       if (ip.startsWith('2001:4860')) return "Google CDN (IPv6)";
       if (ip.startsWith('2606:4700')) return "Cloudflare CDN (IPv6)";
@@ -202,14 +188,12 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
       return "IPv6 全球网络";
     }
     
-    // IPv4 判断
     const parts = ip.split('.');
     if (parts.length !== 4) return "未知";
     
     const first = parseInt(parts[0]);
     const second = parseInt(parts[1]);
     
-    // 常见CDN和云服务商
     if (first === 104 && (second === 16 || second === 17 || second === 18)) return "Cloudflare CDN";
     if (first === 172 && second >= 64 && second <= 127) return "Cloudflare CDN";
     if (first === 108 && second === 162) return "Google Cloud";
@@ -225,7 +209,6 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
     if (first === 43 && second === 240) return "百度云";
     if (first === 180 && second === 76) return "百度云";
     
-    // 地区判断
     if (first >= 1 && first <= 2) return "亚太 APNIC";
     if (first >= 58 && first <= 61) return "亚太 APNIC";
     if (first >= 106 && first <= 125) return "中国网络";
@@ -273,9 +256,10 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
         <div className="space-y-3 sm:space-y-4">
           {displayDomain && (
             <div className="p-2 sm:p-3 bg-muted/50 rounded-lg border border-border mb-3 sm:mb-4">
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                查询域名: <span className="font-mono text-foreground break-all">{displayDomain}</span>
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">查询域名:</span>
+                <span className="font-mono font-bold text-sm sm:text-base text-foreground break-all">{displayDomain}</span>
+              </div>
             </div>
           )}
           {nodes.map((node, index) => (
@@ -288,32 +272,27 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
                   {node.type}
                 </Badge>
               </div>
-              <div className="flex-1 min-w-0 pt-0.5">
-                <div className="mb-2 sm:mb-3">
-                  <span className="font-mono text-xs sm:text-sm font-semibold text-foreground break-all leading-relaxed">
+              <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">名称:</span>
+                  <span className="font-mono font-bold text-sm sm:text-base text-foreground break-all leading-relaxed">
                     {node.name}
                   </span>
                 </div>
-                <div className="space-y-2">
-                  {node.ip && (
-                    <div className="flex items-start gap-2">
-                      <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">解析地址</p>
-                        <p className="font-mono text-xs sm:text-sm text-foreground break-all">{node.ip}</p>
-                      </div>
-                    </div>
-                  )}
-                  {node.location && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground mb-0.5">位置/服务商</p>
-                        <p className="font-medium text-xs sm:text-sm text-foreground break-all">{node.location}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {node.ip && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Globe2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">解析地址:</span>
+                    <span className="font-mono font-bold text-sm sm:text-base text-foreground break-all">{node.ip}</span>
+                  </div>
+                )}
+                {node.location && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">位置/服务商:</span>
+                    <span className="font-bold text-sm sm:text-base text-foreground break-all">{node.location}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}

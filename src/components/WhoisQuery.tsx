@@ -1,10 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, DollarSign, RefreshCw } from "lucide-react";
+import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
-import { useDomainPrice } from "@/hooks/use-domain-price";
-import { useEffect } from "react";
+import { useState } from "react";
 import { toUnicode, isIDN } from "@/utils/tld-servers";
 
 // 检查是否为隐私保护或空信息
@@ -250,18 +248,10 @@ const translateDomainStatus = (status: string): string => {
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
-  const { priceData, isLoading: isPriceLoading, error, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
+  const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
   // 使用传入的displayDomain或使用toUnicode转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
-
-  // 当域名改变时自动查询价格
-  useEffect(() => {
-    resetPrice();
-    if (domain) {
-      fetchPrice(domain);
-    }
-  }, [domain]);
 
   // 获取域名状态 - 增强判断逻辑
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
@@ -511,60 +501,32 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
     return `${days} 天`;
   };
 
+  // 格式化日期为 年/月/日 时:分:秒
+  const formatDateTime = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const seconds = date.getSeconds().toString().padStart(2, '0');
+      
+      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+    } catch {
+      return dateString;
+    }
+  };
+
+  // 判断注册商名称是否过长
+  const isRegistrarLong = (registrar: string): boolean => {
+    return registrar.length > 30;
+  };
+
   return (
     <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
-      {/* 价格信息 */}
-      {isPriceLoading ? (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md animate-fade-in">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-xs sm:text-sm text-muted-foreground">正在查询价格...</span>
-          </div>
-        </div>
-      ) : error ? (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-destructive/50 shadow-md animate-fade-in">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs sm:text-sm text-destructive">{error}</span>
-            <Button
-              onClick={() => fetchPrice(domain)}
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-            >
-              <RefreshCw className="h-3 w-3" />
-              重试
-            </Button>
-          </div>
-        </div>
-      ) : priceData ? (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md animate-fade-in">
-          <div className="space-y-2 sm:space-y-3">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册价格:</span>
-              <span className="font-bold text-sm sm:text-base text-foreground animate-scale-in">{formatPrice(priceData.registrationPrice)}</span>
-              {priceData.isPremium && (
-                <Badge variant="destructive" className="text-xs font-semibold px-2 py-0.5 animate-scale-in">
-                  溢价
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">续费价格:</span>
-              <span className="font-bold text-sm sm:text-base text-foreground animate-scale-in">{formatPrice(priceData.renewalPrice)}</span>
-            </div>
-            {priceData.meaning && (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 opacity-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">含义:</span>
-                <span className="text-xs sm:text-sm text-foreground">{priceData.meaning}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
-
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-foreground" />
@@ -605,16 +567,42 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
           {whoisData.registrar && (
               <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册商:</span>
-                    <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                    {isRegistrarLong(whoisData.registrar) && !expandedRegistrar ? (
+                      <>
+                        <span className="font-bold text-sm sm:text-base text-foreground truncate max-w-[150px] sm:max-w-[200px]">
+                          {whoisData.registrar.slice(0, 25)}...
+                        </span>
+                        <button 
+                          onClick={() => setExpandedRegistrar(true)}
+                          className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                          展开
+                        </button>
+                      </>
+                    ) : isRegistrarLong(whoisData.registrar) && expandedRegistrar ? (
+                      <>
+                        <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                        <button 
+                          onClick={() => setExpandedRegistrar(false)}
+                          className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                          收起
+                        </button>
+                      </>
+                    ) : (
+                      <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                    )}
                   </div>
                   {whoisData.registrarIanaId && (
                     <div className="flex items-center gap-2 sm:gap-3">
                       <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">IANA ID:</span>
-                      <span className="text-xs sm:text-sm text-foreground">{whoisData.registrarIanaId}</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground">{whoisData.registrarIanaId}</span>
                     </div>
                   )}
                 </div>
@@ -626,8 +614,8 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
             <div className="relative p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground">注册时间:</span>
-                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{whoisData.creationDate}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册时间:</span>
+                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.creationDate)}</span>
               </div>
               <p className="absolute bottom-2 sm:bottom-3 right-3 sm:right-4 text-xs text-muted-foreground">
                 已注册 {getRegisteredTime(whoisData.creationDate)}
@@ -639,8 +627,8 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
             <div className="relative p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground">过期时间:</span>
-                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{whoisData.expirationDate}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">过期时间:</span>
+                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.expirationDate)}</span>
               </div>
               <p className="absolute bottom-2 sm:bottom-3 right-3 sm:right-4 text-xs text-muted-foreground">
                 距离过期 {getTimeUntilExpiry(whoisData.expirationDate)}
@@ -652,8 +640,8 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
             <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground">更新时间:</span>
-                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{whoisData.updatedDate}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">更新时间:</span>
+                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.updatedDate)}</span>
               </div>
             </div>
           )}
@@ -663,9 +651,9 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
               <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {whoisData.registrantOrg && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground">注册主体:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册主体:</span>
                       <span className={`font-bold text-sm sm:text-base break-all ${isPrivacyRedacted(whoisData.registrantOrg) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
                         {formatDisplayValue(whoisData.registrantOrg)}
                       </span>
@@ -674,8 +662,8 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                   {whoisData.registrantCountry && (
                     <div className="flex items-center gap-2 sm:gap-3">
                       <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground">国家/地区:</span>
-                      <span className="text-xs sm:text-sm text-foreground">{getCountryName(whoisData.registrantCountry)}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">国家/地区:</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground">{getCountryName(whoisData.registrantCountry)}</span>
                     </div>
                   )}
                 </div>
@@ -690,7 +678,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                   <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">名称服务器:</span>
                   <div className="flex-1 min-w-0 space-y-1">
                     {whoisData.nameServers.map((ns, index) => (
-                      <p key={index} className="font-mono text-xs sm:text-sm text-foreground break-all">{ns}</p>
+                      <p key={index} className="font-mono text-sm sm:text-base font-bold text-foreground break-all">{ns}</p>
                     ))}
                   </div>
                 </div>
