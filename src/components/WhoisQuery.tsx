@@ -400,6 +400,81 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
     return { label: "状态未知", variant: "outline" };
   };
 
+  // 获取额外的状态标签（用于DNSSEC右侧显示）
+  const getExtraStatusBadges = (): Array<{ label: string; variant: "default" | "secondary" | "destructive" | "outline" }> => {
+    const badges: Array<{ label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = [];
+    if (!whoisData) return badges;
+    
+    const statusString = whoisData.status?.join(' ').toLowerCase() || '';
+    
+    // 1. 检查过期相关状态
+    if (whoisData.expirationDate) {
+      try {
+        const expDate = new Date(whoisData.expirationDate);
+        const now = new Date();
+        const daysUntilExpiry = Math.floor((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (expDate < now) {
+          badges.push({ label: "已过期", variant: "destructive" });
+        } else if (daysUntilExpiry <= 7) {
+          badges.push({ label: "马上过期", variant: "destructive" });
+        } else if (daysUntilExpiry <= 30) {
+          badges.push({ label: "即将过期", variant: "destructive" });
+        }
+      } catch (e) {
+        // 忽略日期解析错误
+      }
+    }
+    
+    // 2. 检查续费相关状态
+    if (statusString.includes('autorenew') || statusString.includes('renewperiod')) {
+      badges.push({ label: "近期续费", variant: "secondary" });
+    }
+    
+    // 3. 检查转移相关状态
+    if (statusString.includes('pendingtransfer') || (statusString.includes('transfer') && statusString.includes('pending'))) {
+      badges.push({ label: "正在转移", variant: "secondary" });
+    } else if (statusString.includes('transferperiod')) {
+      badges.push({ label: "近期转移", variant: "secondary" });
+    } else if (statusString.includes('transferstarted')) {
+      badges.push({ label: "转移中", variant: "secondary" });
+    }
+    
+    // 4. 检查暂停/Hold状态
+    if (statusString.includes('hold')) {
+      if (!badges.some(b => b.label.includes('暂停'))) {
+        badges.push({ label: "域名暂停", variant: "destructive" });
+      }
+    }
+    
+    // 5. 检查赎回期
+    if (statusString.includes('redemption')) {
+      badges.push({ label: "赎回期", variant: "destructive" });
+    }
+    
+    // 6. 检查待删除
+    if (statusString.includes('pendingdelete')) {
+      badges.push({ label: "待删除", variant: "destructive" });
+    }
+    
+    // 7. 检查隔离期
+    if (statusString.includes('quarantine')) {
+      badges.push({ label: "隔离期", variant: "destructive" });
+    }
+    
+    // 8. 检查冻结状态
+    if (statusString.includes('frozen')) {
+      badges.push({ label: "已冻结", variant: "destructive" });
+    }
+    
+    // 9. 新注册宽限期
+    if (statusString.includes('addperiod')) {
+      badges.push({ label: "新注册", variant: "default" });
+    }
+    
+    return badges;
+  };
+
   // 计算时间差 - 使用精确的日期计算
   const getTimeDifference = (startDate: string, endDate?: Date): string => {
     const start = new Date(startDate);
@@ -601,12 +676,14 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
               <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {(whoisData.domainName || domain) && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">域名:</span>
-                      <span className="font-bold text-sm sm:text-base text-foreground break-all">
-                        {displayDomain}
-                      </span>
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5">域名:</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-sm sm:text-base text-foreground break-all">
+                          {displayDomain}
+                        </span>
+                      </div>
                       <Badge 
                         variant={getDomainStatus().variant} 
                         className="text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 flex-shrink-0"
@@ -618,8 +695,18 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                   {whoisData.dnssec && (
                     <div className="flex items-center gap-2 sm:gap-3">
                       <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground">DNSSEC:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">DNSSEC:</span>
                       <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec}</span>
+                      <div className="flex-1" />
+                      {getExtraStatusBadges().map((badge, index) => (
+                        <Badge 
+                          key={index}
+                          variant={badge.variant} 
+                          className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
+                        >
+                          {badge.label}
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </div>
