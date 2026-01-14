@@ -41,7 +41,17 @@ export const useDomainPrice = () => {
         throw new Error(`获取价格信息失败 (HTTP ${response.status})`);
       }
       
-      const data = await response.json();
+      const responseData = await response.json();
+      
+      // API返回格式: { code: 200, msg: "查询成功", data: {...} }
+      if (responseData.code !== 200) {
+        throw new Error(responseData.msg || "查询失败");
+      }
+      
+      const data = responseData.data;
+      if (!data) {
+        throw new Error("返回数据格式错误");
+      }
       
       // 增强价格解析的可靠性和精准度
       const parsePrice = (value: any): number | undefined => {
