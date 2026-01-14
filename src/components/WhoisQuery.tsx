@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
-import { useState } from "react";
+import { useDomainPrice } from "@/hooks/use-domain-price";
+import { useState, useEffect } from "react";
 import { toUnicode, isIDN } from "@/utils/tld-servers";
 
 // 检查是否为隐私保护或空信息
@@ -248,10 +250,19 @@ const translateDomainStatus = (status: string): string => {
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
+  const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
   // 使用传入的displayDomain或使用toUnicode转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
+
+  // 当域名变化时自动查询价格
+  useEffect(() => {
+    if (domain) {
+      resetPrice();
+      fetchPrice(domain);
+    }
+  }, [domain]);
 
   // 获取域名状态 - 增强判断逻辑
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
@@ -704,6 +715,74 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                 </div>
               </div>
             )}
+
+          {/* 7. 域名价格信息 */}
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="space-y-3">
+              {/* 标题行 */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">价格信息:</span>
+                
+                {isPriceLoading && (
+                  <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-xs sm:text-sm">正在查询价格...</span>
+                  </div>
+                )}
+                
+                {priceError && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm text-destructive">{priceError}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchPrice(domain)}
+                      className="h-6 px-2 text-xs gap-1"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      重试
+                    </Button>
+                  </div>
+                )}
+                
+                {priceData && !isPriceLoading && !priceError && (
+                  <div className="flex items-center gap-2 animate-in fade-in-0 slide-in-from-left-2 duration-300">
+                    {priceData.isPremium && (
+                      <Badge variant="destructive" className="text-xs font-semibold px-2 py-0.5 animate-in zoom-in-50 duration-300">
+                        溢价
+                      </Badge>
+                    )}
+                    {!priceData.isPremium && (
+                      <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5 animate-in zoom-in-50 duration-300">
+                        普通
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* 价格详情 */}
+              {priceData && !isPriceLoading && !priceError && (
+                <div className="space-y-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 opacity-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册价格:</span>
+                    <span className="font-bold text-sm sm:text-base text-foreground">
+                      {formatPrice(priceData.registrationPrice)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 opacity-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">续费价格:</span>
+                    <span className="font-bold text-sm sm:text-base text-foreground">
+                      {formatPrice(priceData.renewalPrice)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
