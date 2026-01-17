@@ -6,7 +6,6 @@ import { SslCertQuery } from "@/components/SslCertQuery";
 import { DnsMap } from "@/components/DnsMap";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Globe, Activity } from "lucide-react";
 
 const Index = () => {
   const [domain, setDomain] = useState("");
@@ -83,20 +82,15 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-grid-light">
+    <div className="min-h-screen bg-grid-light flex flex-col">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden flex-shrink-0">
         <div className="relative container mx-auto px-3 sm:px-4 py-8 md:py-20">
           <div className="text-center mb-6 md:mb-12">
-            <div className="flex items-center justify-center gap-3 sm:gap-5 mb-6 sm:mb-8">
-              <div className="relative flex-shrink-0">
-                <Globe className="h-12 w-12 sm:h-20 sm:w-20 md:h-24 md:w-24 text-primary" strokeWidth={1.5} />
-              </div>
-              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tight text-primary whitespace-nowrap">
-                域名查询
-              </h1>
-            </div>
-            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto tracking-wide leading-relaxed">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-primary mb-4 sm:mb-6">
+              域名查询
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto tracking-wide">
               DNS · RDAP+Whois · SSL · 映射
             </p>
           </div>
@@ -111,7 +105,7 @@ const Index = () => {
 
       {/* Results Section */}
       {domain && (
-        <div ref={resultsRef} className="container mx-auto px-2 sm:px-4 py-4 md:py-12 max-w-full overflow-hidden">
+        <div ref={resultsRef} className="container mx-auto px-2 sm:px-4 py-4 md:py-12 max-w-full overflow-hidden flex-1">
           <Tabs defaultValue="whois" className="w-full animate-fade-in">
             <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg">
               <TabsTrigger 
@@ -159,11 +153,14 @@ const Index = () => {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="mt-20">
-        <div className="container mx-auto px-4 py-8 text-center">
+      {/* Spacer to push footer down when no results */}
+      {!domain && <div className="flex-1" />}
+
+      {/* Fixed Footer */}
+      <footer className="mt-auto py-4 border-t border-border/30 bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 text-center">
           <p className="text-xs text-muted-foreground/60">
-            信息仅供参考，请勿以此为准。
+            © 2025 域名查询工具 · 信息仅供参考
           </p>
         </div>
       </footer>

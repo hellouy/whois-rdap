@@ -672,46 +672,43 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
           </div>
 
           {/* 2. 域名信息 */}
-          {(whoisData.domainName || whoisData.dnssec) && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="space-y-3">
-                  {(whoisData.domainName || domain) && (
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5">域名:</span>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-bold text-sm sm:text-base text-foreground break-all">
-                          {displayDomain}
-                        </span>
-                      </div>
-                      <Badge 
-                        variant={getDomainStatus().variant} 
-                        className="text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 flex-shrink-0"
-                      >
-                        {getDomainStatus().label}
-                      </Badge>
-                    </div>
-                  )}
-                  {whoisData.dnssec && (
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">DNSSEC:</span>
-                      <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec}</span>
-                      <div className="flex-1" />
-                      {getExtraStatusBadges().map((badge, index) => (
-                        <Badge 
-                          key={index}
-                          variant={badge.variant} 
-                          className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
-                        >
-                          {badge.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="space-y-3">
+              {/* 域名和状态标签 */}
+              <div className="flex items-start gap-2 sm:gap-3">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5">域名:</span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-bold text-sm sm:text-base text-foreground break-all">
+                    {displayDomain}
+                  </span>
                 </div>
+                <Badge 
+                  variant={getDomainStatus().variant} 
+                  className="text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 flex-shrink-0"
+                >
+                  {getDomainStatus().label}
+                </Badge>
               </div>
-            )}
+              
+              {/* DNSSEC和额外状态标签 */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">DNSSEC:</span>
+                <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec || "未启用"}</span>
+                <div className="flex-1" />
+                {getExtraStatusBadges().map((badge, index) => (
+                  <Badge 
+                    key={index}
+                    variant={badge.variant} 
+                    className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
+                  >
+                    {badge.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
