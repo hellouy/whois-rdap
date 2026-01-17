@@ -91,14 +91,14 @@ const Index = () => {
               域名查询
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto tracking-wide">
-              DNS · RDAP+Whois · SSL · 映射
+              改版升级中，不保证信息准确性。
             </p>
           </div>
 
           <QueryInput 
             onQuery={handleQuery} 
             isLoading={isQuerying}
-            placeholder="输入域名，如：ye.ye"
+            placeholder="输入域名，如：NIC.RW"
           />
         </div>
       </div>
@@ -160,7 +160,7 @@ const Index = () => {
       <footer className="mt-auto py-4 border-t border-border/30 bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center">
           <p className="text-xs text-muted-foreground/60">
-            © 2025 域名查询工具 · 信息仅供参考
+            © 2026 域名查询工具 · 信息仅供参考
           </p>
         </div>
       </footer>
