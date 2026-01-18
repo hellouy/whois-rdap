@@ -222,7 +222,7 @@ const navigationData: NavSection[] = [
     title: "Whois",
     icon: Search,
     items: [
-      { title: "whois.ls", description: "推荐Whois查询", url: "https://whois.ls" },
+      { title: "whois.nic.bn", description: "推荐Whois查询", url: "https://whois.ls" },
       { title: "tian.hu", description: "推荐Whois查询", url: "https://tian.hu" },
       { title: "who.cx", description: "推荐Whois查询", url: "https://who.cx" },
       { title: "rdapis.com", description: "推荐Whois查询", url: "https://rdapis.com" },
