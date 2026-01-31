@@ -113,7 +113,16 @@ const getCountryName = (countryCode: string): string => {
 };
 
 // 域名状态映射到中文 - 增强版
-const translateDomainStatus = (status: string): string => {
+const translateDomainStatus = (status: string | number | object): string => {
+  // 确保status是字符串
+  if (typeof status !== 'string') {
+    if (typeof status === 'number') return String(status);
+    if (typeof status === 'object' && status !== null) {
+      return (status as any).text || (status as any).desc || (status as any).value || JSON.stringify(status);
+    }
+    return '';
+  }
+  
   // 移除 IANA URL、多余空格和特殊字符
   const cleanStatus = status
     .replace(/\s*https?:\/\/[^\s]+/gi, '')
