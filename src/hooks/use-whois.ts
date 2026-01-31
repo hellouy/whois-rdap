@@ -211,19 +211,134 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 使用新的API，增加超时时间以支持特殊TLD（如.ge等）
-        const url = `https://whois.nic.bn/api/?domain=${encodeURIComponent(norm)}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 增加到20秒
+        // 获取TLD以确定使用哪个RDAP服务器
+        const parts = norm.split('.');
+        const tld = parts[parts.length - 1];
         
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
+        // 常用TLD的RDAP服务器映射
+        const rdapServers: Record<string, string> = {
+          'com': 'https://rdap.verisign.com/com/v1',
+          'net': 'https://rdap.verisign.com/net/v1',
+          'org': 'https://rdap.publicinterestregistry.org/rdap',
+          'io': 'https://rdap.nic.io',
+          'co': 'https://rdap.nic.co',
+          'me': 'https://rdap.nic.me',
+          'info': 'https://rdap.afilias.net/rdap/info',
+          'biz': 'https://rdap.nic.biz',
+          'dev': 'https://rdap.nic.google',
+          'app': 'https://rdap.nic.google',
+          'ai': 'https://rdap.nic.ai',
+          'cc': 'https://rdap.verisign.com/cc/v1',
+          'tv': 'https://rdap.verisign.com/tv/v1',
+          'name': 'https://rdap.verisign.com/name/v1',
+          'xyz': 'https://rdap.nic.xyz',
+          'online': 'https://rdap.centralnic.com/online',
+          'site': 'https://rdap.centralnic.com/site',
+          'store': 'https://rdap.centralnic.com/store',
+          'tech': 'https://rdap.centralnic.com/tech',
+          'cn': 'https://rdap.cnnic.cn',
+          'uk': 'https://rdap.nominet.uk/uk',
+          'de': 'https://rdap.denic.de',
+          'fr': 'https://rdap.nic.fr',
+          'eu': 'https://rdap.eurid.eu',
+          'nl': 'https://rdap.sidn.nl',
+          'be': 'https://rdap.dns.be',
+          'ch': 'https://rdap.nic.ch',
+          'at': 'https://rdap.nic.at',
+          'se': 'https://rdap.iis.se',
+          'no': 'https://rdap.norid.no',
+          'dk': 'https://rdap.dk-hostmaster.dk',
+          'fi': 'https://rdap.traficom.fi',
+          'pl': 'https://rdap.dns.pl',
+          'cz': 'https://rdap.nic.cz',
+          'ru': 'https://rdap.tcinet.ru',
+          'jp': 'https://rdap.jprs.jp',
+          'kr': 'https://rdap.kisa.or.kr',
+          'au': 'https://rdap.auda.org.au',
+          'nz': 'https://rdap.nzrs.nz',
+          'ca': 'https://rdap.ca.fury.ca',
+          'br': 'https://rdap.registro.br',
+          'mx': 'https://rdap.mx',
+          'in': 'https://rdap.registry.in',
+          'sg': 'https://rdap.sgnic.sg',
+          'hk': 'https://rdap.hkirc.hk',
+          'tw': 'https://rdap.twnic.net.tw',
+          'th': 'https://rdap.thnic.co.th',
+          'vn': 'https://rdap.vnnic.vn',
+          'id': 'https://rdap.pandi.id',
+          'my': 'https://rdap.mynic.my',
+          'ph': 'https://rdap.dot.ph',
+        };
         
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+        let result: any = null;
+        let lastError: string = "";
+        
+        // 构建API源列表
+        const apiSources: Array<{
+          name: string;
+          url: string;
+          parseResponse: (res: Response) => Promise<any>;
+        }> = [];
+        
+        // 1. 首先尝试TLD特定的RDAP服务器
+        if (rdapServers[tld]) {
+          apiSources.push({
+            name: `RDAP (${tld})`,
+            url: `${rdapServers[tld]}/domain/${encodeURIComponent(norm)}`,
+            parseResponse: async (res: Response) => {
+              const data = await res.json();
+              return { data: { rdapData: data }, source: `rdap-${tld}` };
+            }
+          });
         }
         
-        const result = await response.json();
+        // 2. 尝试通用RDAP引导（通过代理避免CORS）
+        apiSources.push({
+          name: "RDAP Bootstrap",
+          url: `https://rdap-bootstrap.arin.net/bootstrap/domain/${encodeURIComponent(norm)}`,
+          parseResponse: async (res: Response) => {
+            const data = await res.json();
+            return { data: { rdapData: data }, source: "rdap-bootstrap" };
+          }
+        });
+        
+        for (const source of apiSources) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const response = await fetch(source.url, { 
+              signal: controller.signal,
+              headers: { 'Accept': 'application/rdap+json, application/json' }
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              lastError = `${source.name}: HTTP ${response.status}`;
+              continue;
+            }
+            
+            // 检查响应类型是否为JSON
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json') && !contentType.includes('application/rdap+json')) {
+              lastError = `${source.name}: 非JSON响应`;
+              continue;
+            }
+            
+            result = await source.parseResponse(response);
+            console.log(`Whois查询成功: ${source.name}`);
+            break; // 成功获取数据，跳出循环
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "未知错误";
+            lastError = `${source.name}: ${msg}`;
+            console.warn(`API源 ${source.name} 查询失败:`, msg);
+            continue;
+          }
+        }
+        
+        if (!result) {
+          throw new Error(lastError || "暂不支持该域名后缀的Whois查询");
+        }
         
         if (!mounted.current) return;
         
