@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getTLDServers } from "@/utils/tld-servers";
+import { getRdapServer, getWhoisServer, WHOIS_SERVERS } from "@/utils/whois-servers";
 
 export interface WhoisData {
   domainName?: string;
@@ -45,18 +46,6 @@ const safeParseJson = (text: string): any | null => {
   return null;
 };
 
-const fetchText = async (url: string, timeoutMs = 6000): Promise<string> => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
-  } finally {
-    clearTimeout(id);
-  }
-};
-
 function parseRegistrar(entity?: AnyObj) {
   if (!entity) return { name: undefined, ianaId: undefined, abuseEmail: undefined, abusePhone: undefined };
   const v = (k: string) => entity?.vcardArray?.[1]?.find((x: any) => x?.[0] === k)?.[3];
@@ -79,28 +68,22 @@ function parseEntities(entities: AnyObj[] = []) {
     return entry?.[3];
   };
 
-  // 提取滥用联系信息
   const registrarAbuseEmail = v(abuseEntity, "email");
   const registrarAbusePhone = v(abuseEntity, "tel");
   
-  // 提取注册主体信息 - 增强对国别域名的支持
   let registrantOrg = v(registrantEntity, "org") || v(registrantEntity, "fn");
   
-  // 尝试从其他可能的字段提取组织名称
   if (!registrantOrg && registrantEntity) {
     registrantOrg = registrantEntity.org || registrantEntity.organization || registrantEntity.name;
   }
   
-  // 提取国家信息 - 增强多种格式支持
   let registrantCountry: string | undefined = v(registrantEntity, "country-name") || v(registrantEntity, "country-code");
   
-  // 从adr结构化地址中提取国家
   const adr = registrantEntity?.vcardArray?.[1]?.find((x: any) => x?.[0] === "adr")?.[3];
   if (!registrantCountry && Array.isArray(adr) && adr.length >= 7) {
-    registrantCountry = adr[6]; // 国家通常在第7个位置
+    registrantCountry = adr[6];
   }
   
-  // 从实体对象直接字段提取国家
   if (!registrantCountry && registrantEntity) {
     registrantCountry = registrantEntity.country || registrantEntity.countryCode || registrantEntity.cc;
   }
@@ -132,13 +115,24 @@ function parseEvents(events: AnyObj[] = []) {
 }
 
 function formatDate(s?: string) {
-  return s ? new Date(s).toLocaleDateString("zh-CN") : undefined;
+  if (!s) return undefined;
+  // 处理多种日期格式
+  const dateStr = String(s).trim();
+  
+  // 尝试解析 DD.MM.YYYY 格式
+  const dotMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (dotMatch) {
+    const [, day, month, year] = dotMatch;
+    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`).toLocaleDateString("zh-CN");
+  }
+  
+  // 标准ISO格式
+  return new Date(dateStr).toLocaleDateString("zh-CN");
 }
 
 function parseRdap(obj: AnyObj): WhoisData {
   const domainName = obj.ldhName || obj.unicodeName || obj.domain || obj.domainName;
   
-  // 增强NS解析，支持多种格式
   let ns: string[] = [];
   if (Array.isArray(obj.nameservers)) {
     ns = obj.nameservers
@@ -150,7 +144,6 @@ function parseRdap(obj: AnyObj): WhoisData {
       .filter(Boolean);
   }
   
-  // 状态解析，支持多种格式
   let status: string[] = [];
   if (Array.isArray(obj.status)) {
     status = obj.status.map((s: any) => typeof s === 'string' ? s : (s.status || s.text || s.value)).filter(Boolean);
@@ -158,7 +151,6 @@ function parseRdap(obj: AnyObj): WhoisData {
     status = [String(obj.status)];
   }
   
-  // DNSSEC状态
   const dnssec = obj.secureDNS?.delegationSigned ? "已启用" : 
                  obj.secureDNS ? "未启用" : 
                  obj.dnssec ? (obj.dnssec === true || obj.dnssec === "signed" ? "已启用" : "未启用") :
@@ -182,6 +174,135 @@ function parseRdap(obj: AnyObj): WhoisData {
     status,
     dnssec,
   };
+}
+
+// 解析原始Whois文本
+function parseWhoisText(text: string, domain: string): WhoisData {
+  const lines = text.split(/\r?\n/);
+  const data: WhoisData = { domainName: domain };
+  
+  const getValue = (patterns: RegExp[]): string | undefined => {
+    for (const pattern of patterns) {
+      for (const line of lines) {
+        const match = line.match(pattern);
+        if (match && match[1]?.trim()) {
+          return match[1].trim();
+        }
+      }
+    }
+    return undefined;
+  };
+  
+  const getValues = (patterns: RegExp[]): string[] => {
+    const results: string[] = [];
+    for (const pattern of patterns) {
+      for (const line of lines) {
+        const match = line.match(pattern);
+        if (match && match[1]?.trim()) {
+          results.push(match[1].trim());
+        }
+      }
+    }
+    return [...new Set(results)];
+  };
+  
+  // 域名
+  data.domainName = getValue([
+    /Domain Name:\s*(.+)/i,
+    /domain:\s*(.+)/i,
+  ]) || domain;
+  
+  // 注册商
+  data.registrar = getValue([
+    /Registrar:\s*(.+)/i,
+    /Registrar Name:\s*(.+)/i,
+    /registrar:\s*(.+)/i,
+    /Sponsoring Registrar:\s*(.+)/i,
+  ]);
+  
+  // 注册商IANA ID
+  data.registrarIanaId = getValue([
+    /Registrar IANA ID:\s*(.+)/i,
+  ]);
+  
+  // 滥用联系
+  data.registrarAbuseEmail = getValue([
+    /Registrar Abuse Contact Email:\s*(.+)/i,
+    /abuse.*email:\s*(.+)/i,
+  ]);
+  
+  data.registrarAbusePhone = getValue([
+    /Registrar Abuse Contact Phone:\s*(.+)/i,
+    /abuse.*phone:\s*(.+)/i,
+  ]);
+  
+  // 日期
+  data.creationDate = formatDate(getValue([
+    /Creation Date:\s*(.+)/i,
+    /Created Date:\s*(.+)/i,
+    /created:\s*(.+)/i,
+    /registered:\s*(.+)/i,
+    /Registration Date:\s*(.+)/i,
+    /Created On:\s*(.+)/i,
+  ]));
+  
+  data.expirationDate = formatDate(getValue([
+    /Expir(?:y|ation) Date:\s*(.+)/i,
+    /expire:\s*(.+)/i,
+    /Expiration:\s*(.+)/i,
+    /Registry Expiry Date:\s*(.+)/i,
+    /paid-till:\s*(.+)/i,
+  ]));
+  
+  data.updatedDate = formatDate(getValue([
+    /Updated Date:\s*(.+)/i,
+    /changed:\s*(.+)/i,
+    /Last Updated:\s*(.+)/i,
+    /Last Modified:\s*(.+)/i,
+  ]));
+  
+  // NS
+  data.nameServers = getValues([
+    /Name Server:\s*(.+)/i,
+    /nserver:\s*(.+)/i,
+    /Nameserver:\s*(.+)/i,
+    /NS:\s*([^\s]+)/i,
+  ]).map(ns => ns.toLowerCase());
+  
+  // 状态
+  data.status = getValues([
+    /Domain Status:\s*(.+)/i,
+    /Status:\s*(.+)/i,
+    /state:\s*(.+)/i,
+  ]);
+  
+  // 注册人
+  data.registrantOrg = getValue([
+    /Registrant Organization:\s*(.+)/i,
+    /Registrant:\s*(.+)/i,
+    /org:\s*(.+)/i,
+    /Organization:\s*(.+)/i,
+    /registrant:\s*(.+)/i,
+  ]);
+  
+  data.registrantCountry = getValue([
+    /Registrant Country:\s*(.+)/i,
+    /Country:\s*(.+)/i,
+  ]);
+  
+  // DNSSEC
+  const dnssecValue = getValue([
+    /DNSSEC:\s*(.+)/i,
+    /dnssec:\s*(.+)/i,
+  ]);
+  if (dnssecValue) {
+    data.dnssec = /sign|true|yes|active/i.test(dnssecValue) ? "已启用" : "未启用";
+  }
+  
+  data.raw = text;
+  data.registered = true;
+  
+  return data;
 }
 
 export function useWhois(domain: string) {
@@ -211,367 +332,242 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 获取TLD以确定使用哪个RDAP服务器
         const parts = norm.split('.');
         const tld = parts[parts.length - 1];
         
-        // 常用TLD的RDAP服务器映射（支持CORS）
-        const rdapServers: Record<string, string> = {
-          'com': 'https://rdap.verisign.com/com/v1',
-          'net': 'https://rdap.verisign.com/net/v1',
-          'org': 'https://rdap.publicinterestregistry.org/rdap',
-          'io': 'https://rdap.nic.io',
-          'co': 'https://rdap.nic.co',
-          'me': 'https://rdap.nic.me',
-          'info': 'https://rdap.afilias.net/rdap/info',
-          'biz': 'https://rdap.nic.biz',
-          'dev': 'https://rdap.nic.google',
-          'app': 'https://rdap.nic.google',
-          'ai': 'https://rdap.nic.ai',
-          'cc': 'https://rdap.verisign.com/cc/v1',
-          'tv': 'https://rdap.verisign.com/tv/v1',
-          'name': 'https://rdap.verisign.com/name/v1',
-          'xyz': 'https://rdap.nic.xyz',
-          'online': 'https://rdap.centralnic.com/online',
-          'site': 'https://rdap.centralnic.com/site',
-          'store': 'https://rdap.centralnic.com/store',
-          'tech': 'https://rdap.centralnic.com/tech',
-          'top': 'https://rdap.nic.top',
-          'icu': 'https://rdap.nic.icu',
-          'club': 'https://rdap.nic.club',
-          'shop': 'https://rdap.nic.shop',
-          'vip': 'https://rdap.nic.vip',
-          'live': 'https://rdap.donuts.co/rdap',
-          'blog': 'https://rdap.nic.blog',
-          'cloud': 'https://rdap.donuts.co/rdap',
-          'pro': 'https://rdap.afilias.net/rdap/pro',
-          'link': 'https://rdap.uniregistry.net/rdap',
-          'click': 'https://rdap.uniregistry.net/rdap',
-          'uk': 'https://rdap.nominet.uk/uk',
-          'de': 'https://rdap.denic.de',
-          'fr': 'https://rdap.nic.fr',
-          'eu': 'https://rdap.eurid.eu',
-          'nl': 'https://rdap.sidn.nl',
-          'be': 'https://rdap.dns.be',
-          'ch': 'https://rdap.nic.ch',
-          'at': 'https://rdap.nic.at',
-          'se': 'https://rdap.iis.se',
-          'no': 'https://rdap.norid.no',
-          'dk': 'https://rdap.dk-hostmaster.dk',
-          'fi': 'https://rdap.traficom.fi',
-          'pl': 'https://rdap.dns.pl',
-          'cz': 'https://rdap.nic.cz',
-          'ru': 'https://rdap.tcinet.ru',
-          'jp': 'https://rdap.jprs.jp',
-          'kr': 'https://rdap.kisa.or.kr',
-          'au': 'https://rdap.auda.org.au',
-          'nz': 'https://rdap.nzrs.nz',
-          'ca': 'https://rdap.ca.fury.ca',
-          'br': 'https://rdap.registro.br',
-          'mx': 'https://rdap.mx',
-          'in': 'https://rdap.registry.in',
-          'sg': 'https://rdap.sgnic.sg',
-          'hk': 'https://rdap.hkirc.hk',
-          'tw': 'https://rdap.twnic.net.tw',
-          'th': 'https://rdap.thnic.co.th',
-          'vn': 'https://rdap.vnnic.vn',
-          'id': 'https://rdap.pandi.id',
-          'my': 'https://rdap.mynic.my',
-          'ph': 'https://rdap.dot.ph',
-          'cn': 'https://rdap.cnnic.cn',
-        };
+        let result: WhoisData | null = null;
+        let lastError = "";
         
-        let result: any = null;
-        let lastError: string = "";
-        
-        // 构建API源列表
-        const apiSources: Array<{
-          name: string;
-          url: string;
-          parseResponse: (res: Response) => Promise<any>;
-        }> = [];
-        
-        // 1. 首先尝试TLD特定的RDAP服务器
-        if (rdapServers[tld]) {
-          apiSources.push({
-            name: `RDAP (${tld})`,
-            url: `${rdapServers[tld]}/domain/${encodeURIComponent(norm)}`,
-            parseResponse: async (res: Response) => {
-              const data = await res.json();
-              return { data: { rdapData: data }, source: `rdap-${tld}` };
-            }
-          });
-        }
-        
-        // 2. 使用 who.cx API作为备用（支持whois查询）
-        apiSources.push({
-          name: "who.cx",
-          url: `https://api.who.cx/api/whois/${encodeURIComponent(norm)}`,
-          parseResponse: async (res: Response) => {
-            const data = await res.json();
-            // who.cx 返回格式可能不同，需要转换
-            return { data: data, source: "who.cx" };
-          }
-        });
-        
-        // 3. 使用 tian.hu whois API作为备用
-        apiSources.push({
-          name: "tian.hu",
-          url: `https://api.tian.hu/whois/${encodeURIComponent(norm)}`,
-          parseResponse: async (res: Response) => {
-            const data = await res.json();
-            return { data: data?.data || data, source: "tian.hu" };
-          }
-        });
-        
-        // 4. 使用 rdap.org 作为最后备用（通过代理避免CORS）
-        apiSources.push({
-          name: "rdap.org",
-          url: `https://r.jina.ai/https://rdap.org/domain/${encodeURIComponent(norm)}`,
-          parseResponse: async (res: Response) => {
-            const text = await res.text();
-            // jina.ai 返回的是markdown格式，需要提取JSON
-            const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-            if (jsonMatch) {
-              const data = JSON.parse(jsonMatch[1]);
-              return { data: { rdapData: data }, source: "rdap.org" };
-            }
-            // 尝试直接解析
-            const parsed = safeParseJson(text);
-            if (parsed) {
-              return { data: { rdapData: parsed }, source: "rdap.org" };
-            }
-            throw new Error("无法解析响应");
-          }
-        });
-        
-        for (const source of apiSources) {
+        // === 1. 优先尝试RDAP查询 ===
+        const rdapServer = getRdapServer(norm);
+        if (rdapServer) {
           try {
+            console.log(`[WHOIS] 尝试RDAP: ${rdapServer}/domain/${norm}`);
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000);
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
             
-            const response = await fetch(source.url, { 
+            const response = await fetch(`${rdapServer}/domain/${encodeURIComponent(norm)}`, {
               signal: controller.signal,
-              headers: { 'Accept': 'application/rdap+json, application/json, text/plain' }
+              headers: { 'Accept': 'application/rdap+json, application/json' }
             });
             clearTimeout(timeoutId);
             
-            if (!response.ok) {
-              lastError = `${source.name}: HTTP ${response.status}`;
-              console.warn(`API源 ${source.name} 返回错误:`, response.status);
-              continue;
+            if (response.ok) {
+              const rdapData = await response.json();
+              result = parseRdap(rdapData);
+              result.raw = JSON.stringify(rdapData, null, 2);
+              console.log(`[WHOIS] RDAP查询成功`);
+            } else {
+              lastError = `RDAP: HTTP ${response.status}`;
+              console.warn(`[WHOIS] RDAP失败: ${response.status}`);
             }
-            
-            result = await source.parseResponse(response);
-            console.log(`Whois查询成功: ${source.name}`);
-            break; // 成功获取数据，跳出循环
           } catch (err) {
             const msg = err instanceof Error ? err.message : "未知错误";
-            lastError = `${source.name}: ${msg}`;
-            console.warn(`API源 ${source.name} 查询失败:`, msg);
-            continue;
+            lastError = `RDAP: ${msg}`;
+            console.warn(`[WHOIS] RDAP异常: ${msg}`);
           }
         }
         
+        // === 2. RDAP失败，使用本地WHOIS服务器通过代理查询 ===
         if (!result) {
-          throw new Error(lastError || "暂不支持该域名后缀的Whois查询");
+          const whoisServer = getWhoisServer(norm);
+          if (whoisServer) {
+            try {
+              console.log(`[WHOIS] 尝试WHOIS代理: ${whoisServer} -> ${norm}`);
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 15000);
+              
+              // 使用 jina.ai 代理访问 whois 查询服务
+              // 方案1: 使用 who.is 网页版
+              const proxyUrl = `https://r.jina.ai/https://www.who.is/whois/${encodeURIComponent(norm)}`;
+              
+              const response = await fetch(proxyUrl, {
+                signal: controller.signal,
+                headers: { 'Accept': 'text/plain' }
+              });
+              clearTimeout(timeoutId);
+              
+              if (response.ok) {
+                const text = await response.text();
+                // 从网页内容中提取whois信息
+                const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i) 
+                  || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
+                  || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
+                
+                if (rawWhoisMatch) {
+                  result = parseWhoisText(rawWhoisMatch[1] || text, norm);
+                  console.log(`[WHOIS] WHOIS代理查询成功 (who.is)`);
+                } else {
+                  // 尝试直接解析
+                  result = parseWhoisText(text, norm);
+                  console.log(`[WHOIS] WHOIS代理解析完成`);
+                }
+              } else {
+                lastError = `WHOIS代理: HTTP ${response.status}`;
+              }
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : "未知错误";
+              lastError = `WHOIS代理: ${msg}`;
+              console.warn(`[WHOIS] WHOIS代理异常: ${msg}`);
+            }
+          }
+        }
+        
+        // === 3. 使用 whois.vu 查询服务 ===
+        if (!result) {
+          try {
+            console.log(`[WHOIS] 尝试 whois.vu 查询`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const response = await fetch(`https://r.jina.ai/https://whois.vu/?q=${encodeURIComponent(norm)}&submit=`, {
+              signal: controller.signal,
+              headers: { 'Accept': 'text/plain' }
+            });
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const text = await response.text();
+              // 提取whois数据
+              const whoisSection = text.match(/```[\s\S]*?(Domain Name|domain:)[\s\S]*?```/i);
+              if (whoisSection) {
+                result = parseWhoisText(whoisSection[0], norm);
+                console.log(`[WHOIS] whois.vu 查询成功`);
+              }
+            }
+          } catch (err) {
+            console.warn(`[WHOIS] whois.vu 异常:`, err);
+          }
+        }
+        
+        // === 4. 最后尝试 rdap.org ===
+        if (!result) {
+          try {
+            console.log(`[WHOIS] 尝试 rdap.org`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const response = await fetch(`https://r.jina.ai/https://rdap.org/domain/${encodeURIComponent(norm)}`, {
+              signal: controller.signal,
+              headers: { 'Accept': 'text/plain' }
+            });
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const text = await response.text();
+              const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+              if (jsonMatch) {
+                const rdapData = JSON.parse(jsonMatch[1]);
+                result = parseRdap(rdapData);
+                result.raw = JSON.stringify(rdapData, null, 2);
+                console.log(`[WHOIS] rdap.org 查询成功`);
+              } else {
+                const parsed = safeParseJson(text);
+                if (parsed) {
+                  result = parseRdap(parsed);
+                  result.raw = JSON.stringify(parsed, null, 2);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn(`[WHOIS] rdap.org 异常:`, err);
+          }
+        }
+        
+        // === 5. 最终兜底：使用 tian.hu API (仅解析已有数据) ===
+        if (!result) {
+          try {
+            console.log(`[WHOIS] 尝试 tian.hu API`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
+            
+            const response = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
+              signal: controller.signal,
+              headers: { 'Accept': 'application/json' }
+            });
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.code === 200 && data.data) {
+                const payload = data.data;
+                const formatted = payload.formatted;
+                
+                // 从tian.hu格式解析
+                let ns: string[] = [];
+                let creationDate: string | undefined;
+                let expirationDate: string | undefined;
+                let status: string[] = [];
+                
+                if (formatted?.domain) {
+                  ns = formatted.domain.name_servers || [];
+                  status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
+                  creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
+                  expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
+                }
+                
+                // 从原始whois文本提取NS
+                if (ns.length === 0 && payload.result) {
+                  const nsMatches = payload.result.match(/nserver:\s*([^\s<\r\n]+)/gi) || [];
+                  ns = nsMatches.map((m: string) => {
+                    const parts = m.split(/:\s*/);
+                    return parts[1]?.trim();
+                  }).filter(Boolean);
+                }
+                
+                result = {
+                  domainName: payload.domain || norm,
+                  registrar: formatted?.registrar?.registrar_name,
+                  registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
+                  registrantCountry: formatted?.registrant?.registrant_street?.split(',').pop()?.trim(),
+                  creationDate,
+                  expirationDate,
+                  nameServers: ns,
+                  status,
+                  registered: payload.status === 1,
+                  raw: payload.result,
+                };
+                console.log(`[WHOIS] tian.hu API 查询成功`);
+              } else {
+                lastError = `tian.hu: ${data.message || '查询失败'}`;
+              }
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "未知错误";
+            lastError = `tian.hu: ${msg}`;
+            console.warn(`[WHOIS] tian.hu 异常:`, msg);
+          }
         }
         
         if (!mounted.current) return;
         
-        // 解析API返回数据
-        const payload: AnyObj = result?.data ?? result ?? {};
-        
-        // 检测是否为 tian.hu API 格式
-        const isTianHuFormat = payload.formatted && payload.formatted.domain;
-        
-        // 尝试从 RDAP 解析结构化信息
-        const rdapObj = typeof payload.rdapData === "string" ? safeParseJson(payload.rdapData) : payload.rdapData;
-        const fromRdap = rdapObj ? parseRdap(rdapObj) : ({} as WhoisData);
-        
-        // 从 tian.hu 格式解析
-        let ns: string[] = [];
-        let registrar: string | undefined;
-        let registrantOrg: string | undefined;
-        let registrantCountry: string | undefined;
-        let creationDate: string | undefined;
-        let expirationDate: string | undefined;
-        let updatedDate: string | undefined;
-        let domainStatus: string[] = [];
-        
-        if (isTianHuFormat) {
-          const formatted = payload.formatted;
-          const domain = formatted.domain;
-          
-          // 解析NS
-          ns = domain.name_servers || [];
-          
-          // 解析状态
-          domainStatus = Array.isArray(domain.status) ? domain.status : [];
-          
-          // 解析日期
-          creationDate = formatDate(domain.created_date || domain.created_date_utc);
-          expirationDate = formatDate(domain.expired_date || domain.expired_date_utc);
-          updatedDate = formatDate(domain.updated_date || domain.updated_date_utc);
-          
-          // 解析注册商
-          registrar = formatted.registrar?.registrar_name;
-          
-          // 解析注册人信息
-          registrantOrg = formatted.registrant?.name || formatted.registrant?.organization;
-          registrantCountry = formatted.registrant?.country;
-          
-          // 从原始whois文本中提取更多信息
-          if (payload.result && typeof payload.result === 'string') {
-            const whoisText = payload.result;
-            
-            // 提取NS
-            if (ns.length === 0) {
-              const nsMatches = whoisText.match(/Name Servers?:\s*\n?\s*([A-Z0-9.-]+)/gi) || [];
-              ns = nsMatches.map((m: string) => {
-                const parts = m.split(/:\s*\n?\s*/);
-                return parts[1]?.trim();
-              }).filter(Boolean);
-              
-              // 尝试另一种格式
-              if (ns.length === 0) {
-                const nsLines = whoisText.match(/(?:THUNDER|BALSAM|NS\d*)\.[A-Z0-9.-]+/gi) || [];
-                ns = nsLines.map((s: string) => s.trim()).filter(Boolean);
-              }
-            }
-          }
-        } else {
-          // 标准格式解析
-          ns = fromRdap.nameServers || payload.nameServers || payload.name_servers || payload.nameservers || [];
-          registrar = fromRdap.registrar || payload.registrar || payload.registrar_name;
-          registrantOrg = fromRdap.registrantOrg;
-          registrantCountry = fromRdap.registrantCountry;
+        if (!result) {
+          const whoisServer = WHOIS_SERVERS[tld];
+          const supportMsg = whoisServer 
+            ? `该后缀的WHOIS服务器(${whoisServer})暂时无法访问`
+            : `暂不支持该域名后缀(.${tld})的查询`;
+          throw new Error(lastError || supportMsg);
         }
         
-        // 如果RDAP没有提取到NS，从whois文本中提取
-        if ((!ns || ns.length === 0) && typeof payload.whoisData === "string") {
-          const whoisText = payload.whoisData;
-          
-          // 提取NS - 支持多种格式
-          const nsPatterns = [
-            /Name Server:\s*([^\r\n]+)/gi,
-            /nserver:\s*([^\r\n]+)/gi,
-            /Nameserver:\s*([^\r\n]+)/gi,
-            /NS:\s*([^\r\n]+)/gi,
-            /Name Servers:\s*([^\r\n]+)/gi,
-          ];
-          
-          for (const pattern of nsPatterns) {
-            const matches = whoisText.match(pattern) || [];
-            if (matches.length > 0) {
-              ns = matches.map((m: string) => m.split(/[:：]/)[1]?.trim()).filter(Boolean);
-              break;
-            }
-          }
-          
-          // 提取注册商 - 支持多种格式
-          if (!registrar) {
-            const registrarPatterns = [
-              /Registrar:\s*([^\r\n]+)/i,
-              /Registrar Name:\s*([^\r\n]+)/i,
-              /注册商:\s*([^\r\n]+)/i,
-            ];
-            for (const pattern of registrarPatterns) {
-              const match = whoisText.match(pattern);
-              if (match && match[1]) {
-                registrar = match[1].trim();
-                break;
-              }
-            }
-          }
-          
-          // 提取注册主体 - 支持多种格式
-          if (!registrantOrg) {
-            const orgPatterns = [
-              /Registrant Organization:\s*([^\r\n]+)/i,
-              /Registrant:\s*([^\r\n]+)/i,
-              /Organization:\s*([^\r\n]+)/i,
-              /注册人:\s*([^\r\n]+)/i,
-              /注册组织:\s*([^\r\n]+)/i,
-            ];
-            for (const pattern of orgPatterns) {
-              const match = whoisText.match(pattern);
-              if (match && match[1] && match[1].trim() !== 'REDACTED FOR PRIVACY') {
-                registrantOrg = match[1].trim();
-                break;
-              }
-            }
-          }
-          
-          // 提取国家 - 支持多种格式
-          if (!registrantCountry) {
-            const countryPatterns = [
-              /Registrant Country:\s*([^\r\n]+)/i,
-              /Country:\s*([^\r\n]+)/i,
-              /国家:\s*([^\r\n]+)/i,
-              /国家\/地区:\s*([^\r\n]+)/i,
-            ];
-            for (const pattern of countryPatterns) {
-              const match = whoisText.match(pattern);
-              if (match && match[1]) {
-                registrantCountry = match[1].trim();
-                break;
-              }
-            }
-          }
-        }
-        
-        // 兼容 status 为对象数组或字符串数组
-        let status: string[] = [];
-        if (isTianHuFormat && domainStatus.length > 0) {
-          status = domainStatus;
-        } else if (Array.isArray(fromRdap.status) && fromRdap.status.length > 0) {
-          status = fromRdap.status;
-        } else if (Array.isArray(payload.status) && typeof payload.status[0] !== 'number') {
-          status = typeof payload.status[0] === "string" 
-            ? payload.status 
-            : (payload.status as AnyObj[]).map((s: AnyObj) => s.text || s.status || s.value || s.desc).filter(Boolean);
-        }
-        
-        // 从IANA获取TLD权威服务器
+        // 添加TLD权威服务器信息
         const tldServers = getTLDServers(norm);
+        result.tldServers = tldServers || undefined;
         
-        const whoisData: WhoisData = {
-          domainName: fromRdap.domainName || payload.domain || payload.domain_name || payload.domainName || norm,
-          registrar: registrar,
-          registrarIanaId: fromRdap.registrarIanaId || payload.registrarIanaId || payload.registrar_iana_id || payload.registrar_id,
-          registrarAbuseEmail: fromRdap.registrarAbuseEmail || payload.registrar_abuse_contact_email || payload.abuse_email,
-          registrarAbusePhone: fromRdap.registrarAbusePhone || payload.registrar_abuse_contact_phone || payload.abuse_phone,
-          registrantOrg: registrantOrg,
-          registrantCountry: registrantCountry,
-          creationDate: isTianHuFormat ? creationDate : (fromRdap.creationDate || formatDate(payload.creationDateISO8601 || payload.creationDate || payload.created_date || payload.creation_date)),
-          expirationDate: isTianHuFormat ? expirationDate : (fromRdap.expirationDate || formatDate(payload.expirationDateISO8601 || payload.expirationDate || payload.expiry_date || payload.expiration_date)),
-          updatedDate: isTianHuFormat ? updatedDate : (fromRdap.updatedDate || formatDate(payload.updatedDateISO8601 || payload.updatedDate || payload.last_updated || payload.updated_date)),
-          nameServers: ns,
-          tldServers: tldServers || undefined,
-          status,
-          dnssec: fromRdap.dnssec || payload.dnssec,
-          registered: isTianHuFormat ? (payload.status === 1) : payload.registered,
-          raw: payload.result || payload.whoisData || payload.raw || JSON.stringify(payload, null, 2),
-        };
-        
-        setData(whoisData);
+        setData(result);
         setIsLoading(false);
       } catch (err) {
         if (!mounted.current) return;
         const msg = err instanceof Error ? err.message : "查询失败";
-        // 针对特殊TLD提供更友好的错误提示
         const errorMessage = msg.includes("abort") || msg.includes("timeout")
-          ? "查询超时，该域名后缀可能响应较慢或暂不支持"
+          ? "查询超时，请稍后重试"
           : msg;
         setError(errorMessage);
         setIsLoading(false);
-        console.error("Whois查询错误:", msg);
+        console.error("[WHOIS] 查询错误:", msg);
       }
     };
 
     run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain]);
 
   return { whois: data, isLoading, error };
