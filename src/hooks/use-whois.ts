@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { getTLDServers } from "@/utils/tld-servers";
-import { getRdapServer, getWhoisServer, WHOIS_SERVERS } from "@/utils/whois-servers";
+import { getTLDServers, toASCII, isIDN } from "@/utils/tld-servers";
+import { getRdapServer, getWhoisServer, WHOIS_SERVERS, getSupportedTldCount } from "@/utils/whois-servers";
 
 export interface WhoisData {
   domainName?: string;
@@ -320,8 +320,8 @@ export function useWhois(domain: string) {
 
   useEffect(() => {
     const run = async () => {
-      const norm = domain.trim().toLowerCase();
-      if (!norm) {
+      const rawDomain = domain.trim().toLowerCase();
+      if (!rawDomain) {
         setData(null);
         setIsLoading(false);
         setError(null);
@@ -332,6 +332,13 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
+        // 将IDN域名转换为Punycode进行查询
+        const norm = toASCII(rawDomain);
+        const isIdnDomain = isIDN(rawDomain);
+        
+        console.log(`[WHOIS] 查询域名: ${rawDomain}${isIdnDomain ? ` (Punycode: ${norm})` : ''}`);
+        console.log(`[WHOIS] 支持 ${getSupportedTldCount()}+ TLDs`);
+        
         const parts = norm.split('.');
         const tld = parts[parts.length - 1];
         
@@ -552,6 +559,11 @@ export function useWhois(domain: string) {
         // 添加TLD权威服务器信息
         const tldServers = getTLDServers(norm);
         result.tldServers = tldServers || undefined;
+        
+        // 对于IDN域名，保留原始Unicode域名用于显示
+        if (isIdnDomain && result.domainName === norm) {
+          result.domainName = rawDomain;
+        }
         
         setData(result);
         setIsLoading(false);
