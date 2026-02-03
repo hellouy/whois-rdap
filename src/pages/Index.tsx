@@ -11,6 +11,9 @@ const Index = () => {
   const [domain, setDomain] = useState("");
   const [displayDomain, setDisplayDomain] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
+  const [activeTab, setActiveTab] = useState("whois");
+  // 记录哪些 Tab 已经被访问过（用于懒加载）
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(["whois"]));
   const resultsRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<number | null>(null);
   const userInteractedRef = useRef(false);
@@ -20,6 +23,9 @@ const Index = () => {
     setDomain(queryDomain);
     setDisplayDomain(originalDomain);
     userInteractedRef.current = false;
+    // 重置为 whois Tab，并清空已访问记录
+    setActiveTab("whois");
+    setVisitedTabs(new Set(["whois"]));
     
     setTimeout(() => {
       setIsQuerying(false);
@@ -59,6 +65,12 @@ const Index = () => {
     }, 500);
   };
 
+  // 处理 Tab 切换，记录已访问的 Tab
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setVisitedTabs(prev => new Set(prev).add(value));
+  };
+
   useEffect(() => {
     const stopAutoScroll = () => {
       userInteractedRef.current = true;
@@ -80,6 +92,9 @@ const Index = () => {
       }
     };
   }, []);
+
+  // 判断某个 Tab 是否应该渲染内容
+  const shouldRenderTab = (tabName: string) => visitedTabs.has(tabName);
 
   return (
     <div className="min-h-screen bg-grid-light flex flex-col">
@@ -106,7 +121,7 @@ const Index = () => {
       {/* Results Section */}
       {domain && (
         <div ref={resultsRef} className="container mx-auto px-2 sm:px-4 py-4 md:py-12 max-w-full overflow-hidden flex-1">
-          <Tabs defaultValue="whois" className="w-full animate-fade-in">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full animate-fade-in">
             <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg">
               <TabsTrigger 
                 value="whois" 
@@ -134,21 +149,53 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="whois" className="mt-0 transition-opacity duration-500" forceMount>
+            {/* WHOIS 始终渲染（首次加载） */}
+            <TabsContent 
+              value="whois" 
+              className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden" 
+              forceMount
+            >
               <WhoisQuery domain={domain} displayDomain={displayDomain} />
             </TabsContent>
 
-            <TabsContent value="dns" className="mt-0 transition-opacity duration-500" forceMount>
-              <DnsQuery domain={domain} displayDomain={displayDomain} />
-            </TabsContent>
+            {/* DNS - 点击后才渲染，渲染后保持 */}
+            {shouldRenderTab("dns") ? (
+              <TabsContent 
+                value="dns" 
+                className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
+                forceMount
+              >
+                <DnsQuery domain={domain} displayDomain={displayDomain} />
+              </TabsContent>
+            ) : (
+              <TabsContent value="dns" className="mt-0" />
+            )}
 
-            <TabsContent value="map" className="mt-0 transition-opacity duration-500" forceMount>
-              <DnsMap domain={domain} displayDomain={displayDomain} />
-            </TabsContent>
+            {/* 映射 - 点击后才渲染，渲染后保持 */}
+            {shouldRenderTab("map") ? (
+              <TabsContent 
+                value="map" 
+                className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
+                forceMount
+              >
+                <DnsMap domain={domain} displayDomain={displayDomain} />
+              </TabsContent>
+            ) : (
+              <TabsContent value="map" className="mt-0" />
+            )}
 
-            <TabsContent value="ssl" className="mt-0 transition-opacity duration-500" forceMount>
-              <SslCertQuery domain={domain} displayDomain={displayDomain} />
-            </TabsContent>
+            {/* SSL - 点击后才渲染，渲染后保持 */}
+            {shouldRenderTab("ssl") ? (
+              <TabsContent 
+                value="ssl" 
+                className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
+                forceMount
+              >
+                <SslCertQuery domain={domain} displayDomain={displayDomain} />
+              </TabsContent>
+            ) : (
+              <TabsContent value="ssl" className="mt-0" />
+            )}
           </Tabs>
         </div>
       )}
