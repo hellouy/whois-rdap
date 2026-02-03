@@ -394,14 +394,23 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
     
     // 5. registered === true 但没有创建日期（可能是特殊状态）
     if (whoisData.registered === true) {
-      // 如果有状态信息，显示为已注册
-      if (whoisData.status && whoisData.status.length > 0) {
-        return { label: "已注册", variant: "default" };
-      }
+      // ccTLD 很常见：不返回 creationDate/registrar/status，但会给 nameserver / dnssec 等；
+      // 这里统一兜底为“已注册”，避免大量显示“状态未知”。
+      return { label: "已注册", variant: "default" };
     }
     
     // 6. 如果有注册商信息，大概率是已注册
     if (whoisData.registrar) {
+      return { label: "已注册", variant: "default" };
+    }
+
+    // 6.1 如果存在 NS，也可视为已注册（很多 ccTLD 仅返回 NS）
+    if (whoisData.nameServers && whoisData.nameServers.length > 0) {
+      return { label: "已注册", variant: "default" };
+    }
+
+    // 6.2 RDAP 结果可能只有 DNSSEC/少量字段，若有 raw 或 dnssec 信息，也倾向于已注册
+    if (whoisData.dnssec || (whoisData.raw && whoisData.raw.length > 50)) {
       return { label: "已注册", variant: "default" };
     }
     

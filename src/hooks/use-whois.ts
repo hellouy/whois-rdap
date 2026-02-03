@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getTLDServers, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer, WHOIS_SERVERS, getSupportedTldCount } from "@/utils/whois-servers";
+import { looksLikeNotFoundWhois } from "@/utils/whois-heuristics";
 
 export interface WhoisData {
   domainName?: string;
@@ -161,6 +162,8 @@ function parseRdap(obj: AnyObj): WhoisData {
 
   return {
     domainName,
+    // RDAP 200 响应本身就表示该对象存在（即已注册），即便部分 ccTLD 不返回创建时间/注册商等字段。
+    registered: true,
     registrar: ent.registrar,
     registrarIanaId: ent.registrarIanaId,
     registrarAbuseEmail: ent.registrarAbuseEmail,
@@ -179,6 +182,16 @@ function parseRdap(obj: AnyObj): WhoisData {
 // 解析原始Whois文本
 function parseWhoisText(text: string, domain: string): WhoisData {
   const lines = text.split(/\r?\n/);
+  // 先判断是否明确“未注册/无数据”
+  if (looksLikeNotFoundWhois(text)) {
+    return {
+      domainName: domain,
+      registered: false,
+      status: ["available"],
+      raw: text,
+    };
+  }
+
   const data: WhoisData = { domainName: domain };
   
   const getValue = (patterns: RegExp[]): string | undefined => {
@@ -300,6 +313,7 @@ function parseWhoisText(text: string, domain: string): WhoisData {
   }
   
   data.raw = text;
+  // WHOIS 文本能解析到这里，默认视为已注册（除非上方已判定未注册）
   data.registered = true;
   
   return data;
