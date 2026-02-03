@@ -396,18 +396,39 @@ export function useWhois(domain: string) {
               
               if (response.ok) {
                 const text = await response.text();
-                // 从网页内容中提取whois信息
-                const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i) 
-                  || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
-                  || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
                 
-                if (rawWhoisMatch) {
-                  result = parseWhoisText(rawWhoisMatch[1] || text, norm);
-                  console.log(`[WHOIS] WHOIS代理查询成功 (who.is)`);
-                } else {
-                  // 尝试直接解析
-                  result = parseWhoisText(text, norm);
-                  console.log(`[WHOIS] WHOIS代理解析完成`);
+                // 检测"未找到数据"的情况
+                const noDataPatterns = [
+                  /No WHOIS data was found/i,
+                  /No match for/i,
+                  /NOT FOUND/i,
+                  /No entries found/i,
+                  /Domain not found/i,
+                  /No information available/i,
+                  /Status:\s*AVAILABLE/i,
+                ];
+                
+                const hasNoData = noDataPatterns.some(pattern => pattern.test(text));
+                
+                if (!hasNoData) {
+                  // 从网页内容中提取whois信息
+                  const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i) 
+                    || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
+                    || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
+                  
+                  if (rawWhoisMatch) {
+                    const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
+                    // 验证解析结果是否有实质性数据
+                    if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
+                      result = parsed;
+                      console.log(`[WHOIS] WHOIS代理查询成功 (who.is)`);
+                    }
+                  }
+                }
+                
+                if (!result) {
+                  lastError = `WHOIS代理: who.is 无法获取该域名的WHOIS数据`;
+                  console.warn(`[WHOIS] who.is 未返回有效数据`);
                 }
               } else {
                 lastError = `WHOIS代理: HTTP ${response.status}`;
