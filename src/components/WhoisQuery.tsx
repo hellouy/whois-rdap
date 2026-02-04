@@ -1,11 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw } from "lucide-react";
+import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, Database, Info } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { useState, useEffect } from "react";
-import { toUnicode, isIDN } from "@/utils/tld-servers";
+import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
+import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
+import { categorizeStatuses, getSeverityVariant, translateStatus } from "@/utils/domain-status-mapping";
 
 // 检查是否为隐私保护或空信息
 const isPrivacyRedacted = (value: string | undefined): boolean => {
@@ -47,6 +49,7 @@ const formatDisplayValue = (value: string | undefined, defaultText: string = "�
 interface WhoisQueryProps {
   domain: string;
   displayDomain?: string;
+  onLoadComplete?: () => void;
 }
 
 // 国家代码映射到中文名称
@@ -257,14 +260,30 @@ const translateDomainStatus = (status: string | number | object): string => {
   return status.replace(/\s*https?:\/\/[^\s]+/gi, '').trim();
 };
 
-export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQueryProps) => {
+export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
   // 使用传入的displayDomain或使用toUnicode转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
+  
+  // 计算Punycode版本（用于IDN域名显示）
+  const punycodeDomain = toASCII(domain);
+  const showDualForm = isIDN(domain) && punycodeDomain !== displayDomain;
+  
+  // 获取服务器诊断信息
+  const rdapServer = getRdapServer(domain);
+  const whoisServer = getWhoisServer(domain);
+  const hasRdapSupport = !!rdapServer;
+  const hasWhoisSupport = !!whoisServer;
 
+  // 当加载完成时调用回调
+  useEffect(() => {
+    if (!isLoading && onLoadComplete) {
+      onLoadComplete();
+    }
+  }, [isLoading, onLoadComplete]);
   // 当域名变化时自动查询价格
   useEffect(() => {
     if (domain) {
@@ -273,7 +292,11 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
     }
   }, [domain]);
 
-  // 获取域名状态 - 增强判断逻辑
+  // 获取分类后的状态信息（用于增强状态徽标）
+  const getCategorizedStatuses = () => {
+    if (!whoisData?.status) return null;
+    return categorizeStatuses(whoisData.status);
+  };
   const getDomainStatus = (): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
     if (!whoisData) return { label: "查询中", variant: "outline" };
     
@@ -700,6 +723,14 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                   <span className="font-bold text-sm sm:text-base text-foreground break-all">
                     {displayDomain}
                   </span>
+                  {/* IDN 双形态显示 */}
+                  {showDualForm && (
+                    <div className="mt-1">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        ({punycodeDomain})
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <Badge 
                   variant={getDomainStatus().variant} 
@@ -709,21 +740,73 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                 </Badge>
               </div>
               
-              {/* DNSSEC和额外状态标签 */}
+              {/* DNSSEC和增强状态徽标 */}
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">DNSSEC:</span>
                 <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec || "未启用"}</span>
                 <div className="flex-1" />
-                {getExtraStatusBadges().map((badge, index) => (
+                {/* 显示增强状态徽标：主状态 + 最多3个子状态 */}
+                {getCategorizedStatuses()?.subStatuses.slice(0, 3).map((statusInfo, index) => (
                   <Badge 
                     key={index}
+                    variant={getSeverityVariant(statusInfo.severity)} 
+                    className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
+                    title={statusInfo.description}
+                  >
+                    {statusInfo.chinese}
+                  </Badge>
+                ))}
+                {getExtraStatusBadges().map((badge, index) => (
+                  <Badge 
+                    key={`extra-${index}`}
                     variant={badge.variant} 
                     className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
                   >
                     {badge.label}
                   </Badge>
                 ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* 服务器诊断信息 */}
+          <div className="p-3 sm:p-5 bg-card/40 backdrop-blur-sm rounded-xl border border-border/50 shadow-sm">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <Database className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Globe className="h-3 w-3" />
+                    RDAP:
+                    {hasRdapSupport ? (
+                      <span className="text-green-600 font-medium" title={rdapServer || ''}>支持</span>
+                    ) : (
+                      <span className="text-yellow-600 font-medium">不支持</span>
+                    )}
+                  </span>
+                  <span className="text-border">|</span>
+                  <span className="flex items-center gap-1">
+                    <Server className="h-3 w-3" />
+                    WHOIS:
+                    {hasWhoisSupport ? (
+                      <span className="text-green-600 font-medium" title={whoisServer || ''}>支持</span>
+                    ) : (
+                      <span className="text-yellow-600 font-medium">不支持</span>
+                    )}
+                  </span>
+                  {(rdapServer || whoisServer) && (
+                    <>
+                      <span className="text-border">|</span>
+                      <span className="flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        <span className="font-mono text-xs truncate max-w-[200px]" title={rdapServer || whoisServer || ''}>
+                          {rdapServer ? rdapServer.replace('https://', '').split('/')[0] : whoisServer}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -861,8 +944,9 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain }: WhoisQu
                       <span
                         key={index}
                         className="px-2 sm:px-4 py-1 sm:py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
+                        title={typeof status === 'string' ? status : ''}
                       >
-                        {translateDomainStatus(status)}
+                        {translateStatus(status)}
                       </span>
                     ))}
                   </div>

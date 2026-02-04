@@ -6,14 +6,43 @@ import { SslCertQuery } from "@/components/SslCertQuery";
 import { DnsMap } from "@/components/DnsMap";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabLoading } from "@/hooks/use-tab-loading";
+import { Loader2, Check, AlertCircle } from "lucide-react";
+
+// Tab 加载状态指示器组件
+const TabIndicator = ({ status }: { status: 'none' | 'loading' | 'loaded' | 'error' }) => {
+  if (status === 'none') return null;
+  
+  if (status === 'loading') {
+    return <Loader2 className="h-3 w-3 animate-spin ml-1.5 text-primary" />;
+  }
+  
+  if (status === 'loaded') {
+    return <Check className="h-3 w-3 ml-1.5 text-green-500" />;
+  }
+  
+  if (status === 'error') {
+    return <AlertCircle className="h-3 w-3 ml-1.5 text-destructive" />;
+  }
+  
+  return null;
+};
 
 const Index = () => {
   const [domain, setDomain] = useState("");
   const [displayDomain, setDisplayDomain] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
-  const [activeTab, setActiveTab] = useState("whois");
-  // 记录哪些 Tab 已经被访问过（用于懒加载）
-  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(["whois"]));
+  
+  const {
+    activeTab,
+    loadingStates,
+    reset: resetTabLoading,
+    handleTabChange,
+    setTabLoaded,
+    shouldRenderTab,
+    getTabIndicator,
+  } = useTabLoading({ preloadDelay: 2000, enablePreload: true });
+  
   const resultsRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<number | null>(null);
   const userInteractedRef = useRef(false);
@@ -23,9 +52,9 @@ const Index = () => {
     setDomain(queryDomain);
     setDisplayDomain(originalDomain);
     userInteractedRef.current = false;
-    // 重置为 whois Tab，并清空已访问记录
-    setActiveTab("whois");
-    setVisitedTabs(new Set(["whois"]));
+    
+    // 重置 Tab 状态
+    resetTabLoading();
     
     setTimeout(() => {
       setIsQuerying(false);
@@ -65,12 +94,6 @@ const Index = () => {
     }, 500);
   };
 
-  // 处理 Tab 切换，记录已访问的 Tab
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setVisitedTabs(prev => new Set(prev).add(value));
-  };
-
   useEffect(() => {
     const stopAutoScroll = () => {
       userInteractedRef.current = true;
@@ -92,9 +115,6 @@ const Index = () => {
       }
     };
   }, []);
-
-  // 判断某个 Tab 是否应该渲染内容
-  const shouldRenderTab = (tabName: string) => visitedTabs.has(tabName);
 
   return (
     <div className="min-h-screen bg-grid-light flex flex-col">
@@ -125,27 +145,31 @@ const Index = () => {
             <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg">
               <TabsTrigger 
                 value="whois" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02]"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02] flex items-center justify-center"
               >
                 Whois
+                <TabIndicator status={getTabIndicator('whois')} />
               </TabsTrigger>
               <TabsTrigger 
                 value="dns" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02]"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02] flex items-center justify-center"
               >
                 DNS
+                <TabIndicator status={getTabIndicator('dns')} />
               </TabsTrigger>
               <TabsTrigger 
                 value="map" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02]"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02] flex items-center justify-center"
               >
                 映射
+                <TabIndicator status={getTabIndicator('map')} />
               </TabsTrigger>
               <TabsTrigger 
                 value="ssl" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02]"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02] flex items-center justify-center"
               >
                 SSL
+                <TabIndicator status={getTabIndicator('ssl')} />
               </TabsTrigger>
             </TabsList>
 
@@ -155,7 +179,11 @@ const Index = () => {
               className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden" 
               forceMount
             >
-              <WhoisQuery domain={domain} displayDomain={displayDomain} />
+              <WhoisQuery 
+                domain={domain} 
+                displayDomain={displayDomain} 
+                onLoadComplete={() => setTabLoaded('whois', 'loaded')}
+              />
             </TabsContent>
 
             {/* DNS - 点击后才渲染，渲染后保持 */}
@@ -165,7 +193,11 @@ const Index = () => {
                 className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
                 forceMount
               >
-                <DnsQuery domain={domain} displayDomain={displayDomain} />
+                <DnsQuery 
+                  domain={domain} 
+                  displayDomain={displayDomain} 
+                  onLoadComplete={() => setTabLoaded('dns', 'loaded')}
+                />
               </TabsContent>
             ) : (
               <TabsContent value="dns" className="mt-0" />
@@ -178,7 +210,11 @@ const Index = () => {
                 className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
                 forceMount
               >
-                <DnsMap domain={domain} displayDomain={displayDomain} />
+                <DnsMap 
+                  domain={domain} 
+                  displayDomain={displayDomain}
+                  onLoadComplete={() => setTabLoaded('map', 'loaded')}
+                />
               </TabsContent>
             ) : (
               <TabsContent value="map" className="mt-0" />
@@ -191,7 +227,11 @@ const Index = () => {
                 className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
                 forceMount
               >
-                <SslCertQuery domain={domain} displayDomain={displayDomain} />
+                <SslCertQuery 
+                  domain={domain} 
+                  displayDomain={displayDomain}
+                  onLoadComplete={() => setTabLoaded('ssl', 'loaded')}
+                />
               </TabsContent>
             ) : (
               <TabsContent value="ssl" className="mt-0" />
