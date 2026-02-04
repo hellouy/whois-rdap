@@ -15,9 +15,10 @@ interface DnsRecord {
 interface DnsQueryProps {
   domain: string;
   displayDomain?: string;
+  onLoadComplete?: () => void;
 }
 
-export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryProps) => {
+export const DnsQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: DnsQueryProps) => {
   const [records, setRecords] = useState<DnsRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +127,7 @@ export const DnsQuery = ({ domain, displayDomain: propDisplayDomain }: DnsQueryP
       setRecords([]);
     } finally {
       setIsLoading(false);
+      onLoadComplete?.();
     }
   };
 

@@ -7,6 +7,7 @@ import { toASCII, toUnicode, isIDN } from "@/utils/tld-servers";
 interface DnsMapProps {
   domain: string;
   displayDomain?: string;
+  onLoadComplete?: () => void;
 }
 
 interface DnsNode {
@@ -16,7 +17,7 @@ interface DnsNode {
   location?: string;
 }
 
-export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps) => {
+export const DnsMap = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: DnsMapProps) => {
   const [nodes, setNodes] = useState<DnsNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +150,7 @@ export const DnsMap = ({ domain, displayDomain: propDisplayDomain }: DnsMapProps
       setNodes([]);
     } finally {
       setIsLoading(false);
+      onLoadComplete?.();
     }
   };
 

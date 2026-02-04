@@ -826,16 +826,27 @@ export const WHOIS_SERVERS: Record<string, string> = {
 };
 
 // RDAP服务器映射 (优先使用 - 更准确的结构化数据)
+// 扩展版本：涵盖更多ccTLD和gTLD
 export const RDAP_SERVERS: Record<string, string> = {
-  // 主要gTLDs
+  // ========== 主要gTLDs ==========
   "com": "https://rdap.verisign.com/com/v1",
   "net": "https://rdap.verisign.com/net/v1",
   "org": "https://rdap.publicinterestregistry.org/rdap",
   "info": "https://rdap.afilias.net/rdap/info",
   "biz": "https://rdap.nic.biz",
   "name": "https://rdap.verisign.com/name/v1",
+  "mobi": "https://rdap.afilias.net/rdap/mobi",
+  "asia": "https://rdap.nic.asia",
+  "tel": "https://rdap.nic.tel",
+  "jobs": "https://rdap.nic.jobs",
+  "xxx": "https://rdap.nic.xxx",
+  "cat": "https://rdap.nic.cat",
+  "pro": "https://rdap.afilias.net/rdap/pro",
+  "aero": "https://rdap.aero",
+  "coop": "https://rdap.nic.coop",
+  "museum": "https://rdap.nic.museum",
 
-  // 热门ccTLDs
+  // ========== 热门ccTLDs ==========
   "io": "https://rdap.nic.io",
   "co": "https://rdap.nic.co",
   "me": "https://rdap.nic.me",
@@ -844,6 +855,30 @@ export const RDAP_SERVERS: Record<string, string> = {
   "ai": "https://rdap.nic.ai",
   "gg": "https://rdap.nic.gg",
   "fm": "https://rdap.nic.fm",
+  "la": "https://rdap.nic.la",
+  "ws": "https://rdap.website.ws",
+  "so": "https://rdap.nic.so",
+  "sh": "https://rdap.nic.sh",
+  "ac": "https://rdap.nic.ac",
+  "sc": "https://rdap.nic.sc",
+  "im": "https://rdap.nic.im",
+  "je": "https://rdap.nic.je",
+  "cx": "https://rdap.nic.cx",
+  "nu": "https://rdap.iis.nu",
+  "pw": "https://rdap.nic.pw",
+  "to": "https://rdap.tonic.to",
+  "tk": "https://rdap.dot.tk",
+  "ms": "https://rdap.nic.ms",
+  "ky": "https://rdap.kyregistry.ky",
+  "ag": "https://rdap.nic.ag",
+  "bz": "https://rdap.afilias-grs.info",
+  "lc": "https://rdap.afilias-grs.info",
+  "vc": "https://rdap.nic.vc",
+  "vg": "https://rdap.nic.vg",
+  "tc": "https://rdap.nic.tc",
+  "gd": "https://rdap.nic.gd",
+  "dm": "https://rdap.nic.dm",
+  "sx": "https://rdap.sx",
 
   // 欧洲
   "uk": "https://rdap.nominet.uk/uk",
@@ -899,7 +934,6 @@ export const RDAP_SERVERS: Record<string, string> = {
   // 大洋洲
   "au": "https://rdap.auda.org.au",
   "nz": "https://rdap.nzrs.nz",
-  "nu": "https://rdap.iis.nu",
 
   // 美洲
   "ca": "https://rdap.ca.fury.ca",
@@ -991,7 +1025,6 @@ export const RDAP_SERVERS: Record<string, string> = {
   "inc": "https://rdap.nic.inc",
   "llc": "https://rdap.afilias.net/rdap",
   "gmbh": "https://rdap.donuts.co/rdap",
-  "pro": "https://rdap.afilias.net/rdap/pro",
   "ceo": "https://rdap.nic.ceo",
   "love": "https://rdap.nic.love",
   "baby": "https://rdap.nic.baby",

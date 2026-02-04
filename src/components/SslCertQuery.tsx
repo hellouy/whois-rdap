@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Lock, Calendar, AlertTriangle, CheckCircle2, Clock, FileText } from "lucide-react";
@@ -7,11 +8,19 @@ import { toUnicode, isIDN } from "@/utils/tld-servers";
 interface SslCertQueryProps {
   domain: string;
   displayDomain?: string;
+  onLoadComplete?: () => void;
 }
 
-export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain }: SslCertQueryProps) => {
+export const SslCertQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: SslCertQueryProps) => {
   const { certData, isLoading } = useSslCertificate(domain);
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
+
+  // 加载完成时调用回调
+  useEffect(() => {
+    if (!isLoading && onLoadComplete) {
+      onLoadComplete();
+    }
+  }, [isLoading, onLoadComplete]);
 
   const getDaysRemaining = (validTo: string): number => {
     const expiryDate = new Date(validTo);
