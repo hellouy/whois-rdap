@@ -770,46 +770,6 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
             </div>
           </div>
           
-          {/* 服务器诊断信息 */}
-          <div className="p-3 sm:p-5 bg-card/40 backdrop-blur-sm rounded-xl border border-border/50 shadow-sm">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <Database className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Globe className="h-3 w-3" />
-                    RDAP:
-                    {hasRdapSupport ? (
-                      <span className="text-green-600 font-medium" title={rdapServer || ''}>支持</span>
-                    ) : (
-                      <span className="text-yellow-600 font-medium">不支持</span>
-                    )}
-                  </span>
-                  <span className="text-border">|</span>
-                  <span className="flex items-center gap-1">
-                    <Server className="h-3 w-3" />
-                    WHOIS:
-                    {hasWhoisSupport ? (
-                      <span className="text-green-600 font-medium" title={whoisServer || ''}>支持</span>
-                    ) : (
-                      <span className="text-yellow-600 font-medium">不支持</span>
-                    )}
-                  </span>
-                  {(rdapServer || whoisServer) && (
-                    <>
-                      <span className="text-border">|</span>
-                      <span className="flex items-center gap-1">
-                        <Info className="h-3 w-3" />
-                        <span className="font-mono text-xs truncate max-w-[200px]" title={rdapServer || whoisServer || ''}>
-                          {rdapServer ? rdapServer.replace('https://', '').split('/')[0] : whoisServer}
-                        </span>
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
