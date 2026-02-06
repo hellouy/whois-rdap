@@ -43,7 +43,7 @@ const Index = () => {
     shouldRenderTab,
     canLoadTab,
     getTabIndicator,
-  } = useTabLoading({ preloadDelay: 500, enablePreload: true });
+  } = useTabLoading({ preloadDelay: 1000, enablePreload: false });
   
   const resultsRef = useRef<HTMLDivElement>(null);
   const scrollIntervalRef = useRef<number | null>(null);
