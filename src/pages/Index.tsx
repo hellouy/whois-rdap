@@ -36,10 +36,12 @@ const Index = () => {
   const {
     activeTab,
     loadingStates,
+    isWhoisComplete,
     reset: resetTabLoading,
     handleTabChange,
     setTabLoaded,
     shouldRenderTab,
+    canLoadTab,
     getTabIndicator,
   } = useTabLoading({ preloadDelay: 2000, enablePreload: true });
   
@@ -186,8 +188,8 @@ const Index = () => {
               />
             </TabsContent>
 
-            {/* DNS - 点击后才渲染，渲染后保持 */}
-            {shouldRenderTab("dns") ? (
+            {/* DNS - Whois完成后才渲染 */}
+            {shouldRenderTab("dns") && canLoadTab("dns") ? (
               <TabsContent 
                 value="dns" 
                 className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
@@ -203,8 +205,8 @@ const Index = () => {
               <TabsContent value="dns" className="mt-0" />
             )}
 
-            {/* 映射 - 点击后才渲染，渲染后保持 */}
-            {shouldRenderTab("map") ? (
+            {/* 映射 - Whois完成后才渲染 */}
+            {shouldRenderTab("map") && canLoadTab("map") ? (
               <TabsContent 
                 value="map" 
                 className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"
@@ -220,8 +222,8 @@ const Index = () => {
               <TabsContent value="map" className="mt-0" />
             )}
 
-            {/* SSL - 点击后才渲染，渲染后保持 */}
-            {shouldRenderTab("ssl") ? (
+            {/* SSL - Whois完成后才渲染 */}
+            {shouldRenderTab("ssl") && canLoadTab("ssl") ? (
               <TabsContent 
                 value="ssl" 
                 className="mt-0 transition-opacity duration-500 data-[state=inactive]:hidden"

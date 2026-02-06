@@ -71,9 +71,12 @@ export function useTabLoading(options: UseTabLoadingOptions = {}) {
     setLoadingStates(prev => ({ ...prev, [tab]: status }));
   }, []);
   
+  // 检查 Whois 是否已完成加载
+  const isWhoisComplete = loadingStates.whois === 'loaded' || loadingStates.whois === 'error';
+  
   // 当 Whois 加载完成后，启动预加载计时器
   useEffect(() => {
-    if (loadingStates.whois === 'loaded' && enablePreload && !preloadedRef.current) {
+    if (isWhoisComplete && enablePreload && !preloadedRef.current) {
       preloadTimerRef.current = window.setTimeout(() => {
         preloadedRef.current = true;
         // 自动标记其他 Tab 为可预加载状态
@@ -92,7 +95,13 @@ export function useTabLoading(options: UseTabLoadingOptions = {}) {
         clearTimeout(preloadTimerRef.current);
       }
     };
-  }, [loadingStates.whois, enablePreload, preloadDelay]);
+  }, [isWhoisComplete, enablePreload, preloadDelay]);
+  
+  // 判断某个 Tab 是否可以开始加载（Whois必须先完成）
+  const canLoadTab = useCallback((tabName: string) => {
+    if (tabName === 'whois') return true;
+    return isWhoisComplete;
+  }, [isWhoisComplete]);
   
   // 判断某个 Tab 是否应该渲染
   const shouldRenderTab = useCallback((tabName: string) => {
@@ -110,10 +119,12 @@ export function useTabLoading(options: UseTabLoadingOptions = {}) {
     activeTab,
     visitedTabs,
     loadingStates,
+    isWhoisComplete,
     reset,
     handleTabChange,
     setTabLoaded,
     shouldRenderTab,
+    canLoadTab,
     getTabIndicator,
   };
 }
