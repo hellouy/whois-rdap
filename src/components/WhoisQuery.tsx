@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, Database, Info } from "lucide-react";
+import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { useState, useEffect } from "react";
@@ -113,6 +113,199 @@ const getCountryName = (countryCode: string): string => {
   
   const code = countryCode.toUpperCase();
   return countryMap[code] || countryCode;
+};
+
+// 注册商官网映射
+const REGISTRAR_WEBSITES: Record<string, string> = {
+  // 国际知名注册商
+  'godaddy': 'https://www.godaddy.com',
+  'namecheap': 'https://www.namecheap.com',
+  'cloudflare': 'https://www.cloudflare.com',
+  'google': 'https://domains.google',
+  'name.com': 'https://www.name.com',
+  'namesilo': 'https://www.namesilo.com',
+  'dynadot': 'https://www.dynadot.com',
+  'porkbun': 'https://porkbun.com',
+  'gandi': 'https://www.gandi.net',
+  'hover': 'https://www.hover.com',
+  'enom': 'https://www.enom.com',
+  'tucows': 'https://www.tucows.com',
+  'network solutions': 'https://www.networksolutions.com',
+  'register.com': 'https://www.register.com',
+  '1&1': 'https://www.ionos.com',
+  'ionos': 'https://www.ionos.com',
+  'hostinger': 'https://www.hostinger.com',
+  'bluehost': 'https://www.bluehost.com',
+  'dreamhost': 'https://www.dreamhost.com',
+  'hostgator': 'https://www.hostgator.com',
+  'namebright': 'https://www.namebright.com',
+  'epik': 'https://www.epik.com',
+  'sav': 'https://www.sav.com',
+  'squarespace': 'https://www.squarespace.com',
+  'wix': 'https://www.wix.com',
+  'shopify': 'https://www.shopify.com',
+  'automattic': 'https://automattic.com',
+  'wordpress': 'https://wordpress.com',
+  'key-systems': 'https://www.key-systems.net',
+  'ascio': 'https://www.ascio.com',
+  'centralnic': 'https://www.centralnic.com',
+  'publicdomainregistry': 'https://www.publicdomainregistry.com',
+  'pdr': 'https://www.publicdomainregistry.com',
+  'rebel': 'https://www.rebel.com',
+  'domain.com': 'https://www.domain.com',
+  'markmonitor': 'https://www.markmonitor.com',
+  'csc': 'https://www.cscglobal.com',
+  'safenames': 'https://www.safenames.net',
+  'netim': 'https://www.netim.com',
+  'ovh': 'https://www.ovh.com',
+  'gmo': 'https://www.gmo.jp',
+  'onamae': 'https://www.onamae.com',
+  'webnic': 'https://www.webnic.cc',
+  'directi': 'https://www.directi.com',
+  'resellerclub': 'https://www.resellerclub.com',
+  'bigrock': 'https://www.bigrock.in',
+  'hostwinds': 'https://www.hostwinds.com',
+  'fasthosts': 'https://www.fasthosts.co.uk',
+  '123-reg': 'https://www.123-reg.co.uk',
+  'united domains': 'https://www.united-domains.de',
+  'strato': 'https://www.strato.de',
+  'infomaniak': 'https://www.infomaniak.com',
+  'afriregister': 'https://www.afriregister.com',
+  // 中国注册商
+  '阿里云': 'https://wanwang.aliyun.com',
+  'alibaba': 'https://wanwang.aliyun.com',
+  'aliyun': 'https://wanwang.aliyun.com',
+  '万网': 'https://wanwang.aliyun.com',
+  'hichina': 'https://wanwang.aliyun.com',
+  '腾讯云': 'https://dnspod.cloud.tencent.com',
+  'dnspod': 'https://www.dnspod.cn',
+  'tencent': 'https://dnspod.cloud.tencent.com',
+  '西部数码': 'https://www.west.cn',
+  'west.cn': 'https://www.west.cn',
+  '新网': 'https://www.xinnet.com',
+  'xinnet': 'https://www.xinnet.com',
+  '易名': 'https://www.ename.net',
+  'ename': 'https://www.ename.net',
+  '爱名网': 'https://www.22.cn',
+  '22.cn': 'https://www.22.cn',
+  '纳点网': 'https://www.nadin.cn',
+  '商务中国': 'https://www.bizcn.com',
+  'bizcn': 'https://www.bizcn.com',
+  '中国数据': 'https://www.chinadata.com',
+  '时代互联': 'https://www.now.cn',
+  'now.cn': 'https://www.now.cn',
+  '美橙互联': 'https://www.cndns.com',
+  'cndns': 'https://www.cndns.com',
+  '华为云': 'https://www.huaweicloud.com',
+  'huawei': 'https://www.huaweicloud.com',
+  '百度云': 'https://cloud.baidu.com',
+  'baidu': 'https://cloud.baidu.com',
+  '京东云': 'https://www.jdcloud.com',
+  'jdcloud': 'https://www.jdcloud.com',
+  // 其他地区注册商
+  'gmo internet': 'https://www.gmo.jp',
+  'whois': 'https://www.whois.com',
+  'uniregistrar': 'https://uniregistrar.com',
+  'internet.bs': 'https://www.internetbs.net',
+  'hexonet': 'https://www.hexonet.net',
+  'domain-it': 'https://www.domainit.com',
+};
+
+// 识别注册商官网
+const getRegistrarWebsite = (registrar: string): string | null => {
+  if (!registrar) return null;
+  const lowerRegistrar = registrar.toLowerCase();
+  
+  for (const [key, url] of Object.entries(REGISTRAR_WEBSITES)) {
+    if (lowerRegistrar.includes(key.toLowerCase())) {
+      return url;
+    }
+  }
+  return null;
+};
+
+// DNS 提供商识别
+const DNS_PROVIDERS: Record<string, { name: string; url: string }> = {
+  // 国际 DNS 提供商
+  'cloudflare': { name: 'Cloudflare', url: 'https://www.cloudflare.com' },
+  'awsdns': { name: 'AWS Route53', url: 'https://aws.amazon.com/route53' },
+  'azure-dns': { name: 'Azure DNS', url: 'https://azure.microsoft.com' },
+  'googledomains': { name: 'Google Domains', url: 'https://domains.google' },
+  'google': { name: 'Google Cloud DNS', url: 'https://cloud.google.com/dns' },
+  'ns.google': { name: 'Google Cloud DNS', url: 'https://cloud.google.com/dns' },
+  'dnsimple': { name: 'DNSimple', url: 'https://dnsimple.com' },
+  'dynect': { name: 'Dyn', url: 'https://www.oracle.com/cloud/networking/dns' },
+  'ultradns': { name: 'UltraDNS', url: 'https://www.ultradns.com' },
+  'ns1': { name: 'NS1', url: 'https://ns1.com' },
+  'akamai': { name: 'Akamai', url: 'https://www.akamai.com' },
+  'akadns': { name: 'Akamai', url: 'https://www.akamai.com' },
+  'fastly': { name: 'Fastly', url: 'https://www.fastly.com' },
+  'vercel-dns': { name: 'Vercel', url: 'https://vercel.com' },
+  'netlify': { name: 'Netlify', url: 'https://www.netlify.com' },
+  'digitalocean': { name: 'DigitalOcean', url: 'https://www.digitalocean.com' },
+  'linode': { name: 'Linode', url: 'https://www.linode.com' },
+  'vultr': { name: 'Vultr', url: 'https://www.vultr.com' },
+  'godaddy': { name: 'GoDaddy', url: 'https://www.godaddy.com' },
+  'domaincontrol': { name: 'GoDaddy', url: 'https://www.godaddy.com' },
+  'namecheap': { name: 'Namecheap', url: 'https://www.namecheap.com' },
+  'registrar-servers': { name: 'Namecheap', url: 'https://www.namecheap.com' },
+  'namesilo': { name: 'NameSilo', url: 'https://www.namesilo.com' },
+  'porkbun': { name: 'Porkbun', url: 'https://porkbun.com' },
+  'he.net': { name: 'Hurricane Electric', url: 'https://dns.he.net' },
+  'hostinger': { name: 'Hostinger', url: 'https://www.hostinger.com' },
+  'bluehost': { name: 'Bluehost', url: 'https://www.bluehost.com' },
+  'hostgator': { name: 'HostGator', url: 'https://www.hostgator.com' },
+  'dreamhost': { name: 'DreamHost', url: 'https://www.dreamhost.com' },
+  'siteground': { name: 'SiteGround', url: 'https://www.siteground.com' },
+  'ovh': { name: 'OVH', url: 'https://www.ovh.com' },
+  'hetzner': { name: 'Hetzner', url: 'https://www.hetzner.com' },
+  'gandi': { name: 'Gandi', url: 'https://www.gandi.net' },
+  'squarespace': { name: 'Squarespace', url: 'https://www.squarespace.com' },
+  'wix': { name: 'Wix', url: 'https://www.wix.com' },
+  'wordpress': { name: 'WordPress', url: 'https://wordpress.com' },
+  'wpengine': { name: 'WP Engine', url: 'https://wpengine.com' },
+  'shopify': { name: 'Shopify', url: 'https://www.shopify.com' },
+  // 中国 DNS 提供商
+  'dnspod': { name: 'DNSPod (腾讯云)', url: 'https://www.dnspod.cn' },
+  'tencentyun': { name: '腾讯云 DNS', url: 'https://cloud.tencent.com' },
+  'aliyun': { name: '阿里云 DNS', url: 'https://www.aliyun.com' },
+  'alidns': { name: '阿里云 DNS', url: 'https://www.aliyun.com' },
+  'hichina': { name: '万网 (阿里云)', url: 'https://wanwang.aliyun.com' },
+  'net.cn': { name: '万网 (阿里云)', url: 'https://wanwang.aliyun.com' },
+  'huaweicloud': { name: '华为云 DNS', url: 'https://www.huaweicloud.com' },
+  'baidubce': { name: '百度云 DNS', url: 'https://cloud.baidu.com' },
+  'jdcloud': { name: '京东云 DNS', url: 'https://www.jdcloud.com' },
+  'west': { name: '西部数码', url: 'https://www.west.cn' },
+  'xinnet': { name: '新网', url: 'https://www.xinnet.com' },
+  'ename': { name: '易名', url: 'https://www.ename.net' },
+  '51dns': { name: '51DNS', url: 'https://www.51dns.com' },
+  'cloudxns': { name: 'CloudXNS', url: 'https://www.cloudxns.net' },
+  // 日本
+  'onamae': { name: 'お名前.com', url: 'https://www.onamae.com' },
+  'gmondns': { name: 'GMO (お名前)', url: 'https://www.onamae.com' },
+  // 其他
+  'constellix': { name: 'Constellix', url: 'https://constellix.com' },
+  'easydns': { name: 'easyDNS', url: 'https://easydns.com' },
+  'dnsmadeeasy': { name: 'DNS Made Easy', url: 'https://dnsmadeeasy.com' },
+  'zoneedit': { name: 'ZoneEdit', url: 'https://www.zoneedit.com' },
+  'freedns': { name: 'FreeDNS', url: 'https://freedns.afraid.org' },
+  'afraid': { name: 'FreeDNS', url: 'https://freedns.afraid.org' },
+  'no-ip': { name: 'No-IP', url: 'https://www.noip.com' },
+  'dyn': { name: 'Dyn', url: 'https://dyn.com' },
+};
+
+// 识别 DNS 提供商
+const getDnsProvider = (nameServers: string[]): { name: string; url: string } | null => {
+  if (!nameServers || nameServers.length === 0) return null;
+  
+  const firstNs = nameServers[0].toLowerCase();
+  
+  for (const [key, provider] of Object.entries(DNS_PROVIDERS)) {
+    if (firstNs.includes(key.toLowerCase())) {
+      return provider;
+    }
+  }
+  return null;
 };
 
 // 域名状态映射到中文 - 增强版
@@ -778,32 +971,48 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册商:</span>
-                    {isRegistrarLong(whoisData.registrar) && !expandedRegistrar ? (
-                      <>
-                        <span className="font-bold text-sm sm:text-base text-foreground truncate max-w-[150px] sm:max-w-[200px]">
-                          {whoisData.registrar.slice(0, 25)}...
-                        </span>
-                        <button 
-                          onClick={() => setExpandedRegistrar(true)}
-                          className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
-                        >
-                          <ChevronDown className="h-3 w-3" />
-                          展开
-                        </button>
-                      </>
-                    ) : isRegistrarLong(whoisData.registrar) && expandedRegistrar ? (
-                      <>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      {isRegistrarLong(whoisData.registrar) && !expandedRegistrar ? (
+                        <>
+                          <span className="font-bold text-sm sm:text-base text-foreground truncate max-w-[150px] sm:max-w-[200px]">
+                            {whoisData.registrar.slice(0, 25)}...
+                          </span>
+                          <button 
+                            onClick={() => setExpandedRegistrar(true)}
+                            className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                            展开
+                          </button>
+                        </>
+                      ) : isRegistrarLong(whoisData.registrar) && expandedRegistrar ? (
+                        <>
+                          <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                          <button 
+                            onClick={() => setExpandedRegistrar(false)}
+                            className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                            收起
+                          </button>
+                        </>
+                      ) : (
                         <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
-                        <button 
-                          onClick={() => setExpandedRegistrar(false)}
-                          className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
-                        >
-                          <ChevronUp className="h-3 w-3" />
-                          收起
-                        </button>
-                      </>
-                    ) : (
-                      <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                      )}
+                    </div>
+                    {/* 注册商官网跳转 */}
+                    {getRegistrarWebsite(whoisData.registrar) && (
+                      <a
+                        href={getRegistrarWebsite(whoisData.registrar)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors flex-shrink-0"
+                        title="访问注册商官网"
+                      >
+                        <Globe className="h-3 w-3" />
+                        <span className="hidden sm:inline">官网</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                     )}
                   </div>
                   {whoisData.registrarIanaId && (
@@ -889,6 +1098,20 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                       <p key={index} className="font-mono text-sm sm:text-base font-bold text-foreground break-all">{ns}</p>
                     ))}
                   </div>
+                  {/* DNS 提供商识别 */}
+                  {getDnsProvider(whoisData.nameServers) && (
+                    <a
+                      href={getDnsProvider(whoisData.nameServers)!.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors flex-shrink-0 self-start"
+                      title={`DNS 提供商: ${getDnsProvider(whoisData.nameServers)!.name}`}
+                    >
+                      <Globe className="h-3 w-3" />
+                      <span>{getDnsProvider(whoisData.nameServers)!.name}</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             )}
