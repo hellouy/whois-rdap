@@ -7,7 +7,7 @@ import { useDomainPrice } from "@/hooks/use-domain-price";
 import { useState, useEffect } from "react";
 import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
-import { categorizeStatuses, getSeverityVariant, translateStatus } from "@/utils/domain-status-mapping";
+import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo } from "@/utils/domain-status-mapping";
 
 // 检查是否为隐私保护或空信息
 const isPrivacyRedacted = (value: string | undefined): boolean => {
@@ -171,6 +171,57 @@ const REGISTRAR_WEBSITES: Record<string, string> = {
   'strato': 'https://www.strato.de',
   'infomaniak': 'https://www.infomaniak.com',
   'afriregister': 'https://www.afriregister.com',
+  // 更多国际注册商
+  'namejot': 'https://www.namejot.com',
+  'domaindiscount24': 'https://www.domaindiscount24.com',
+  'inwx': 'https://www.inwx.com',
+  'nicsell': 'https://www.nicsell.com',
+  'gkg': 'https://www.gkg.net',
+  'dotster': 'https://www.dotster.com',
+  'above.com': 'https://www.above.com',
+  'moniker': 'https://www.moniker.com',
+  'fabulous': 'https://www.fabulous.com',
+  'uniregistrar': 'https://uniregistrar.com',
+  'internet.bs': 'https://www.internetbs.net',
+  'hexonet': 'https://www.hexonet.net',
+  'domain-it': 'https://www.domainit.com',
+  'whois': 'https://www.whois.com',
+  'sedo': 'https://www.sedo.com',
+  'dan.com': 'https://dan.com',
+  'afternic': 'https://www.afternic.com',
+  'cosmotown': 'https://cosmotown.com',
+  'launchpad': 'https://www.launchpad.com',
+  'blacknight': 'https://www.blacknight.com',
+  'comlaude': 'https://www.comlaude.com',
+  'nom-iq': 'https://www.nom-iq.net',
+  'netfirms': 'https://www.netfirms.com',
+  'ipage': 'https://www.ipage.com',
+  'fatcow': 'https://www.fatcow.com',
+  'domain international': 'https://www.yourdomaininternational.com',
+  'easyspace': 'https://www.easyspace.com',
+  'webfusion': 'https://www.webfusion.com',
+  'heart internet': 'https://www.heartinternet.uk',
+  'mesh digital': 'https://www.meshdigital.com',
+  'crazy domains': 'https://www.crazydomains.com',
+  'netregistry': 'https://www.netregistry.com.au',
+  'melbourne it': 'https://www.melbourneit.com.au',
+  'synergy wholesale': 'https://synergywholesale.com',
+  'domainname sales': 'https://www.domainname.shop',
+  'markmonitor inc': 'https://www.markmonitor.com',
+  'corporation service': 'https://www.cscglobal.com',
+  'brandshield': 'https://www.brandshield.com',
+  'valideus': 'https://www.valideus.com',
+  'openprovider': 'https://www.openprovider.com',
+  'transip': 'https://www.transip.nl',
+  'combell': 'https://www.combell.com',
+  'one.com': 'https://www.one.com',
+  'versio': 'https://www.versio.nl',
+  'active24': 'https://www.active24.com',
+  'zone media': 'https://www.zone.eu',
+  'loopia': 'https://www.loopia.se',
+  'binero': 'https://www.binero.se',
+  'simply.com': 'https://www.simply.com',
+  'domainnameshop': 'https://www.domainnameshop.com',
   // 中国注册商
   '阿里云': 'https://wanwang.aliyun.com',
   'alibaba': 'https://wanwang.aliyun.com',
@@ -182,6 +233,7 @@ const REGISTRAR_WEBSITES: Record<string, string> = {
   'tencent': 'https://dnspod.cloud.tencent.com',
   '西部数码': 'https://www.west.cn',
   'west.cn': 'https://www.west.cn',
+  'west digital': 'https://www.west.cn',
   '新网': 'https://www.xinnet.com',
   'xinnet': 'https://www.xinnet.com',
   '易名': 'https://www.ename.net',
@@ -202,13 +254,51 @@ const REGISTRAR_WEBSITES: Record<string, string> = {
   'baidu': 'https://cloud.baidu.com',
   '京东云': 'https://www.jdcloud.com',
   'jdcloud': 'https://www.jdcloud.com',
-  // 其他地区注册商
+  '三五互联': 'https://www.35.com',
+  '35.com': 'https://www.35.com',
+  '中资源': 'https://www.zzy.cn',
+  '耐思': 'https://www.nice.cn',
+  'nice.cn': 'https://www.nice.cn',
+  '聚名网': 'https://www.juming.com',
+  'juming': 'https://www.juming.com',
+  '域名城': 'https://www.domain.cn',
+  '金名网': 'https://www.4.cn',
+  '4.cn': 'https://www.4.cn',
+  '景安': 'https://www.zzidc.com',
+  '上海有孚': 'https://www.yovole.com',
+  '码云': 'https://www.maoyun.com',
+  '中万网络': 'https://www.zw.cn',
+  '新网互联': 'https://www.dns.com.cn',
+  // 韩国注册商
+  'gabia': 'https://www.gabia.com',
+  'megazone': 'https://www.megazone.com',
+  'cafe24': 'https://www.cafe24.com',
+  'hosting.kr': 'https://www.hosting.kr',
+  // 日本注册商
   'gmo internet': 'https://www.gmo.jp',
-  'whois': 'https://www.whois.com',
-  'uniregistrar': 'https://uniregistrar.com',
-  'internet.bs': 'https://www.internetbs.net',
-  'hexonet': 'https://www.hexonet.net',
-  'domain-it': 'https://www.domainit.com',
+  'xserver': 'https://www.xserver.ne.jp',
+  'sakura': 'https://www.sakura.ad.jp',
+  'value-domain': 'https://www.value-domain.com',
+  'muumuu-domain': 'https://muumuu-domain.com',
+  // 印度注册商
+  'nixi': 'https://www.nixi.in',
+  'mitsu': 'https://www.mitsu.in',
+  'net4india': 'https://www.net4.in',
+  'znetlive': 'https://www.znetlive.com',
+  // 俄罗斯注册商
+  'reg.ru': 'https://www.reg.ru',
+  'nic.ru': 'https://www.nic.ru',
+  'r01': 'https://www.r01.ru',
+  'regtime': 'https://www.regtime.net',
+  'beget': 'https://beget.com',
+  // 巴西注册商
+  'registro.br': 'https://registro.br',
+  'locaweb': 'https://www.locaweb.com.br',
+  'hostgator brasil': 'https://www.hostgator.com.br',
+  // 其他地区
+  'netearth': 'https://www.netearth.com',
+  'enomcentral': 'https://www.enomcentral.com',
+  'name.co': 'https://www.name.co',
 };
 
 // 识别注册商官网
@@ -236,7 +326,7 @@ const DNS_PROVIDERS: Record<string, { name: string; url: string }> = {
   'dnsimple': { name: 'DNSimple', url: 'https://dnsimple.com' },
   'dynect': { name: 'Dyn', url: 'https://www.oracle.com/cloud/networking/dns' },
   'ultradns': { name: 'UltraDNS', url: 'https://www.ultradns.com' },
-  'ns1': { name: 'NS1', url: 'https://ns1.com' },
+  'ns1': { name: 'NS1 (IBM)', url: 'https://ns1.com' },
   'akamai': { name: 'Akamai', url: 'https://www.akamai.com' },
   'akadns': { name: 'Akamai', url: 'https://www.akamai.com' },
   'fastly': { name: 'Fastly', url: 'https://www.fastly.com' },
@@ -265,24 +355,61 @@ const DNS_PROVIDERS: Record<string, { name: string; url: string }> = {
   'wordpress': { name: 'WordPress', url: 'https://wordpress.com' },
   'wpengine': { name: 'WP Engine', url: 'https://wpengine.com' },
   'shopify': { name: 'Shopify', url: 'https://www.shopify.com' },
+  // 更多国际 DNS 提供商
+  'bunny': { name: 'BunnyDNS', url: 'https://bunny.net' },
+  'quad9': { name: 'Quad9', url: 'https://www.quad9.net' },
+  'stackpath': { name: 'StackPath', url: 'https://www.stackpath.com' },
+  'incapsula': { name: 'Imperva', url: 'https://www.imperva.com' },
+  'sucuri': { name: 'Sucuri', url: 'https://sucuri.net' },
+  'edgecast': { name: 'Edgecast (Edgio)', url: 'https://edg.io' },
+  'lumen': { name: 'Lumen', url: 'https://www.lumen.com' },
+  'oracle': { name: 'Oracle DNS', url: 'https://www.oracle.com' },
+  'rackspace': { name: 'Rackspace', url: 'https://www.rackspace.com' },
+  'scaleway': { name: 'Scaleway', url: 'https://www.scaleway.com' },
+  'inwx': { name: 'INWX', url: 'https://www.inwx.com' },
+  'transip': { name: 'TransIP', url: 'https://www.transip.nl' },
+  'ionos': { name: 'IONOS', url: 'https://www.ionos.com' },
+  'strato': { name: 'STRATO', url: 'https://www.strato.de' },
+  'hover': { name: 'Hover', url: 'https://www.hover.com' },
+  'epik': { name: 'Epik', url: 'https://www.epik.com' },
+  'dynadot': { name: 'Dynadot', url: 'https://www.dynadot.com' },
+  'name.com': { name: 'Name.com', url: 'https://www.name.com' },
   // 中国 DNS 提供商
   'dnspod': { name: 'DNSPod (腾讯云)', url: 'https://www.dnspod.cn' },
   'tencentyun': { name: '腾讯云 DNS', url: 'https://cloud.tencent.com' },
+  'tencentdns': { name: '腾讯云 DNS', url: 'https://cloud.tencent.com' },
   'aliyun': { name: '阿里云 DNS', url: 'https://www.aliyun.com' },
   'alidns': { name: '阿里云 DNS', url: 'https://www.aliyun.com' },
   'hichina': { name: '万网 (阿里云)', url: 'https://wanwang.aliyun.com' },
   'net.cn': { name: '万网 (阿里云)', url: 'https://wanwang.aliyun.com' },
   'huaweicloud': { name: '华为云 DNS', url: 'https://www.huaweicloud.com' },
+  'hwclouds-dns': { name: '华为云 DNS', url: 'https://www.huaweicloud.com' },
   'baidubce': { name: '百度云 DNS', url: 'https://cloud.baidu.com' },
+  'bdydns': { name: '百度云 DNS', url: 'https://cloud.baidu.com' },
   'jdcloud': { name: '京东云 DNS', url: 'https://www.jdcloud.com' },
   'west': { name: '西部数码', url: 'https://www.west.cn' },
   'xinnet': { name: '新网', url: 'https://www.xinnet.com' },
   'ename': { name: '易名', url: 'https://www.ename.net' },
   '51dns': { name: '51DNS', url: 'https://www.51dns.com' },
   'cloudxns': { name: 'CloudXNS', url: 'https://www.cloudxns.net' },
+  'dns.com': { name: 'DNS.COM', url: 'https://www.dns.com' },
+  'zdns': { name: 'ZDNS (互联网域名系统)', url: 'https://www.zdns.cn' },
+  'cndns': { name: '美橙互联', url: 'https://www.cndns.com' },
+  '35.com': { name: '三五互联', url: 'https://www.35.com' },
+  'chinanet': { name: '中国电信', url: 'https://www.chinatelecom.com.cn' },
   // 日本
   'onamae': { name: 'お名前.com', url: 'https://www.onamae.com' },
   'gmondns': { name: 'GMO (お名前)', url: 'https://www.onamae.com' },
+  'sakura': { name: 'さくらインターネット', url: 'https://www.sakura.ad.jp' },
+  'xserver': { name: 'Xserver', url: 'https://www.xserver.ne.jp' },
+  // 韩国
+  'gabia': { name: 'Gabia', url: 'https://www.gabia.com' },
+  'cafe24': { name: 'Cafe24', url: 'https://www.cafe24.com' },
+  // 俄罗斯
+  'yandex': { name: 'Yandex DNS', url: 'https://connect.yandex.com' },
+  'selectel': { name: 'Selectel', url: 'https://selectel.ru' },
+  'nic.ru': { name: 'RU-CENTER', url: 'https://www.nic.ru' },
+  'reg.ru': { name: 'REG.RU', url: 'https://www.reg.ru' },
   // 其他
   'constellix': { name: 'Constellix', url: 'https://constellix.com' },
   'easydns': { name: 'easyDNS', url: 'https://easydns.com' },
@@ -292,6 +419,11 @@ const DNS_PROVIDERS: Record<string, { name: string; url: string }> = {
   'afraid': { name: 'FreeDNS', url: 'https://freedns.afraid.org' },
   'no-ip': { name: 'No-IP', url: 'https://www.noip.com' },
   'dyn': { name: 'Dyn', url: 'https://dyn.com' },
+  'rage4': { name: 'Rage4', url: 'https://rage4.com' },
+  'luadns': { name: 'LuaDNS', url: 'https://luadns.com' },
+  'desec': { name: 'deSEC', url: 'https://desec.io' },
+  'zilore': { name: 'Zilore', url: 'https://zilore.com' },
+  'clouDNS': { name: 'ClouDNS', url: 'https://www.cloudns.net' },
 };
 
 // 识别 DNS 提供商
@@ -933,32 +1065,11 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 </Badge>
               </div>
               
-              {/* DNSSEC和增强状态徽标 */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              {/* DNSSEC */}
+              <div className="flex items-center gap-2 sm:gap-3">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">DNSSEC:</span>
                 <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec || "未启用"}</span>
-                <div className="flex-1" />
-                {/* 显示增强状态徽标：主状态 + 最多3个子状态 */}
-                {getCategorizedStatuses()?.subStatuses.slice(0, 3).map((statusInfo, index) => (
-                  <Badge 
-                    key={index}
-                    variant={getSeverityVariant(statusInfo.severity)} 
-                    className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
-                    title={statusInfo.description}
-                  >
-                    {statusInfo.chinese}
-                  </Badge>
-                ))}
-                {getExtraStatusBadges().map((badge, index) => (
-                  <Badge 
-                    key={`extra-${index}`}
-                    variant={badge.variant} 
-                    className="text-xs font-semibold px-2 py-0.5 flex-shrink-0"
-                  >
-                    {badge.label}
-                  </Badge>
-                ))}
               </div>
             </div>
           </div>
@@ -1090,28 +1201,36 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           {/* 5. 域名NS */}
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
               <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Server className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">名称服务器:</span>
-                  <div className="flex-1 min-w-0 space-y-1">
+                <div className="space-y-2">
+                  {/* 标题行：名称服务器 + DNS提供商标识 */}
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Server className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">名称服务器:</span>
+                    <div className="flex-1" />
+                    {/* DNS 提供商识别 */}
+                    {getDnsProvider(whoisData.nameServers) && (
+                      <a
+                        href={getDnsProvider(whoisData.nameServers)!.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors flex-shrink-0"
+                        title={`DNS 提供商: ${getDnsProvider(whoisData.nameServers)!.name}`}
+                      >
+                        <Globe className="h-3 w-3" />
+                        <span>{getDnsProvider(whoisData.nameServers)!.name}</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                  {/* NS 列表：NS1, NS2, NS3... */}
+                  <div className="ml-6 sm:ml-8 space-y-1.5">
                     {whoisData.nameServers.map((ns, index) => (
-                      <p key={index} className="font-mono text-sm sm:text-base font-bold text-foreground break-all">{ns}</p>
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">NS{index + 1}:</span>
+                        <span className="font-mono text-sm sm:text-base font-bold text-foreground break-all">{ns}</span>
+                      </div>
                     ))}
                   </div>
-                  {/* DNS 提供商识别 */}
-                  {getDnsProvider(whoisData.nameServers) && (
-                    <a
-                      href={getDnsProvider(whoisData.nameServers)!.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors flex-shrink-0 self-start"
-                      title={`DNS 提供商: ${getDnsProvider(whoisData.nameServers)!.name}`}
-                    >
-                      <Globe className="h-3 w-3" />
-                      <span>{getDnsProvider(whoisData.nameServers)!.name}</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
                 </div>
               </div>
             )}
@@ -1119,17 +1238,43 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           {/* 6. 域名状态 */}
           {whoisData.status && whoisData.status.length > 0 && (
               <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">域名状态:</span>
-                  <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 sm:gap-2.5">
-                    {whoisData.status.map((status, index) => (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">域名状态:</span>
+                  </div>
+                  <div className="ml-6 sm:ml-8 flex flex-wrap gap-1.5 sm:gap-2">
+                    {whoisData.status.map((status, index) => {
+                      const statusInfo = getStatusInfo(status);
+                      const severity = statusInfo?.severity || 'info';
+                      const badgeClass = severity === 'error' 
+                        ? 'bg-destructive text-destructive-foreground' 
+                        : severity === 'warning'
+                        ? 'bg-secondary text-secondary-foreground'
+                        : 'bg-primary text-primary-foreground';
+                      return (
+                        <span
+                          key={index}
+                          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg shadow-sm ${badgeClass}`}
+                          title={typeof status === 'string' ? status : ''}
+                        >
+                          {translateStatus(status)}
+                        </span>
+                      );
+                    })}
+                    {/* 额外状态标签（过期、转移等动态状态） */}
+                    {getExtraStatusBadges().map((badge, index) => (
                       <span
-                        key={index}
-                        className="px-2 sm:px-4 py-1 sm:py-1.5 bg-primary text-primary-foreground text-xs font-mono rounded-lg shadow-md"
-                        title={typeof status === 'string' ? status : ''}
+                        key={`extra-${index}`}
+                        className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg shadow-sm ${
+                          badge.variant === 'destructive' 
+                            ? 'bg-destructive text-destructive-foreground' 
+                            : badge.variant === 'secondary'
+                            ? 'bg-secondary text-secondary-foreground'
+                            : 'bg-primary text-primary-foreground'
+                        }`}
                       >
-                        {translateStatus(status)}
+                        {badge.label}
                       </span>
                     ))}
                   </div>
