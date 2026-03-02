@@ -299,7 +299,45 @@ const REGISTRAR_WEBSITES: Record<string, string> = {
   'netearth': 'https://www.netearth.com',
   'enomcentral': 'https://www.enomcentral.com',
   'name.co': 'https://www.name.co',
+  // 更多注册商
+  'payrope': 'https://www.payrope.com',
+  'sarek oy': 'https://www.sarek.fi',
+  'binero group': 'https://www.binero.se',
+  'aruba': 'https://www.aruba.it',
+  'domainpeople': 'https://www.domainpeople.com',
+  'webnames': 'https://www.webnames.ca',
+  'joker': 'https://joker.com',
+  'eurodns': 'https://www.eurodns.com',
+  'nicenic': 'https://www.nicenic.net',
+  'domainz': 'https://www.domainz.net',
+  'udag': 'https://www.udag.com',
+  'register.it': 'https://www.register.it',
+  'netsi': 'https://www.netsi.com',
+  'afilias': 'https://www.afilias.info',
+  'rrpproxy': 'https://www.rrpproxy.net',
+  'hostpoint': 'https://www.hostpoint.ch',
+  'cPanel': 'https://cpanel.net',
+  'planet hoster': 'https://www.planethoster.com',
+  'web4africa': 'https://web4africa.net',
+  'liqd': 'https://www.liqd.com',
+  'domainking': 'https://www.domainking.ng',
+  'onlinenic': 'https://www.onlinenic.com',
+  'nettigritty': 'https://www.nettigritty.com',
+  'domain the net': 'https://www.domainthe.net',
+  'ilovewww': 'https://www.ilovewww.com',
+  'gal communication': 'https://www.gal.co.il',
+  'psi-usa': 'https://www.psi-usa.info',
+  'domreg': 'https://www.domreg.lt',
+  'dot.tk': 'https://www.dot.tk',
+  'freenom': 'https://www.freenom.com',
+  'register.eu': 'https://www.register.eu',
+  'visesh': 'https://www.visesh.com',
+  'todaynic': 'https://www.todaynic.com',
+  'domaininfo': 'https://www.domaininfo.com',
 };
+
+// 动态注册商记录（运行时学习）
+const dynamicRegistrars = new Map<string, string>();
 
 // 识别注册商官网
 const getRegistrarWebsite = (registrar: string): string | null => {
@@ -311,7 +349,31 @@ const getRegistrarWebsite = (registrar: string): string | null => {
       return url;
     }
   }
+  
+  // 检查动态记录
+  for (const [key, url] of dynamicRegistrars.entries()) {
+    if (lowerRegistrar.includes(key)) return url;
+  }
+  
+  // 尝试从注册商名称推断官网
+  const domainMatch = registrar.match(/([a-z0-9-]+\.[a-z]{2,})/i);
+  if (domainMatch) {
+    const guessedUrl = `https://www.${domainMatch[1].toLowerCase()}`;
+    dynamicRegistrars.set(domainMatch[1].toLowerCase(), guessedUrl);
+    return guessedUrl;
+  }
+  
   return null;
+};
+
+// 获取 favicon URL
+const getFaviconUrl = (websiteUrl: string): string => {
+  try {
+    const domain = new URL(websiteUrl).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch {
+    return '';
+  }
 };
 
 // DNS 提供商识别
@@ -567,6 +629,46 @@ const translateDomainStatus = (status: string | number | object): string => {
     'quarantine': '隔离期',
     'blocked': '已屏蔽',
     'frozen': '已冻结',
+    
+    // 不规则/ccTLD特殊状态
+    'connect': '已连接',
+    'linked': '已关联',
+    'associated': '已关联',
+    'registered': '已注册',
+    'notassigned': '未分配',
+    'assigned': '已分配',
+    'published': '已发布',
+    'verified': '已验证',
+    'validated': '已验证',
+    'delegated': '已委托',
+    'notdelegated': '未委托',
+    'undelegated': '未委托',
+    'exempt': '豁免',
+    'renewgrace': '续费宽限期',
+    'pendingreview': '审核中',
+    'pendingactivation': '待激活',
+    'pendingsuspension': '待暂停',
+    'pendingtransit': '待转移',
+    'free': '空闲',
+    'taken': '已被注册',
+    'parked': '已停放',
+    'outofservice': '停止服务',
+    'disabled': '已禁用',
+    'tobereleased': '待释放',
+    'released': '已释放',
+    'disputed': '争议中',
+    'court': '法院限制',
+    'renewal': '续费中',
+    'grace': '宽限期',
+    'tobepurged': '待清除',
+    'purged': '已清除',
+    'archived': '已归档',
+    'notrenewed': '未续费',
+    'nottransferrable': '不可转移',
+    'notregistrable': '不可注册',
+    'thedomainisn\'tgeneratedinthezone': '未生成DNS区域',
+    'notgeneratedinthezone': '未生成DNS区域',
+    'live': '正常',
   };
   
   // 如果找到精确匹配，返回映射值
@@ -953,9 +1055,12 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     return `${days} 天`;
   };
 
-  // 格式化日期为 年/月/日 时:分:秒
+  // 格式化日期为 年月日 时:分:秒
   const formatDateTime = (dateString: string): string => {
     try {
+      // 如果已经是 年月日 格式，直接返回
+      if (/\d{4}年\d{1,2}月\d{1,2}日/.test(dateString)) return dateString;
+      
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
       
@@ -966,7 +1071,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
       const minutes = date.getMinutes().toString().padStart(2, '0');
       const seconds = date.getSeconds().toString().padStart(2, '0');
       
-      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+      return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`;
     } catch {
       return dateString;
     }
@@ -1080,7 +1185,18 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    {/* 注册商 favicon */}
+                    {getRegistrarWebsite(whoisData.registrar) && (
+                      <img 
+                        src={getFaviconUrl(getRegistrarWebsite(whoisData.registrar)!)} 
+                        alt="" 
+                        className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 rounded-sm"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
+                    {!getRegistrarWebsite(whoisData.registrar) && (
+                      <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    )}
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册商:</span>
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       {isRegistrarLong(whoisData.registrar) && !expandedRegistrar ? (
@@ -1216,7 +1332,12 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                         className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors flex-shrink-0"
                         title={`DNS 提供商: ${getDnsProvider(whoisData.nameServers)!.name}`}
                       >
-                        <Globe className="h-3 w-3" />
+                        <img 
+                          src={getFaviconUrl(getDnsProvider(whoisData.nameServers)!.url)} 
+                          alt="" 
+                          className="h-3 w-3 rounded-sm"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
                         <span>{getDnsProvider(whoisData.nameServers)!.name}</span>
                         <ExternalLink className="h-3 w-3" />
                       </a>
