@@ -815,7 +815,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     // 3. 检查过期日期
     if (whoisData.expirationDate) {
       try {
-        const expDate = new Date(whoisData.expirationDate);
+        const expDate = parseChineseDate(whoisData.expirationDate);
         const now = new Date();
         
         // 3.1 已过期
@@ -878,7 +878,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     // 1. 检查过期相关状态
     if (whoisData.expirationDate) {
       try {
-        const expDate = new Date(whoisData.expirationDate);
+        const expDate = parseChineseDate(whoisData.expirationDate);
         const now = new Date();
         const daysUntilExpiry = Math.floor((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         
@@ -943,9 +943,24 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     return badges;
   };
 
+  // 解析年月日格式的日期字符串
+  const parseChineseDate = (dateString: string): Date => {
+    // 匹配 "2026年2月5日 08:00:00" 格式
+    const match = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日\s*(\d{2}):(\d{2}):(\d{2})/);
+    if (match) {
+      return new Date(+match[1], +match[2] - 1, +match[3], +match[4], +match[5], +match[6]);
+    }
+    // 匹配 "2026年2月5日" 无时间
+    const match2 = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (match2) {
+      return new Date(+match2[1], +match2[2] - 1, +match2[3]);
+    }
+    return new Date(dateString);
+  };
+
   // 计算时间差 - 使用精确的日期计算
   const getTimeDifference = (startDate: string, endDate?: Date): string => {
-    const start = new Date(startDate);
+    const start = parseChineseDate(startDate);
     const end = endDate || new Date();
     const diffTime = Math.abs(end.getTime() - start.getTime());
     
@@ -998,7 +1013,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
   // 计算距离过期时间
   const getTimeUntilExpiry = (expirationDate: string): string => {
-    const expDate = new Date(expirationDate);
+    const expDate = parseChineseDate(expirationDate);
     const now = new Date();
     
     if (expDate < now) {
@@ -1131,12 +1146,6 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                       {formatPrice(priceData.renewalPrice)}
                     </span>
                   </div>
-                  <Badge 
-                    variant={priceData.isPremium ? "destructive" : "secondary"} 
-                    className="text-xs font-semibold px-2 py-0.5 animate-in zoom-in-50 duration-300"
-                  >
-                    {priceData.isPremium ? "溢价域名" : "普通域名"}
-                  </Badge>
                 </div>
               )}
             </div>
@@ -1178,7 +1187,6 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               </div>
             </div>
           </div>
-          
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
