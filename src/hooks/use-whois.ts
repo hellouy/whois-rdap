@@ -117,18 +117,26 @@ function parseEvents(events: AnyObj[] = []) {
 
 function formatDate(s?: string) {
   if (!s) return undefined;
-  // 处理多种日期格式
   const dateStr = String(s).trim();
   
   // 尝试解析 DD.MM.YYYY 格式
   const dotMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  let date: Date;
   if (dotMatch) {
     const [, day, month, year] = dotMatch;
-    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`).toLocaleDateString("zh-CN");
+    date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+  } else {
+    date = new Date(dateStr);
   }
   
-  // 标准ISO格式
-  return new Date(dateStr).toLocaleDateString("zh-CN");
+  if (isNaN(date.getTime())) return dateStr;
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const hh = date.getHours().toString().padStart(2, '0');
+  const mm = date.getMinutes().toString().padStart(2, '0');
+  const ss = date.getSeconds().toString().padStart(2, '0');
+  return `${y}年${m}月${d}日 ${hh}:${mm}:${ss}`;
 }
 
 function parseRdap(obj: AnyObj): WhoisData {
@@ -319,6 +327,29 @@ function parseWhoisText(text: string, domain: string): WhoisData {
   return data;
 }
 
+// WHOIS 查询结果缓存（内存级别，避免重复查询）
+const whoisCache = new Map<string, { data: WhoisData; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
+
+function getCachedWhois(domain: string): WhoisData | null {
+  const cached = whoisCache.get(domain);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`[WHOIS] 命中缓存: ${domain}`);
+    return cached.data;
+  }
+  if (cached) whoisCache.delete(domain);
+  return null;
+}
+
+function setCachedWhois(domain: string, data: WhoisData) {
+  whoisCache.set(domain, { data, timestamp: Date.now() });
+  // 限制缓存大小
+  if (whoisCache.size > 100) {
+    const oldest = whoisCache.keys().next().value;
+    if (oldest) whoisCache.delete(oldest);
+  }
+}
+
 export function useWhois(domain: string) {
   const [data, setData] = useState<WhoisData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -346,9 +377,17 @@ export function useWhois(domain: string) {
       setData(null);
 
       try {
-        // 将IDN域名转换为Punycode进行查询
         const norm = toASCII(rawDomain);
         const isIdnDomain = isIDN(rawDomain);
+        
+        // 检查缓存
+        const cached = getCachedWhois(norm);
+        if (cached) {
+          if (!mounted.current) return;
+          setData(cached);
+          setIsLoading(false);
+          return;
+        }
         
         console.log(`[WHOIS] 查询域名: ${rawDomain}${isIdnDomain ? ` (Punycode: ${norm})` : ''}`);
         console.log(`[WHOIS] 支持 ${getSupportedTldCount()}+ TLDs`);
@@ -365,7 +404,7 @@ export function useWhois(domain: string) {
           try {
             console.log(`[WHOIS] 尝试RDAP: ${rdapServer}/domain/${norm}`);
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
             
             const response = await fetch(`${rdapServer}/domain/${encodeURIComponent(norm)}`, {
               signal: controller.signal,
@@ -585,6 +624,7 @@ export function useWhois(domain: string) {
           result.domainName = rawDomain;
         }
         
+        setCachedWhois(norm, result);
         setData(result);
         setIsLoading(false);
       } catch (err) {
