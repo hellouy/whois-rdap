@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink } from "lucide-react";
+import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
+import { WhoisSkeleton } from "@/components/WhoisSkeleton";
 import { useState, useEffect } from "react";
 import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
@@ -62,7 +63,7 @@ interface WhoisQueryProps {
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
-  const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
+  const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, formatOriginalPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
   // 使用传入的displayDomain或使用toUnicode转换
@@ -473,9 +474,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   return (
     <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-foreground" />
-        </div>
+        <WhoisSkeleton />
       ) : whoisData ? (
         <div className="space-y-4 sm:space-y-6">
           {/* 1. 域名价格信息 - 放在最顶部，单行显示 */}
@@ -485,7 +484,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               
               {isPriceLoading && (
                 <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
                   <span className="text-xs sm:text-sm">正在查询价格...</span>
                 </div>
               )}
@@ -512,12 +511,22 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     <span className="font-bold text-sm sm:text-base text-foreground">
                       {formatPrice(priceData.registrationPrice)}
                     </span>
+                    {formatOriginalPrice(priceData.registrationOriginal) && (
+                      <span className="text-xs text-muted-foreground">
+                        ({formatOriginalPrice(priceData.registrationOriginal)})
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">续费:</span>
                     <span className="font-bold text-sm sm:text-base text-foreground">
                       {formatPrice(priceData.renewalPrice)}
                     </span>
+                    {formatOriginalPrice(priceData.renewalOriginal) && (
+                      <span className="text-xs text-muted-foreground">
+                        ({formatOriginalPrice(priceData.renewalOriginal)})
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1.5 flex-shrink-0">
