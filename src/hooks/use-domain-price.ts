@@ -5,17 +5,35 @@ export interface DomainPrice {
   isPremium: boolean;
   registrationPrice?: number;
   renewalPrice?: number;
+  registrationOriginal?: { price: number; currency: string };
+  renewalOriginal?: { price: number; currency: string };
   currency: string;
   registrarName?: string;
   renewRegistrarName?: string;
-  isNegotiable?: boolean; // 是否议价
+  isNegotiable?: boolean;
 }
 
-const USD_TO_CNY = 7.2;
+const EXCHANGE_RATES: Record<string, number> = {
+  usd: 7.2,
+  eur: 7.8,
+  gbp: 9.1,
+  jpy: 0.048,
+  krw: 0.0053,
+  cny: 1,
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  usd: '$',
+  eur: '€',
+  gbp: '£',
+  jpy: '¥',
+  krw: '₩',
+  cny: '¥',
+};
 
 // 价格缓存
 const priceCache = new Map<string, { data: DomainPrice; timestamp: number }>();
-const PRICE_CACHE_TTL = 10 * 60 * 1000; // 10分钟
+const PRICE_CACHE_TTL = 10 * 60 * 1000;
 
 export const useDomainPrice = () => {
   const [priceData, setPriceData] = useState<DomainPrice | null>(null);
@@ -39,52 +57,38 @@ export const useDomainPrice = () => {
         return;
       }
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      // 使用 CORS 代理访问 nazhumi API
       const apiUrl = `https://www.nazhumi.com/api/v1?domain=${encodeURIComponent(tld)}`;
       
       let res: any = null;
-      
-      // 尝试直接请求
-      try {
-        const response = await fetch(apiUrl, {
+
+      // 同时发起直接请求和代理请求，取最快的
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const tryFetch = async (url: string): Promise<any> => {
+        const response = await fetch(url, {
           signal: controller.signal,
           headers: { 'Accept': 'application/json' }
         });
-        if (response.ok) {
-          res = await response.json();
-        }
-      } catch {
-        // 直接请求失败(CORS)，尝试代理
-        console.log('[Price] 直接请求失败，尝试代理...');
-        try {
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
-          const proxyResponse = await fetch(proxyUrl, {
-            signal: controller.signal,
-            headers: { 'Accept': 'application/json' }
-          });
-          if (proxyResponse.ok) {
-            res = await proxyResponse.json();
-          }
-        } catch {
-          // 代理也失败，尝试另一个代理
-          try {
-            const proxy2Url = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
-            const proxy2Response = await fetch(proxy2Url, {
-              signal: controller.signal,
-              headers: { 'Accept': 'application/json' }
-            });
-            if (proxy2Response.ok) {
-              res = await proxy2Response.json();
-            }
-          } catch {
-            console.warn('[Price] 所有代理均失败');
-          }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      };
+
+      const promises = [
+        tryFetch(apiUrl).catch(() => null),
+        tryFetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`).catch(() => null),
+      ];
+
+      // Race: take whichever resolves first with valid data
+      const results = await Promise.allSettled(promises);
+      
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value && r.value.code === 100 && r.value.data?.price?.length) {
+          res = r.value;
+          break;
         }
       }
-      
+
       clearTimeout(timeoutId);
       
       if (!res || res.code !== 100 || !res.data?.price?.length) {
@@ -96,24 +100,35 @@ export const useDomainPrice = () => {
       const toCNY = (val: any, currency: string): number | null => {
         const n = parseFloat(val);
         if (isNaN(n) || n <= 0) return null;
-        return currency === 'usd' ? Math.round(n * USD_TO_CNY) : Math.round(n);
+        const rate = EXCHANGE_RATES[currency.toLowerCase()] || (currency.toLowerCase() === 'usd' ? 7.2 : 1);
+        return Math.round(n * rate);
       };
 
       let minReg: number | null = null;
       let minRegName = '';
+      let minRegOriginal: { price: number; currency: string } | undefined;
       let minRenew: number | null = null;
       let minRenewName = '';
+      let minRenewOriginal: { price: number; currency: string } | undefined;
 
       for (const p of prices) {
         const reg = toCNY(p.new, p.currency);
         if (reg !== null && (minReg === null || reg < minReg)) {
           minReg = reg;
           minRegName = p.registrarname || p.registrar || '';
+          const origPrice = parseFloat(p.new);
+          if (p.currency?.toLowerCase() !== 'cny') {
+            minRegOriginal = { price: origPrice, currency: p.currency?.toLowerCase() || 'usd' };
+          }
         }
         const ren = toCNY(p.renew, p.currency);
         if (ren !== null && (minRenew === null || ren < minRenew)) {
           minRenew = ren;
           minRenewName = p.registrarname || p.registrar || '';
+          const origPrice = parseFloat(p.renew);
+          if (p.currency?.toLowerCase() !== 'cny') {
+            minRenewOriginal = { price: origPrice, currency: p.currency?.toLowerCase() || 'usd' };
+          }
         }
       }
 
@@ -121,7 +136,6 @@ export const useDomainPrice = () => {
         throw new Error("未找到有效的价格信息");
       }
 
-      // 判断是否议价：注册价和续费价差距大于5倍，或注册价非常高（>500元）
       const isNegotiable = (minReg !== null && minReg > 500) || 
         (minReg !== null && minRenew !== null && minReg > minRenew * 5);
 
@@ -130,13 +144,14 @@ export const useDomainPrice = () => {
         isPremium: false,
         registrationPrice: minReg ?? undefined,
         renewalPrice: minRenew ?? undefined,
+        registrationOriginal: minRegOriginal,
+        renewalOriginal: minRenewOriginal,
         currency: 'CNY',
         registrarName: minRegName,
         renewRegistrarName: minRenewName,
         isNegotiable,
       };
       
-      // 缓存结果
       priceCache.set(tld, { data: result, timestamp: Date.now() });
       
       setPriceData(result);
@@ -153,7 +168,13 @@ export const useDomainPrice = () => {
 
   const formatPrice = (price?: number): string => {
     if (!price) return "暂无";
-    return `${price}元`;
+    return `¥${price}`;
+  };
+
+  const formatOriginalPrice = (original?: { price: number; currency: string }): string | null => {
+    if (!original) return null;
+    const symbol = CURRENCY_SYMBOLS[original.currency] || '';
+    return `${symbol}${original.price.toFixed(2)}`;
   };
 
   const resetPrice = () => {
@@ -161,5 +182,5 @@ export const useDomainPrice = () => {
     setError(null);
   };
 
-  return { priceData, isLoading, error, fetchPrice, formatPrice, resetPrice };
+  return { priceData, isLoading, error, fetchPrice, formatPrice, formatOriginalPrice, resetPrice };
 };
