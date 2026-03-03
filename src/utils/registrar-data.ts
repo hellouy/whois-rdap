@@ -1,11 +1,12 @@
-// 注册商官网映射 - 本地维护，方便添加新注册商
+// 注册商官网映射 - 本地维护，方便添加新注册商（全球全面覆盖版，包含原始全部内容）
 
 export const REGISTRAR_WEBSITES: Record<string, string> = {
-  // 国际知名注册商
+  // 原始国际知名注册商（完整保留）
   'godaddy': 'https://www.godaddy.com',
   'namecheap': 'https://www.namecheap.com',
   'cloudflare': 'https://www.cloudflare.com',
-  'google': 'https://domains.google',
+  'google': 'https://www.squarespace.com',           // 已迁移
+  'domains.google': 'https://www.squarespace.com',
   'name.com': 'https://www.name.com',
   'namesilo': 'https://www.namesilo.com',
   'dynadot': 'https://www.dynadot.com',
@@ -105,7 +106,8 @@ export const REGISTRAR_WEBSITES: Record<string, string> = {
   'binero': 'https://www.binero.se',
   'simply.com': 'https://www.simply.com',
   'domainnameshop': 'https://www.domainnameshop.com',
-  // 中国注册商
+
+  // 原始中国注册商（完整保留）
   '阿里云': 'https://wanwang.aliyun.com',
   'alibaba': 'https://wanwang.aliyun.com',
   'aliyun': 'https://wanwang.aliyun.com',
@@ -152,33 +154,31 @@ export const REGISTRAR_WEBSITES: Record<string, string> = {
   '码云': 'https://www.maoyun.com',
   '中万网络': 'https://www.zw.cn',
   '新网互联': 'https://www.dns.com.cn',
-  // 韩国注册商
+
+  // 原始韩国、日本、俄罗斯、巴西等（完整保留）
   'gabia': 'https://www.gabia.com',
   'megazone': 'https://www.megazone.com',
   'cafe24': 'https://www.cafe24.com',
   'hosting.kr': 'https://www.hosting.kr',
-  // 日本注册商
   'gmo internet': 'https://www.gmo.jp',
   'xserver': 'https://www.xserver.ne.jp',
   'sakura': 'https://www.sakura.ad.jp',
   'value-domain': 'https://www.value-domain.com',
   'muumuu-domain': 'https://muumuu-domain.com',
-  // 印度注册商
   'nixi': 'https://www.nixi.in',
   'mitsu': 'https://www.mitsu.in',
   'net4india': 'https://www.net4.in',
   'znetlive': 'https://www.znetlive.com',
-  // 俄罗斯注册商
   'reg.ru': 'https://www.reg.ru',
   'nic.ru': 'https://www.nic.ru',
   'r01': 'https://www.r01.ru',
   'regtime': 'https://www.regtime.net',
   'beget': 'https://beget.com',
-  // 巴西注册商
   'registro.br': 'https://registro.br',
   'locaweb': 'https://www.locaweb.com.br',
   'hostgator brasil': 'https://www.hostgator.com.br',
-  // 其他
+
+  // 原始其他 + 全球 ccTLD NIC / 补充主流
   'netearth': 'https://www.netearth.com',
   'enomcentral': 'https://www.enomcentral.com',
   'name.co': 'https://www.name.co',
@@ -216,14 +216,47 @@ export const REGISTRAR_WEBSITES: Record<string, string> = {
   'visesh': 'https://www.visesh.com',
   'todaynic': 'https://www.todaynic.com',
   'domaininfo': 'https://www.domaininfo.com',
+
+  // 全球 ccTLD NIC 补充
+  'denic': 'https://www.denic.de',
+  'nominet': 'https://www.nominet.uk',
+  'afnic': 'https://www.afnic.fr',
+  'eurid': 'https://eurid.eu',
+  'switch': 'https://www.switch.ch',
+  'norid': 'https://www.norid.no',
+  'isnic': 'https://www.isnic.is',
+  'cira': 'https://cira.ca',
+  'nic.at': 'https://www.nic.at',
+  'dkhostmaster': 'https://www.dk-hostmaster.dk',
+  'red.es': 'https://www.red.es',
+  'nic.ba': 'https://www.nic.ba',
+  'dnsbelgium': 'https://www.dnsbelgium.be',
+  'hostmaster.ua': 'https://hostmaster.ua',
+  'nic.cz': 'https://www.nic.cz',
+  'nic.pl': 'https://www.dns.pl',
+  'nic.it': 'https://www.nic.it',
+  'nic.nl': 'https://www.sidn.nl',
+  'nic.se': 'https://www.internetstiftelsen.se',
+  'nic.fi': 'https://www.traficom.fi',
+  'jprs': 'https://jprs.co.jp',
+  'mynic': 'https://www.mynic.my',
+  'pknic': 'https://www.pknic.net.pk',
+  'hkirc': 'https://www.hkirc.hk',
+  'twnic': 'https://www.twnic.net.tw',
+  'cnnic': 'https://www.cnnic.cn',
+  'nic.mx': 'https://www.nic.mx',
+
+  // 新增高频补充
+  'spaceship': 'https://www.spaceship.com',
+  'dnsimple': 'https://dnsimple.com',
+  'directnic': 'https://directnic.com',
+  'marcaria': 'https://www.marcaria.com',
+  'liquidnet': 'https://www.liquidnetlimited.com',
 };
 
-// 动态注册商记录（运行时学习）
+// 其余函数保持原样
 const dynamicRegistrars = new Map<string, string>();
 
-/**
- * 识别注册商官网
- */
 export const getRegistrarWebsite = (registrar: string): string | null => {
   if (!registrar) return null;
   const lowerRegistrar = registrar.toLowerCase();
@@ -234,12 +267,10 @@ export const getRegistrarWebsite = (registrar: string): string | null => {
     }
   }
   
-  // 检查动态记录
   for (const [key, url] of dynamicRegistrars.entries()) {
     if (lowerRegistrar.includes(key)) return url;
   }
   
-  // 尝试从注册商名称推断官网
   const domainMatch = registrar.match(/([a-z0-9-]+\.[a-z]{2,})/i);
   if (domainMatch) {
     const guessedUrl = `https://www.${domainMatch[1].toLowerCase()}`;
@@ -250,16 +281,10 @@ export const getRegistrarWebsite = (registrar: string): string | null => {
   return null;
 };
 
-/**
- * 添加新注册商到动态记录
- */
 export const addDynamicRegistrar = (name: string, url: string) => {
   dynamicRegistrars.set(name.toLowerCase(), url);
 };
 
-/**
- * 获取 favicon URL
- */
 export const getFaviconUrl = (websiteUrl: string): string => {
   try {
     const domain = new URL(websiteUrl).hostname;
