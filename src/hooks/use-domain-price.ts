@@ -35,6 +35,17 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 const priceCache = new Map<string, { data: DomainPrice; timestamp: number }>();
 const PRICE_CACHE_TTL = 10 * 60 * 1000;
 
+// 负面缓存：记录已知无价格数据的 TLD，避免重复请求
+const noPriceCache = new Map<string, number>();
+const NO_PRICE_CACHE_TTL = 30 * 60 * 1000; // 30分钟
+
+const CORS_PROXIES = [
+  (url: string) => url, // 直连
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
 export const useDomainPrice = () => {
   const [priceData, setPriceData] = useState<DomainPrice | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +60,7 @@ export const useDomainPrice = () => {
       if (parts.length < 2) throw new Error("无效域名");
       const tld = '.' + parts.slice(1).join('.');
       
-      // 检查缓存
+      // 检查正常缓存
       const cached = priceCache.get(tld);
       if (cached && Date.now() - cached.timestamp < PRICE_CACHE_TTL) {
         setPriceData({ ...cached.data, domain });
@@ -57,13 +68,17 @@ export const useDomainPrice = () => {
         return;
       }
       
+      // 检查负面缓存
+      const noPrice = noPriceCache.get(tld);
+      if (noPrice && Date.now() - noPrice < NO_PRICE_CACHE_TTL) {
+        throw new Error("暂无价格数据");
+      }
+      
       const apiUrl = `https://www.nazhumi.com/api/v1?domain=${encodeURIComponent(tld)}`;
       
-      let res: any = null;
-
-      // 同时发起直接请求和代理请求，取最快的
+      // 使用 Promise.any 竞速多个代理，取最快成功的
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const tryFetch = async (url: string): Promise<any> => {
         const response = await fetch(url, {
@@ -71,36 +86,41 @@ export const useDomainPrice = () => {
           headers: { 'Accept': 'application/json' }
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
+        const data = await response.json();
+        // 验证数据有效性
+        if (!data || data.code !== 100 || !data.data?.price?.length) {
+          throw new Error("无效响应");
+        }
+        return data;
       };
 
-      const promises = [
-        tryFetch(apiUrl).catch(() => null),
-        tryFetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`).catch(() => null),
-      ];
-
-      // Race: take whichever resolves first with valid data
-      const results = await Promise.allSettled(promises);
-      
-      for (const r of results) {
-        if (r.status === 'fulfilled' && r.value && r.value.code === 100 && r.value.data?.price?.length) {
-          res = r.value;
-          break;
-        }
-      }
-
-      clearTimeout(timeoutId);
-      
-      if (!res || res.code !== 100 || !res.data?.price?.length) {
+      let res: any;
+      try {
+        // 手动实现 Promise.any 竞速逻辑
+        res = await new Promise<any>((resolve, reject) => {
+          let rejectedCount = 0;
+          const total = CORS_PROXIES.length;
+          CORS_PROXIES.forEach(proxy => {
+            tryFetch(proxy(apiUrl)).then(resolve).catch(() => {
+              rejectedCount++;
+              if (rejectedCount === total) reject(new Error("全部失败"));
+            });
+          });
+        });
+      } catch {
+        clearTimeout(timeoutId);
+        noPriceCache.set(tld, Date.now());
         throw new Error("暂无价格数据");
       }
+      
+      clearTimeout(timeoutId);
       
       const prices = res.data.price as any[];
       
       const toCNY = (val: any, currency: string): number | null => {
         const n = parseFloat(val);
         if (isNaN(n) || n <= 0) return null;
-        const rate = EXCHANGE_RATES[currency.toLowerCase()] || (currency.toLowerCase() === 'usd' ? 7.2 : 1);
+        const rate = EXCHANGE_RATES[currency.toLowerCase()] || 1;
         return Math.round(n * rate);
       };
 
@@ -133,7 +153,8 @@ export const useDomainPrice = () => {
       }
 
       if (minReg === null && minRenew === null) {
-        throw new Error("未找到有效的价格信息");
+        noPriceCache.set(tld, Date.now());
+        throw new Error("暂无价格数据");
       }
 
       const isNegotiable = (minReg !== null && minReg > 500) || 
