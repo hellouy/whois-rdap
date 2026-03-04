@@ -590,13 +590,23 @@ export function useWhois(domain: string) {
             );
           }
           
-          // 竞速：第一个成功的结果就使用
-          const results = await Promise.allSettled(fallbackPromises);
-          for (const r of results) {
-            if (r.status === 'fulfilled' && r.value) {
-              result = r.value;
-              break;
-            }
+          // 竞速：手动实现 Promise.any 取第一个成功的结果
+          try {
+            result = await new Promise<WhoisData>((resolve, reject) => {
+              let rejectedCount = 0;
+              const total = fallbackPromises.length;
+              fallbackPromises.forEach(p => {
+                p.then(r => {
+                  if (r) resolve(r);
+                  else throw new Error('empty');
+                }).catch(() => {
+                  rejectedCount++;
+                  if (rejectedCount === total) reject(new Error("全部失败"));
+                });
+              });
+            });
+          } catch {
+            // 全部失败
           }
           
           if (!result) {
