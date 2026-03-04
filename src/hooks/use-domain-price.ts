@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export interface DomainPrice {
   domain: string;
@@ -35,22 +35,83 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 const priceCache = new Map<string, { data: DomainPrice; timestamp: number }>();
 const PRICE_CACHE_TTL = 10 * 60 * 1000;
 
-// 负面缓存：记录已知无价格数据的 TLD，避免重复请求
+// 负面缓存
 const noPriceCache = new Map<string, number>();
-const NO_PRICE_CACHE_TTL = 30 * 60 * 1000; // 30分钟
+const NO_PRICE_CACHE_TTL = 30 * 60 * 1000;
 
-const CORS_PROXIES = [
-  (url: string) => url, // 直连
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-];
+const validatePriceData = (data: any): boolean => {
+  return data && data.code === 100 && data.data?.price?.length > 0;
+};
+
+// 通过多个代理竞速获取价格数据
+async function fetchPriceFromApi(apiUrl: string, signal: AbortSignal): Promise<any> {
+  const validate = (d: any) => {
+    if (!validatePriceData(d)) throw new Error('invalid');
+    return d;
+  };
+
+  const directFetch = (proxyUrl: string) =>
+    fetch(proxyUrl, { signal, headers: { Accept: 'application/json' } })
+      .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
+      .then(validate)
+      .catch(() => null);
+
+  const fetchers = [
+    // 1. 直连
+    directFetch(apiUrl),
+    
+    // 2. allorigins /get（JSON wrapper）
+    fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`, { signal })
+      .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
+      .then(w => {
+        if (!w?.contents) throw new Error('empty');
+        return validate(typeof w.contents === 'string' ? JSON.parse(w.contents) : w.contents);
+      })
+      .catch(() => null),
+    
+    // 3. everyorigin
+    fetch(`https://everyorigin.jwvbremen.nl/api/get?url=${encodeURIComponent(apiUrl)}`, { signal })
+      .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
+      .then(w => {
+        if (!w?.html) throw new Error('empty');
+        return validate(typeof w.html === 'string' ? JSON.parse(w.html) : w.html);
+      })
+      .catch(() => null),
+    
+    // 4. corsproxy.io
+    directFetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`),
+
+    // 5. api.codetabs.com
+    directFetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`),
+  ];
+
+  // 竞速：第一个返回有效数据的立即使用
+  return new Promise<any>((resolve, reject) => {
+    let settled = false;
+    let doneCount = 0;
+    const total = fetchers.length;
+    
+    fetchers.forEach(p => {
+      p.then(result => {
+        doneCount++;
+        if (result && !settled) {
+          settled = true;
+          resolve(result);
+        } else if (doneCount === total && !settled) {
+          settled = true;
+          reject(new Error("全部代理失败"));
+        }
+      });
+    });
+  });
+}
 
 export const useDomainPrice = () => {
   const [priceData, setPriceData] = useState<DomainPrice | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPrice = async (domain: string) => {
+  const fetchPrice = useCallback(async (domain: string) => {
     setIsLoading(true);
     setError(null);
     
@@ -75,48 +136,14 @@ export const useDomainPrice = () => {
       
       const apiUrl = `https://www.nazhumi.com/api/v1?domain=${encodeURIComponent(tld)}`;
       
-      // 使用 Promise.any 竞速多个代理，取最快成功的
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const tryFetch = async (url: string): Promise<any> => {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        // 验证数据有效性
-        if (!data || data.code !== 100 || !data.data?.price?.length) {
-          throw new Error("无效响应");
-        }
-        return data;
-      };
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
 
       let res: any;
       try {
-        res = await new Promise<any>((resolve, reject) => {
-          let rejectedCount = 0;
-          let settled = false;
-          const total = CORS_PROXIES.length;
-          CORS_PROXIES.forEach(proxy => {
-            tryFetch(proxy(apiUrl)).then(data => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timeoutId);
-                resolve(data);
-              }
-            }).catch(() => {
-              rejectedCount++;
-              if (rejectedCount === total && !settled) {
-                settled = true;
-                clearTimeout(timeoutId);
-                reject(new Error("全部失败"));
-              }
-            });
-          });
-        });
+        res = await fetchPriceFromApi(apiUrl, controller.signal);
       } catch {
+        clearTimeout(timeoutId);
         noPriceCache.set(tld, Date.now());
         throw new Error("暂无价格数据");
       }
@@ -193,7 +220,7 @@ export const useDomainPrice = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const formatPrice = (price?: number): string => {
     if (!price) return "暂无";
@@ -206,10 +233,10 @@ export const useDomainPrice = () => {
     return `${symbol}${original.price.toFixed(2)}`;
   };
 
-  const resetPrice = () => {
+  const resetPrice = useCallback(() => {
     setPriceData(null);
     setError(null);
-  };
+  }, []);
 
   return { priceData, isLoading, error, fetchPrice, formatPrice, formatOriginalPrice, resetPrice };
 };

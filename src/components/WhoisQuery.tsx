@@ -5,7 +5,7 @@ import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, 
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { WhoisSkeleton } from "@/components/WhoisSkeleton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
 import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo } from "@/utils/domain-status-mapping";
@@ -80,17 +80,26 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   const hasWhoisSupport = !!whoisServer;
 
   // 当加载完成时调用回调
+  const onLoadCompleteRef = useRef(onLoadComplete);
+  onLoadCompleteRef.current = onLoadComplete;
+  
   useEffect(() => {
-    if (!isLoading && onLoadComplete) {
-      onLoadComplete();
+    if (!isLoading && onLoadCompleteRef.current) {
+      onLoadCompleteRef.current();
     }
-  }, [isLoading, onLoadComplete]);
+  }, [isLoading]);
+  
   // 当域名变化时自动查询价格
+  const prevDomainRef = useRef('');
   useEffect(() => {
     if (domain) {
-      resetPrice();
+      if (domain !== prevDomainRef.current) {
+        prevDomainRef.current = domain;
+        resetPrice();
+      }
       fetchPrice(domain);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain]);
 
   // 获取分类后的状态信息（用于增强状态徽标）
