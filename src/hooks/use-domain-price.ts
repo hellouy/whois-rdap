@@ -43,7 +43,6 @@ const CORS_PROXIES = [
   (url: string) => url, // 直连
   (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
 export const useDomainPrice = () => {
@@ -96,19 +95,28 @@ export const useDomainPrice = () => {
 
       let res: any;
       try {
-        // 手动实现 Promise.any 竞速逻辑
         res = await new Promise<any>((resolve, reject) => {
           let rejectedCount = 0;
+          let settled = false;
           const total = CORS_PROXIES.length;
           CORS_PROXIES.forEach(proxy => {
-            tryFetch(proxy(apiUrl)).then(resolve).catch(() => {
+            tryFetch(proxy(apiUrl)).then(data => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timeoutId);
+                resolve(data);
+              }
+            }).catch(() => {
               rejectedCount++;
-              if (rejectedCount === total) reject(new Error("全部失败"));
+              if (rejectedCount === total && !settled) {
+                settled = true;
+                clearTimeout(timeoutId);
+                reject(new Error("全部失败"));
+              }
             });
           });
         });
       } catch {
-        clearTimeout(timeoutId);
         noPriceCache.set(tld, Date.now());
         throw new Error("暂无价格数据");
       }
