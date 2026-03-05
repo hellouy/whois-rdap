@@ -63,7 +63,7 @@ interface WhoisQueryProps {
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading } = useWhois(domain);
-  const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, formatOriginalPrice, resetPrice } = useDomainPrice();
+  const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
   // 使用传入的displayDomain或使用toUnicode转换
@@ -520,22 +520,12 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     <span className="font-bold text-sm sm:text-base text-foreground">
                       {formatPrice(priceData.registrationPrice)}
                     </span>
-                    {formatOriginalPrice(priceData.registrationOriginal) && (
-                      <span className="text-xs text-muted-foreground">
-                        ({formatOriginalPrice(priceData.registrationOriginal)})
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">续费:</span>
                     <span className="font-bold text-sm sm:text-base text-foreground">
                       {formatPrice(priceData.renewalPrice)}
                     </span>
-                    {formatOriginalPrice(priceData.renewalOriginal) && (
-                      <span className="text-xs text-muted-foreground">
-                        ({formatOriginalPrice(priceData.renewalOriginal)})
-                      </span>
-                    )}
                   </div>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1.5 flex-shrink-0">

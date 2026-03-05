@@ -125,7 +125,27 @@ function formatDate(s?: string) {
   if (dotMatch) {
     const [, day, month, year] = dotMatch;
     date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-  } else {
+  }
+  // DD/MM/YYYY 格式
+  else if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(dateStr)) {
+    const m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) date = new Date(`${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`);
+    else date = new Date(dateStr);
+  }
+  // YYYY/MM/DD 格式
+  else if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(dateStr)) {
+    date = new Date(dateStr.replace(/\//g, '-'));
+  }
+  // DD-Mon-YYYY 格式 (如 05-Feb-2025)
+  else if (/^\d{1,2}-[A-Za-z]{3}-\d{4}/.test(dateStr)) {
+    date = new Date(dateStr);
+  }
+  // YYYYMMDD 纯数字格式
+  else if (/^\d{8}$/.test(dateStr)) {
+    date = new Date(`${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`);
+  }
+  // 日语格式: 2025/02/05
+  else {
     date = new Date(dateStr);
   }
   
@@ -190,7 +210,7 @@ function parseRdap(obj: AnyObj): WhoisData {
 // 解析原始Whois文本
 function parseWhoisText(text: string, domain: string): WhoisData {
   const lines = text.split(/\r?\n/);
-  // 先判断是否明确“未注册/无数据”
+  // 先判断是否明确"未注册/无数据"
   if (looksLikeNotFoundWhois(text)) {
     return {
       domainName: domain,
@@ -231,33 +251,49 @@ function parseWhoisText(text: string, domain: string): WhoisData {
   data.domainName = getValue([
     /Domain Name:\s*(.+)/i,
     /domain:\s*(.+)/i,
+    /Domain\s*:\s*(.+)/i,
+    /nom de domaine:\s*(.+)/i,
+    /nombre de dominio:\s*(.+)/i,
+    /domainname:\s*(.+)/i,
+    /ドメイン名:\s*(.+)/i,
   ]) || domain;
   
-  // 注册商
+  // 注册商 - 增强多语言/多格式匹配
   data.registrar = getValue([
     /Registrar:\s*(.+)/i,
     /Registrar Name:\s*(.+)/i,
     /registrar:\s*(.+)/i,
     /Sponsoring Registrar:\s*(.+)/i,
+    /Sponsoring Registrar Organization:\s*(.+)/i,
+    /registrar_name:\s*(.+)/i,
+    /Registrar Organisation:\s*(.+)/i,
+    /registrant_registrar:\s*(.+)/i,
+    /Register:\s*(.+)/i,
+    /Registrar\s*:\s*(.+)/i,
+    /注册商:\s*(.+)/i,
+    /Registrar ID:\s*(.+)/i,
   ]);
   
   // 注册商IANA ID
   data.registrarIanaId = getValue([
     /Registrar IANA ID:\s*(.+)/i,
+    /Registrar IANA:\s*(.+)/i,
   ]);
   
   // 滥用联系
   data.registrarAbuseEmail = getValue([
     /Registrar Abuse Contact Email:\s*(.+)/i,
     /abuse.*email:\s*(.+)/i,
+    /Abuse Email:\s*(.+)/i,
   ]);
   
   data.registrarAbusePhone = getValue([
     /Registrar Abuse Contact Phone:\s*(.+)/i,
     /abuse.*phone:\s*(.+)/i,
+    /Abuse Phone:\s*(.+)/i,
   ]);
   
-  // 日期
+  // 日期 - 增强 ccTLD 各类格式支持
   data.creationDate = formatDate(getValue([
     /Creation Date:\s*(.+)/i,
     /Created Date:\s*(.+)/i,
@@ -265,6 +301,19 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /registered:\s*(.+)/i,
     /Registration Date:\s*(.+)/i,
     /Created On:\s*(.+)/i,
+    /Created:\s*(.+)/i,
+    /Creation date:\s*(.+)/i,
+    /Domain Registration Date:\s*(.+)/i,
+    /registered on:\s*(.+)/i,
+    /Registered:\s*(.+)/i,
+    /Date de création:\s*(.+)/i,
+    /Fecha de creación:\s*(.+)/i,
+    /登録年月日:\s*(.+)/i,
+    /Registered Date:\s*(.+)/i,
+    /first-registration-date:\s*(.+)/i,
+    /create:\s*(.+)/i,
+    /Activation:\s*(.+)/i,
+    /Domain Create Date:\s*(.+)/i,
   ]));
   
   data.expirationDate = formatDate(getValue([
@@ -273,6 +322,18 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Expiration:\s*(.+)/i,
     /Registry Expiry Date:\s*(.+)/i,
     /paid-till:\s*(.+)/i,
+    /Expires:\s*(.+)/i,
+    /Expires On:\s*(.+)/i,
+    /Expiration Date:\s*(.+)/i,
+    /Expiry:\s*(.+)/i,
+    /Renewal Date:\s*(.+)/i,
+    /Date d'expiration:\s*(.+)/i,
+    /Fecha de expiración:\s*(.+)/i,
+    /有効期限:\s*(.+)/i,
+    /free-date:\s*(.+)/i,
+    /Domain Expiration Date:\s*(.+)/i,
+    /Expire Date:\s*(.+)/i,
+    /validity:\s*(.+)/i,
   ]));
   
   data.updatedDate = formatDate(getValue([
@@ -280,44 +341,82 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /changed:\s*(.+)/i,
     /Last Updated:\s*(.+)/i,
     /Last Modified:\s*(.+)/i,
+    /Modified:\s*(.+)/i,
+    /Last Update:\s*(.+)/i,
+    /last-update:\s*(.+)/i,
+    /modification date:\s*(.+)/i,
+    /Date de modification:\s*(.+)/i,
+    /Ultima Atualização:\s*(.+)/i,
+    /最終更新:\s*(.+)/i,
+    /Domain Last Updated Date:\s*(.+)/i,
   ]));
   
-  // NS
+  // NS - 增强多格式支持
   data.nameServers = getValues([
     /Name Server:\s*(.+)/i,
     /nserver:\s*(.+)/i,
     /Nameserver:\s*(.+)/i,
     /NS:\s*([^\s]+)/i,
-  ]).map(ns => ns.toLowerCase());
+    /Name servers?:\s*(.+)/i,
+    /Hostname:\s*(.+)/i,
+    /DNS:\s*(.+)/i,
+    /Nameservers:\s*(.+)/i,
+    /host:\s*([^\s]+\.[\w.]+)/i,
+  ]).map(ns => {
+    // 清理NS值：移除尾部IP地址和多余空白
+    return ns.split(/\s+/)[0].toLowerCase().replace(/\.+$/, '');
+  }).filter(ns => ns.includes('.'));
   
-  // 状态
+  // 状态 - 增强多格式
   data.status = getValues([
     /Domain Status:\s*(.+)/i,
     /Status:\s*(.+)/i,
     /state:\s*(.+)/i,
+    /Domain status:\s*(.+)/i,
+    /状態:\s*(.+)/i,
+    /Statut:\s*(.+)/i,
   ]);
   
-  // 注册人
+  // 注册人 - 增强 ccTLD 格式
   data.registrantOrg = getValue([
     /Registrant Organization:\s*(.+)/i,
     /Registrant:\s*(.+)/i,
     /org:\s*(.+)/i,
     /Organization:\s*(.+)/i,
     /registrant:\s*(.+)/i,
+    /Registrant Name:\s*(.+)/i,
+    /Registrant Organisation:\s*(.+)/i,
+    /Owner:\s*(.+)/i,
+    /Holder:\s*(.+)/i,
+    /owner-organization:\s*(.+)/i,
+    /owner-name:\s*(.+)/i,
+    /Titular:\s*(.+)/i,
+    /holder-c:\s*(.+)/i,
+    /Admin Name:\s*(.+)/i,
+    /contact-name:\s*(.+)/i,
+    /person:\s*(.+)/i,
+    /org-name:\s*(.+)/i,
   ]);
   
   data.registrantCountry = getValue([
     /Registrant Country:\s*(.+)/i,
     /Country:\s*(.+)/i,
+    /Registrant Country Code:\s*(.+)/i,
+    /owner-country:\s*(.+)/i,
+    /country:\s*(.+)/i,
+    /Country Code:\s*(.+)/i,
+    /Registrant State\/Province:\s*(.+)/i,
+    /address:\s*([A-Z]{2})\s*$/i,
   ]);
   
   // DNSSEC
   const dnssecValue = getValue([
     /DNSSEC:\s*(.+)/i,
     /dnssec:\s*(.+)/i,
+    /DNSSEC delegated:\s*(.+)/i,
   ]);
   if (dnssecValue) {
-    data.dnssec = /sign|true|yes|active/i.test(dnssecValue) ? "已启用" : "未启用";
+    data.dnssec = /sign|true|yes|active|delegated/i.test(dnssecValue) ? "已启用" : "未启用";
   }
   
   data.raw = text;
