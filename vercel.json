@@ -1,11 +1,28 @@
 {
   "rewrites": [
     {
+      "source": "/api/whois",
+      "destination": "/api/whois"
+    },
+    {
+      "source": "/api/price",
+      "destination": "/api/price"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [

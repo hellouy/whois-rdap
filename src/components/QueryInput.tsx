@@ -20,6 +20,11 @@ function validateDomainInput(input: string): { valid: boolean; error?: string; h
     return { valid: false, error: "请输入域名，不支持 IP 地址查询", hint: "示例：example.com" };
   }
 
+  // IPv6
+  if (/^[\da-fA-F:]+$/.test(trimmed) && trimmed.includes(':')) {
+    return { valid: false, error: "请输入域名，不支持 IPv6 地址查询", hint: "示例：example.com" };
+  }
+
   // 检查是否是邮箱
   if (trimmed.includes('@')) {
     return { valid: false, error: "请输入域名，不是邮箱地址", hint: `试试：${trimmed.split('@')[1] || 'example.com'}` };
@@ -31,23 +36,43 @@ function validateDomainInput(input: string): { valid: boolean; error?: string; h
     .replace(/^\/\//, '')
     .replace(/^ftp:\/\//i, '')
     .replace(/^mailto:/i, '')
+    .replace(/^whois:\/\//i, '')
+    .replace(/^rdap:\/\//i, '')
     .split('/')[0].split('?')[0].split('#')[0].split(':')[0]
     .replace(/\.+$/, '').replace(/^\.+/, '')
     .replace(/\s/g, '');
 
   if (!cleaned) return { valid: false, error: "输入内容无效" };
 
-  // 检查是否包含非法字符（允许中文、字母、数字、连字符、点）
+  // 检查是否包含非法字符（允许中文/日韩/阿拉伯/西里尔等IDN字符、字母、数字、连字符、点）
+  // 排除明确非法的符号
   if (/[!@#$%^&*()+=\[\]{};':"\\|,<>/?`~]/.test(cleaned)) {
     return { valid: false, error: "域名包含非法字符", hint: "域名只能包含字母、数字、连字符和点" };
+  }
+
+  // 检查是否包含空格/制表符等不可见字符
+  if (/[\t\r\n\v\f]/.test(cleaned)) {
+    return { valid: false, error: "域名不能包含空白字符" };
   }
 
   // 检查是否只有一个词（没有点）
   const parts = cleaned.split('.');
   if (parts.length < 2) {
-    // 检查是否像单个关键词
-    if (/^[a-zA-Z\u4e00-\u9fff]+$/.test(cleaned)) {
+    // IDN 单词提示
+    if (/[\u4e00-\u9fff]/.test(cleaned)) {
+      return { valid: false, error: "请输入完整域名", hint: `试试：${cleaned}.com 或 ${cleaned}.cn 或 ${cleaned}.中国` };
+    }
+    if (/^[a-zA-Z]+$/.test(cleaned)) {
       return { valid: false, error: "请输入完整域名", hint: `试试：${cleaned}.com 或 ${cleaned}.cn` };
+    }
+    if (/[\u0400-\u04FF]/.test(cleaned)) {
+      return { valid: false, error: "请输入完整域名", hint: `试试：${cleaned}.рф` };
+    }
+    if (/[\u3040-\u30FF\u31F0-\u31FF]/.test(cleaned)) {
+      return { valid: false, error: "请输入完整域名", hint: `试试：${cleaned}.jp` };
+    }
+    if (/[\uAC00-\uD7AF]/.test(cleaned)) {
+      return { valid: false, error: "请输入完整域名", hint: `试试：${cleaned}.kr 或 ${cleaned}.한국` };
     }
     return { valid: false, error: "域名格式不完整，需要包含后缀", hint: "示例：example.com" };
   }
@@ -66,7 +91,7 @@ function validateDomainInput(input: string): { valid: boolean; error?: string; h
     if (part.length > 63) {
       return { valid: false, error: "域名标签过长（最多63个字符）" };
     }
-    // 允许 xn-- 开头的Punycode，也允许中文
+    // 允许 xn-- 开头的Punycode，也允许中文等IDN字符
     if (/^-|-$/.test(part) && !part.startsWith('xn--')) {
       return { valid: false, error: "域名标签不能以连字符开头或结尾" };
     }

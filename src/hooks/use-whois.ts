@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getTLDServers, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer, WHOIS_SERVERS, getSupportedTldCount } from "@/utils/whois-servers";
-import { looksLikeNotFoundWhois } from "@/utils/whois-heuristics";
+import { looksLikeNotFoundWhois, inferRegisteredFromWhois } from "@/utils/whois-heuristics";
 
 export interface WhoisData {
   domainName?: string;
@@ -351,7 +351,7 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Domain Last Updated Date:\s*(.+)/i,
   ]));
   
-  // NS - 增强多格式支持
+  // NS - 增强多格式支持（含非洲/法语 ccTLD）
   data.nameServers = getValues([
     /Name Server:\s*(.+)/i,
     /nserver:\s*(.+)/i,
@@ -362,12 +362,15 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /DNS:\s*(.+)/i,
     /Nameservers:\s*(.+)/i,
     /host:\s*([^\s]+\.[\w.]+)/i,
+    /Serveur DNS:\s*(.+)/i,
+    /Servidor DNS:\s*(.+)/i,
+    /ネームサーバ:\s*(.+)/i,
   ]).map(ns => {
     // 清理NS值：移除尾部IP地址和多余空白
     return ns.split(/\s+/)[0].toLowerCase().replace(/\.+$/, '');
   }).filter(ns => ns.includes('.'));
   
-  // 状态 - 增强多格式
+  // 状态 - 增强多格式（含非洲/法语 ccTLD）
   data.status = getValues([
     /Domain Status:\s*(.+)/i,
     /Status:\s*(.+)/i,
@@ -375,9 +378,12 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Domain status:\s*(.+)/i,
     /状態:\s*(.+)/i,
     /Statut:\s*(.+)/i,
+    /query_status:\s*(.+)/i,
+    /registration status:\s*(.+)/i,
+    /Situação:\s*(.+)/i,
   ]);
   
-  // 注册人 - 增强 ccTLD 格式
+  // 注册人 - 增强 ccTLD 格式（含非洲/冷门后缀）
   data.registrantOrg = getValue([
     /Registrant Organization:\s*(.+)/i,
     /Registrant:\s*(.+)/i,
@@ -396,6 +402,9 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /contact-name:\s*(.+)/i,
     /person:\s*(.+)/i,
     /org-name:\s*(.+)/i,
+    /Titulaire:\s*(.+)/i,
+    /Propriétaire:\s*(.+)/i,
+    /descr:\s*(.+)/i,
   ]);
   
   data.registrantCountry = getValue([
@@ -407,6 +416,8 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Country Code:\s*(.+)/i,
     /Registrant State\/Province:\s*(.+)/i,
     /address:\s*([A-Z]{2})\s*$/i,
+    /Pays:\s*(.+)/i,
+    /País:\s*(.+)/i,
   ]);
   
   // DNSSEC
@@ -420,8 +431,15 @@ function parseWhoisText(text: string, domain: string): WhoisData {
   }
   
   data.raw = text;
-  // WHOIS 文本能解析到这里，默认视为已注册（除非上方已判定未注册）
-  data.registered = true;
+  
+  // 使用启发式判断注册状态
+  const inferred = inferRegisteredFromWhois(text);
+  if (inferred !== null) {
+    data.registered = inferred;
+  } else {
+    // 如果有任何有效数据，默认视为已注册
+    data.registered = !!(data.registrar || data.creationDate || (data.nameServers && data.nameServers.length > 0));
+  }
   
   return data;
 }
@@ -497,7 +515,72 @@ export function useWhois(domain: string) {
         let result: WhoisData | null = null;
         let lastError = "";
         
+        // === 0. 优先尝试 Vercel Edge 代理（部署在 Vercel 时可用） ===
+        try {
+          const edgeUrl = `/api/whois?domain=${encodeURIComponent(norm)}`;
+          const controller0 = new AbortController();
+          const t0 = setTimeout(() => controller0.abort(), 6000);
+          const edgeResp = await fetch(edgeUrl, {
+            signal: controller0.signal,
+            headers: { Accept: 'application/json' },
+          });
+          clearTimeout(t0);
+          if (edgeResp.ok) {
+            const edgeData = await edgeResp.json();
+            if (edgeData.source === 'rdap' && edgeData.data) {
+              result = parseRdap(edgeData.data);
+              result.raw = JSON.stringify(edgeData.data, null, 2);
+              console.log(`[WHOIS] Edge RDAP 查询成功`);
+            } else if (edgeData.source === 'tianhu' && edgeData.data?.code === 200) {
+              const payload = edgeData.data.data;
+              const formatted = payload?.formatted;
+              let ns: string[] = [];
+              let creationDate: string | undefined;
+              let expirationDate: string | undefined;
+              let status: string[] = [];
+              if (formatted?.domain) {
+                ns = formatted.domain.name_servers || [];
+                status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
+                creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
+                expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
+              }
+              result = {
+                domainName: payload?.domain || norm,
+                registrar: formatted?.registrar?.registrar_name,
+                registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
+                creationDate,
+                expirationDate,
+                nameServers: ns,
+                status,
+                registered: payload?.status === 1,
+                raw: payload?.result,
+              };
+              console.log(`[WHOIS] Edge tian.hu 查询成功`);
+            } else if (edgeData.source === 'whois-proxy' && edgeData.data) {
+              const text = edgeData.data;
+              if (!looksLikeNotFoundWhois(text)) {
+                const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i)
+                  || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
+                  || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
+                if (rawWhoisMatch) {
+                  const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
+                  if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
+                    result = parsed;
+                    console.log(`[WHOIS] Edge WHOIS代理查询成功`);
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.log(`[WHOIS] Edge 代理不可用，回退到直查`);
+        }
+        
+        if (result) {
+          // Edge 成功，跳过后续
+        }
         // === 1. 优先尝试RDAP查询 ===
+        else {
         const rdapServer = getRdapServer(norm);
         if (rdapServer) {
           try {
@@ -712,6 +795,7 @@ export function useWhois(domain: string) {
             lastError = "所有备选查询源均未返回有效数据";
           }
         }
+        } // end else (Edge not available)
         
         
         if (!mounted.current) return;
