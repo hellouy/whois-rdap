@@ -123,6 +123,14 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
     };
   }, []);
 
+  // 支持 initialDomain 伪静态查询
+  useEffect(() => {
+    if (initialDomain && !domain) {
+      handleQuery(initialDomain, initialDomain);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDomain]);
+
   return (
     <div className="min-h-screen bg-grid-light flex flex-col">
       {/* Hero Section */}
