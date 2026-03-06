@@ -33,7 +33,6 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
   const [domain, setDomain] = useState("");
   const [displayDomain, setDisplayDomain] = useState("");
   const navigate = useNavigate();
-  const [displayDomain, setDisplayDomain] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   
   const {
