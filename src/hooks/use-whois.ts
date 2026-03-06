@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getTLDServers, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer, WHOIS_SERVERS, getSupportedTldCount } from "@/utils/whois-servers";
-import { looksLikeNotFoundWhois } from "@/utils/whois-heuristics";
+import { looksLikeNotFoundWhois, inferRegisteredFromWhois } from "@/utils/whois-heuristics";
 
 export interface WhoisData {
   domainName?: string;
@@ -351,7 +351,7 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Domain Last Updated Date:\s*(.+)/i,
   ]));
   
-  // NS - 增强多格式支持
+  // NS - 增强多格式支持（含非洲/法语 ccTLD）
   data.nameServers = getValues([
     /Name Server:\s*(.+)/i,
     /nserver:\s*(.+)/i,
@@ -362,12 +362,15 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /DNS:\s*(.+)/i,
     /Nameservers:\s*(.+)/i,
     /host:\s*([^\s]+\.[\w.]+)/i,
+    /Serveur DNS:\s*(.+)/i,
+    /Servidor DNS:\s*(.+)/i,
+    /ネームサーバ:\s*(.+)/i,
   ]).map(ns => {
     // 清理NS值：移除尾部IP地址和多余空白
     return ns.split(/\s+/)[0].toLowerCase().replace(/\.+$/, '');
   }).filter(ns => ns.includes('.'));
   
-  // 状态 - 增强多格式
+  // 状态 - 增强多格式（含非洲/法语 ccTLD）
   data.status = getValues([
     /Domain Status:\s*(.+)/i,
     /Status:\s*(.+)/i,
@@ -375,9 +378,12 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Domain status:\s*(.+)/i,
     /状態:\s*(.+)/i,
     /Statut:\s*(.+)/i,
+    /query_status:\s*(.+)/i,
+    /registration status:\s*(.+)/i,
+    /Situação:\s*(.+)/i,
   ]);
   
-  // 注册人 - 增强 ccTLD 格式
+  // 注册人 - 增强 ccTLD 格式（含非洲/冷门后缀）
   data.registrantOrg = getValue([
     /Registrant Organization:\s*(.+)/i,
     /Registrant:\s*(.+)/i,
@@ -396,6 +402,9 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /contact-name:\s*(.+)/i,
     /person:\s*(.+)/i,
     /org-name:\s*(.+)/i,
+    /Titulaire:\s*(.+)/i,
+    /Propriétaire:\s*(.+)/i,
+    /descr:\s*(.+)/i,
   ]);
   
   data.registrantCountry = getValue([
@@ -407,6 +416,8 @@ function parseWhoisText(text: string, domain: string): WhoisData {
     /Country Code:\s*(.+)/i,
     /Registrant State\/Province:\s*(.+)/i,
     /address:\s*([A-Z]{2})\s*$/i,
+    /Pays:\s*(.+)/i,
+    /País:\s*(.+)/i,
   ]);
   
   // DNSSEC
@@ -420,8 +431,15 @@ function parseWhoisText(text: string, domain: string): WhoisData {
   }
   
   data.raw = text;
-  // WHOIS 文本能解析到这里，默认视为已注册（除非上方已判定未注册）
-  data.registered = true;
+  
+  // 使用启发式判断注册状态
+  const inferred = inferRegisteredFromWhois(text);
+  if (inferred !== null) {
+    data.registered = inferred;
+  } else {
+    // 如果有任何有效数据，默认视为已注册
+    data.registered = !!(data.registrar || data.creationDate || (data.nameServers && data.nameServers.length > 0));
+  }
   
   return data;
 }
