@@ -777,6 +777,7 @@ export function useWhois(domain: string) {
             lastError = "所有备选查询源均未返回有效数据";
           }
         }
+        } // end else (Edge not available)
         
         
         if (!mounted.current) return;
