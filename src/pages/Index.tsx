@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { QueryInput } from "@/components/QueryInput";
 import { DnsQuery } from "@/components/DnsQuery";
 import { WhoisQuery } from "@/components/WhoisQuery";
@@ -28,9 +29,10 @@ const TabIndicator = ({ status }: { status: 'none' | 'loading' | 'loaded' | 'err
   return null;
 };
 
-const Index = () => {
+const Index = ({ initialDomain }: { initialDomain?: string }) => {
   const [domain, setDomain] = useState("");
   const [displayDomain, setDisplayDomain] = useState("");
+  const navigate = useNavigate();
   const [isQuerying, setIsQuerying] = useState(false);
   
   const {
@@ -54,6 +56,9 @@ const Index = () => {
     setDomain(queryDomain);
     setDisplayDomain(originalDomain);
     userInteractedRef.current = false;
+    
+    // 更新 URL 为伪静态路径
+    navigate(`/${originalDomain}`, { replace: true });
     
     // 重置 Tab 状态
     resetTabLoading();
@@ -117,6 +122,14 @@ const Index = () => {
       }
     };
   }, []);
+
+  // 支持 initialDomain 伪静态查询
+  useEffect(() => {
+    if (initialDomain && !domain) {
+      handleQuery(initialDomain, initialDomain);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDomain]);
 
   return (
     <div className="min-h-screen bg-grid-light flex flex-col">

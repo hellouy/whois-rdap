@@ -148,15 +148,63 @@ export const DNS_PROVIDERS: Record<string, DnsProviderInfo> = {
 };
 
 /**
- * 识别 DNS 提供商（基于第一个NS的子串匹配）
+ * 识别 DNS 提供商（基于NS的精确匹配，避免误判）
+ * 排除通用前缀如 ns1., ns2. 等，只匹配域名部分
  */
 export const getDnsProvider = (nameServers: string[]): DnsProviderInfo | null => {
   if (!nameServers || nameServers.length === 0) return null;
   
-  const firstNs = nameServers[0].toLowerCase();
+  // 提取NS的主域名部分进行匹配（去掉 ns1. ns2. 等前缀）
+  const getNsDomain = (ns: string): string => {
+    const lower = ns.toLowerCase().replace(/\.$/, '');
+    // 去掉常见前缀 ns1. ns2. dns1. dns2. a. b. 等
+    const parts = lower.split('.');
+    if (parts.length >= 3) {
+      // 如果第一部分是 nsX, dnsX, 或单字母，去掉它
+      if (/^(ns\d*|dns\d*|[a-z])$/.test(parts[0])) {
+        return parts.slice(1).join('.');
+      }
+    }
+    return lower;
+  };
+
+  const firstNs = nameServers[0].toLowerCase().replace(/\.$/, '');
+  const nsDomain = getNsDomain(firstNs);
+  
+  // 需要排除的模糊 key（这些 key 太短容易产生误匹配）
+  const ambiguousKeys = new Set(['ns1', 'google', 'oracle', 'he.net']);
   
   for (const [key, provider] of Object.entries(DNS_PROVIDERS)) {
-    if (firstNs.includes(key.toLowerCase())) {
+    const keyLower = key.toLowerCase();
+    
+    // 对于容易误匹配的 key，要求精确匹配域名部分
+    if (ambiguousKeys.has(keyLower)) {
+      // ns1 → 需要 nsDomain 包含 nsone.net 或 p0x.nsone.net
+      if (keyLower === 'ns1') {
+        if (nsDomain.includes('nsone.net') || firstNs.includes('nsone.')) continue; // nsone 已有单独条目
+        continue;
+      }
+      // google → 必须是 google 的 DNS 服务域名
+      if (keyLower === 'google') {
+        if (nsDomain === 'google.com' || nsDomain.includes('googledomains.com') || nsDomain.includes('google.com')) {
+          return provider;
+        }
+        continue;
+      }
+      if (keyLower === 'oracle') {
+        if (nsDomain.includes('oraclecloud.') || firstNs.includes('ultradns.')) {
+          return provider;
+        }
+        continue;
+      }
+      if (keyLower === 'he.net') {
+        if (nsDomain === 'he.net') return provider;
+        continue;
+      }
+    }
+    
+    // 标准匹配：NS域名部分包含 key
+    if (nsDomain.includes(keyLower) || firstNs.includes(keyLower + '.')) {
       return provider;
     }
   }
