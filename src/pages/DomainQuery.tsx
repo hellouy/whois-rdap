@@ -1,6 +1,6 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useParams } from "react-router-dom";
 import Index from "./Index";
+import NotFound from "./NotFound";
 
 /**
  * 伪静态域名查询页面
@@ -13,8 +13,7 @@ const DomainQuery = () => {
   const isDomainLike = domain && /^[a-zA-Z0-9\u4e00-\u9fff][\w\u4e00-\u9fff.-]*\.[a-zA-Z\u4e00-\u9fff]{2,}$/.test(domain);
   
   if (!isDomainLike) {
-    // 不像域名，走 404
-    return null;
+    return <NotFound />;
   }
 
   return <Index initialDomain={domain} />;
