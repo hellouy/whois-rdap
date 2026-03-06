@@ -43,8 +43,8 @@ const validatePriceData = (data: any): boolean => {
   return data && data.code === 100 && data.data?.price?.length > 0;
 };
 
-// 通过多个代理竞速获取价格数据
-async function fetchPriceFromApi(apiUrl: string, signal: AbortSignal): Promise<any> {
+// 通过边缘代理或多个CORS代理竞速获取价格数据
+async function fetchPriceFromApi(apiUrl: string, tld: string, signal: AbortSignal): Promise<any> {
   const validate = (d: any) => {
     if (!validatePriceData(d)) throw new Error('invalid');
     return d;
@@ -57,10 +57,13 @@ async function fetchPriceFromApi(apiUrl: string, signal: AbortSignal): Promise<a
       .catch(() => null);
 
   const fetchers = [
+    // 0. Vercel Edge 代理（部署时最快）
+    directFetch(`/api/price?domain=${encodeURIComponent(tld)}`),
+    
     // 1. 直连
     directFetch(apiUrl),
     
-    // 2. allorigins /get（JSON wrapper）
+    // 2. allorigins
     fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`, { signal })
       .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
       .then(w => {
@@ -69,23 +72,10 @@ async function fetchPriceFromApi(apiUrl: string, signal: AbortSignal): Promise<a
       })
       .catch(() => null),
     
-    // 3. everyorigin
-    fetch(`https://everyorigin.jwvbremen.nl/api/get?url=${encodeURIComponent(apiUrl)}`, { signal })
-      .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
-      .then(w => {
-        if (!w?.html) throw new Error('empty');
-        return validate(typeof w.html === 'string' ? JSON.parse(w.html) : w.html);
-      })
-      .catch(() => null),
-    
-    // 4. corsproxy.io
+    // 3. corsproxy.io
     directFetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`),
-
-    // 5. api.codetabs.com
-    directFetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`),
   ];
 
-  // 竞速：第一个返回有效数据的立即使用
   return new Promise<any>((resolve, reject) => {
     let settled = false;
     let doneCount = 0;
@@ -141,7 +131,7 @@ export const useDomainPrice = () => {
 
       let res: any;
       try {
-        res = await fetchPriceFromApi(apiUrl, controller.signal);
+        res = await fetchPriceFromApi(apiUrl, tld, controller.signal);
       } catch {
         clearTimeout(timeoutId);
         noPriceCache.set(tld, Date.now());
