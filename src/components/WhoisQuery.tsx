@@ -62,7 +62,7 @@ interface WhoisQueryProps {
 
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: WhoisQueryProps) => {
-  const { whois: whoisData, isLoading } = useWhois(domain);
+  const { whois: whoisData, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
@@ -797,6 +797,12 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               )}
             </div>
           </div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <FileText className="h-12 w-12 mx-auto mb-3 text-destructive opacity-50" />
+          <p className="text-destructive font-medium mb-2">查询失败</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
         </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">

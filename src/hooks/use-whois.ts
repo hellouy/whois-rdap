@@ -570,6 +570,22 @@ export function useWhois(domain: string) {
                   }
                 }
               }
+            } else if (edgeData.source === 'dns-fallback' && edgeData.data) {
+              if (edgeData.data.exists === true) {
+                result = {
+                  domainName: rawDomain,
+                  registered: true,
+                  raw: 'DNS 记录存在，WHOIS 数据暂不可用',
+                };
+                console.log(`[WHOIS] Edge DNS回退：域名存在`);
+              } else if (edgeData.data.exists === false) {
+                result = {
+                  domainName: rawDomain,
+                  registered: false,
+                  status: ['available'],
+                };
+                console.log(`[WHOIS] Edge DNS回退：域名不存在`);
+              }
             }
           }
         } catch (err) {
@@ -800,6 +816,60 @@ export function useWhois(domain: string) {
         
         if (!mounted.current) return;
         
+        if (!result) {
+          // Before giving up, try a quick DNS check to see if domain is registered
+          try {
+            const dnsResp = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(norm)}&type=A`, {
+              signal: AbortSignal.timeout(5000),
+              headers: { Accept: 'application/dns-json' },
+            });
+            if (dnsResp.ok) {
+              const dnsData = await dnsResp.json();
+              // Status 0 = NOERROR means domain exists in DNS
+              if (dnsData.Status === 0 && dnsData.Answer && dnsData.Answer.length > 0) {
+                const ns: string[] = [];
+                // Also try to get NS records
+                try {
+                  const nsResp = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(norm)}&type=NS`, {
+                    signal: AbortSignal.timeout(3000),
+                    headers: { Accept: 'application/dns-json' },
+                  });
+                  if (nsResp.ok) {
+                    const nsData = await nsResp.json();
+                    if (nsData.Answer) {
+                      for (const ans of nsData.Answer) {
+                        if (ans.type === 2 && ans.data) {
+                          ns.push(ans.data.replace(/\.$/, '').toLowerCase());
+                        }
+                      }
+                    }
+                  }
+                } catch {}
+                
+                result = {
+                  domainName: rawDomain,
+                  registered: true,
+                  nameServers: ns.length > 0 ? ns : undefined,
+                  raw: `DNS 记录存在 (A/AAAA)，WHOIS 数据暂不可用`,
+                };
+                console.log(`[WHOIS] DNS 回退：域名存在于 DNS 中，判定为已注册`);
+              } else if (dnsData.Status === 3) {
+                // NXDOMAIN - domain does not exist
+                result = {
+                  domainName: rawDomain,
+                  registered: false,
+                  status: ['available'],
+                };
+                console.log(`[WHOIS] DNS 回退：NXDOMAIN，域名未注册`);
+              }
+            }
+          } catch (err) {
+            console.warn(`[WHOIS] DNS 回退查询失败:`, err);
+          }
+        }
+
+        if (!mounted.current) return;
+
         if (!result) {
           const whoisServer = WHOIS_SERVERS[tld];
           const supportMsg = whoisServer 
