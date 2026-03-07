@@ -570,6 +570,22 @@ export function useWhois(domain: string) {
                   }
                 }
               }
+            } else if (edgeData.source === 'dns-fallback' && edgeData.data) {
+              if (edgeData.data.exists === true) {
+                result = {
+                  domainName: rawDomain,
+                  registered: true,
+                  raw: 'DNS 记录存在，WHOIS 数据暂不可用',
+                };
+                console.log(`[WHOIS] Edge DNS回退：域名存在`);
+              } else if (edgeData.data.exists === false) {
+                result = {
+                  domainName: rawDomain,
+                  registered: false,
+                  status: ['available'],
+                };
+                console.log(`[WHOIS] Edge DNS回退：域名不存在`);
+              }
             }
           }
         } catch (err) {
