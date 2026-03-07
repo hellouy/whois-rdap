@@ -8,6 +8,7 @@ interface QueryInputProps {
   onQuery: (domain: string, displayDomain: string) => void;
   isLoading?: boolean;
   placeholder?: string;
+  value?: string;
 }
 
 // 域名输入验证
@@ -105,9 +106,18 @@ function validateDomainInput(input: string): { valid: boolean; error?: string; h
   return { valid: true };
 }
 
-export const QueryInput = ({ onQuery, isLoading, placeholder = "输入域名查询..." }: QueryInputProps) => {
-  const [domain, setDomain] = useState("");
-  const [displayDomain, setDisplayDomain] = useState("");
+export const QueryInput = ({ onQuery, isLoading, placeholder = "输入域名查询...", value }: QueryInputProps) => {
+  const [domain, setDomain] = useState(value || "");
+  const [displayDomain, setDisplayDomain] = useState(value || "");
+
+  // Sync external value changes (e.g. from pseudo-static route)
+  useEffect(() => {
+    if (value !== undefined && value !== domain) {
+      setDomain(value);
+      setDisplayDomain(value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
   const [validationError, setValidationError] = useState<{ error: string; hint?: string } | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
