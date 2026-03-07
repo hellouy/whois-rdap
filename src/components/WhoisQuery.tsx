@@ -62,7 +62,7 @@ interface WhoisQueryProps {
 
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: WhoisQueryProps) => {
-  const { whois: whoisData, isLoading } = useWhois(domain);
+  const { whois: whoisData, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   
