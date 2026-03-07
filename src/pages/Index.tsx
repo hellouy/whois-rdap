@@ -149,6 +149,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
             onQuery={handleQuery} 
             isLoading={isQuerying}
             placeholder="输入域名，如：NIC.RW"
+            value={displayDomain}
           />
         </div>
       </div>
