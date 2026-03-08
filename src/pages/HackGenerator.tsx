@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import TldTagCloud from "@/components/TldTagCloud";
 import { Button } from "@/components/ui/button";
 import { useDomainAvailability } from "@/hooks/use-domain-availability";
 import {
@@ -309,10 +310,17 @@ const HackGenerator = () => {
             ))
           ) : (
             <div className="px-4 py-12 text-center text-muted-foreground text-sm">
-              {keyword.trim() ? "没有找到匹配结果，试试更换关键词或后缀" : "请输入关键词开始搜索"}
+              {keyword.trim() ? "没有找到匹配结果，试试更换关键词或后缀" : null}
             </div>
           )}
         </div>
+
+        {/* TLD Tag Cloud when no keyword */}
+        {!keyword.trim() && (
+          <div className="mt-6">
+            <TldTagCloud onSelectTld={(tld) => { setSelectedTld(tld); setTldDropdownOpen(false); }} />
+          </div>
+        )}
 
         {/* Pagination */}
         {allResults.length > 0 && (
