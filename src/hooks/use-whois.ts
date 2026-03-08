@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getTLDServers, toASCII, isIDN } from "@/utils/tld-servers";
-import { getRdapServer, getWhoisServer, WHOIS_SERVERS, getSupportedTldCount } from "@/utils/whois-servers";
+import { getRdapServer, WHOIS_SERVERS, getSupportedTldCount } from "@/utils/whois-servers";
 import { looksLikeNotFoundWhois, inferRegisteredFromWhois } from "@/utils/whois-heuristics";
 
 export interface WhoisData {
