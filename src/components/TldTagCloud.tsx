@@ -7,6 +7,7 @@ import { WORD_LIBRARY_EXTRA2 } from "@/lib/word-library-extra2";
 import { WORD_LIBRARY_EXTRA3 } from "@/lib/word-library-extra3";
 import { WORD_LIBRARY_EXTRA4 } from "@/lib/word-library-extra4";
 import { WORD_LIBRARY_EXTRA5 } from "@/lib/word-library-extra5";
+import { PINYIN_WORD_LIBRARY } from "@/lib/pinyin-library";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
@@ -23,7 +24,8 @@ function getTldWordCount(tld: string): number {
     (WORD_LIBRARY_EXTRA2[clean] || []).length +
     (WORD_LIBRARY_EXTRA3[clean] || []).length +
     (WORD_LIBRARY_EXTRA4[clean] || []).length +
-    (WORD_LIBRARY_EXTRA5[clean] || []).length
+    (WORD_LIBRARY_EXTRA5[clean] || []).length +
+    (PINYIN_WORD_LIBRARY[clean] || []).length
   );
 }
 
