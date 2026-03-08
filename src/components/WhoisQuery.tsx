@@ -744,7 +744,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     )}
                   </div>
                   {/* NS 列表：NS1, NS2, NS3... */}
-                  <div className="ml-6 sm:ml-8 space-y-1.5">
+                  <div className="ml-[6.5rem] sm:ml-[8rem] space-y-1.5">
                     {whoisData.nameServers.map((ns, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">NS{index + 1}:</span>
