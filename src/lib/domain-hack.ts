@@ -15,6 +15,7 @@ export interface HackResult {
   lengthScore: number;
   isExact: boolean;
   isFromLibrary: boolean;
+  meaning?: string;
 }
 
 function getWordsForTld(tld: string): string[] {
