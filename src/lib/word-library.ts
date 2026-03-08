@@ -1569,24 +1569,6 @@ export const WORD_LIBRARY: Record<string, string[]> = {
     "devil", "devious", "development", "developer",
   ],
 
-  ai: [
-    "samurai", "bonsai", "dubai", "thai", "shanghai",
-    "brain", "train", "chain", "plain", "strain", "sprain",
-    "domain", "remain", "contain", "obtain", "explain", "complain",
-    "maintain", "sustain", "attain", "retain", "refrain", "restrain",
-    "portrait", "detail", "retail", "email", "avail", "prevail",
-    "curtail", "cocktail", "ponytail", "dovetail", "fingernail",
-    "snail", "trail", "rail", "hail", "bail", "fail", "jail",
-    "nail", "sail", "tail", "wail", "frail", "grail", "quail",
-  ],
-
-  io: [
-    "studio", "audio", "radio", "ratio", "patio", "portfolio", "scenario",
-    "bio", "trio", "cardio", "folio", "pistachio", "cheerio", "presidio",
-    "oratorio", "adagio", "arpeggio",
-    "avocado", "brio", "cameo", "curio", "embryo",
-  ],
-
   game: [
     "game", "endgame", "pregame", "wargame", "minigame",
     "boardgame", "ballgame", "videogame", "cardgame",
