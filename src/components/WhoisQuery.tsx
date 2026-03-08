@@ -481,7 +481,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   };
 
   return (
-    <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
+    <Card className="p-3 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
       {isLoading ? (
         <WhoisSkeleton />
       ) : whoisData ? (
