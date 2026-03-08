@@ -5,7 +5,7 @@ import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, 
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { WhoisSkeleton } from "@/components/WhoisSkeleton";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
 import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo } from "@/utils/domain-status-mapping";
@@ -487,11 +487,132 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     return registrar.length > 30;
   };
 
+  // 未注册域名的增强检测：通过DNS和SSL交叉验证
+  const [dnsCheck, setDnsCheck] = useState<{ hasDns: boolean; hasSsl: boolean; checked: boolean }>({ hasDns: false, hasSsl: false, checked: false });
+  
+  useEffect(() => {
+    if (!whoisData || whoisData.registered !== false || !domain) return;
+    // When WHOIS says unregistered, cross-check with DNS + SSL
+    let cancelled = false;
+    const check = async () => {
+      let hasDns = false;
+      let hasSsl = false;
+      try {
+        const dnsResp = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`, {
+          signal: AbortSignal.timeout(5000),
+          headers: { Accept: 'application/dns-json' },
+        });
+        if (dnsResp.ok) {
+          const d = await dnsResp.json();
+          hasDns = d.Status === 0 && d.Answer && d.Answer.length > 0;
+        }
+      } catch {}
+      // Quick SSL check via HTTPS probe
+      try {
+        const sslResp = await fetch(`https://${domain}`, { signal: AbortSignal.timeout(4000), mode: 'no-cors' });
+        hasSsl = true; // If no error thrown, SSL likely exists
+      } catch (e: any) {
+        // TypeError with 'failed to fetch' could mean DNS fail or SSL fail
+        // but if we already know DNS exists, SSL might just be blocked by CORS
+        if (hasDns) hasSsl = false; // uncertain
+      }
+      if (!cancelled) setDnsCheck({ hasDns, hasSsl, checked: true });
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [whoisData, domain]);
+
+  // Override registered status if DNS cross-check reveals the domain exists
+  const effectiveRegistered = useMemo(() => {
+    if (!whoisData) return undefined;
+    if (whoisData.registered === false && dnsCheck.checked && dnsCheck.hasDns) {
+      return true; // DNS records exist, domain is likely registered
+    }
+    return whoisData.registered;
+  }, [whoisData, dnsCheck]);
+
   return (
     <Card className="p-3 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
       {isLoading ? (
         <WhoisSkeleton />
       ) : whoisData ? (
+        effectiveRegistered === false ? (
+          /* ===== 未注册域名增强卡片 ===== */
+          <div className="space-y-4">
+            {/* Price section at top even for unregistered */}
+            <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                {isPriceLoading && (
+                  <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+                    <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    <span className="text-xs sm:text-sm">正在查询价格...</span>
+                  </div>
+                )}
+                {priceError && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm text-muted-foreground">{priceError}</span>
+                    <Button variant="outline" size="sm" onClick={() => fetchPrice(domain)} className="h-6 px-2 text-xs gap-1">
+                      <RefreshCw className="h-3 w-3" />重试
+                    </Button>
+                  </div>
+                )}
+                {priceData && !isPriceLoading && !priceError && (
+                  <div className="flex items-center gap-3 sm:gap-4 animate-in fade-in-0 slide-in-from-left-2 duration-300 flex-wrap flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">注册:</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground">{formatPrice(priceData.registrationPrice)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">续费:</span>
+                      <span className="font-bold text-sm sm:text-base text-foreground">{formatPrice(priceData.renewalPrice)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Unregistered status card */}
+            <div className="p-4 sm:p-6 rounded-lg sm:rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 text-center">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                <span className="text-lg sm:text-xl font-bold text-foreground">{displayDomain}</span>
+              </div>
+              <Badge variant="outline" className="text-sm px-3 py-1 mb-3 border-primary/40 text-primary">
+                🎉 该域名尚未注册
+              </Badge>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                该域名目前可以注册，快去抢注吧！
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                <a
+                  href={`https://www.namesilo.com/domain/search-domains?query=${encodeURIComponent(domain)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />NameSilo
+                </a>
+                <a
+                  href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(domain)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors inline-flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />GoDaddy
+                </a>
+                <a
+                  href={`https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors inline-flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />Namecheap
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-2.5 sm:space-y-4 md:space-y-6">
           {/* 0. 域名价格 - 放在最上方 */}
           <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
@@ -804,6 +925,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 价格已移至顶部 */}
         </div>
+        )
       ) : error ? (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto mb-3 text-destructive opacity-50" />

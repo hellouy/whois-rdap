@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -374,7 +374,10 @@ function HackRow({ hack }: { hack: HackResult }) {
   const tldPart = hack.domain.substring(dotIndex);
 
   return (
-    <div className="grid grid-cols-[1fr_1fr] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors">
+    <Link
+      to={`/${hack.domain}`}
+      className="grid grid-cols-[1fr_1fr] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
+    >
       <div className="px-4 py-3 font-mono text-sm font-bold">
         <span className="text-foreground">{prefix}</span>
         <span className="text-primary">{tldPart}</span>
@@ -382,7 +385,7 @@ function HackRow({ hack }: { hack: HackResult }) {
       <div className="px-4 py-3 text-sm text-muted-foreground truncate">
         {hack.meaning || hack.keyword}
       </div>
-    </div>
+    </Link>
   );
 }
 
