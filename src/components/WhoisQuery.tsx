@@ -598,7 +598,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 3. 时间信息 */}
           {whoisData.creationDate && (
-            <div className="relative p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8 sm:pb-8">
+            <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册时间:</span>
