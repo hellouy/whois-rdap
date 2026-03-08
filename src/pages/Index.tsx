@@ -136,11 +136,11 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
       {/* Hero Section */}
       <div className="relative overflow-hidden flex-shrink-0">
         <div className="relative container mx-auto px-3 sm:px-4 py-4 sm:py-8 md:py-20">
-          <div className="text-center mb-6 md:mb-12">
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-primary mb-4 sm:mb-6">
+          <div className="text-center mb-4 sm:mb-6 md:mb-12">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-primary mb-2 sm:mb-6">
               域名查询
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto tracking-wide">
+            <p className="text-sm sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto tracking-wide">
               改版升级中，不保证信息准确性。
             </p>
           </div>
