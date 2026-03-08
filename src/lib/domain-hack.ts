@@ -1,47 +1,7 @@
-// Domain Hack Generator Logic — imports from modular files
+// Domain Hack Generator Logic — lazy-loaded word libraries for performance
+// Libraries are loaded on first use, not at module import time
 
-import { WORD_LIBRARY as BASE_LIBRARY } from "./word-library";
-import { WORD_LIBRARY_EXTRA } from "./word-library-extra";
-import { WORD_LIBRARY_EXTRA2 } from "./word-library-extra2";
-import { WORD_LIBRARY_EXTRA3 } from "./word-library-extra3";
-import { WORD_LIBRARY_EXTRA4 } from "./word-library-extra4";
-import { WORD_LIBRARY_EXTRA5, WORD_MEANINGS_EXTRA5 } from "./word-library-extra5";
-import { PINYIN_WORD_LIBRARY, PINYIN_MEANINGS } from "./pinyin-library";
-import { WORD_MEANINGS as BASE_MEANINGS } from "./word-meanings";
-import { WORD_MEANINGS_EXTRA } from "./word-meanings-extra";
-import { WORD_MEANINGS_EXTRA2 } from "./word-meanings-extra2";
-import { WORD_MEANINGS_EXTRA3 } from "./word-meanings-extra3";
-import { WORD_MEANINGS_EXTRA4 } from "./word-meanings-extra4";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
-
-// Merge meanings
-const WORD_MEANINGS: Record<string, string> = {
-  ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA, ...WORD_MEANINGS_EXTRA2,
-  ...WORD_MEANINGS_EXTRA3, ...WORD_MEANINGS_EXTRA4, ...WORD_MEANINGS_EXTRA5,
-  ...PINYIN_MEANINGS,
-};
-
-// Merge base + extra libraries
-function mergeLibrary(target: Record<string, string[]>, source: Record<string, string[]>) {
-  for (const [tld, words] of Object.entries(source)) {
-    if (!target[tld] || target[tld].length === 0) {
-      target[tld] = words;
-    } else if (words.length > 0) {
-      const existing = new Set(target[tld]);
-      for (const w of words) {
-        if (!existing.has(w)) target[tld].push(w);
-      }
-    }
-  }
-}
-
-const WORD_LIBRARY: Record<string, string[]> = { ...BASE_LIBRARY };
-mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA);
-mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA2);
-mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA3);
-mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA4);
-mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA5);
-mergeLibrary(WORD_LIBRARY, PINYIN_WORD_LIBRARY);
 
 export { PRESET_TLDS, POPULAR_TLDS };
 
@@ -58,9 +18,91 @@ export interface HackResult {
   meaning?: string;
 }
 
+export type SortMode = "score" | "creativity" | "length" | "alpha";
+
+// ---- Lazy-loaded data singletons ----
+let _wordLibrary: Record<string, string[]> | null = null;
+let _wordMeanings: Record<string, string> | null = null;
+
+function mergeLibrary(target: Record<string, string[]>, source: Record<string, string[]>) {
+  for (const [tld, words] of Object.entries(source)) {
+    if (!target[tld] || target[tld].length === 0) {
+      target[tld] = words;
+    } else if (words.length > 0) {
+      const existing = new Set(target[tld]);
+      for (const w of words) {
+        if (!existing.has(w)) target[tld].push(w);
+      }
+    }
+  }
+}
+
+async function loadLibraries(): Promise<{
+  library: Record<string, string[]>;
+  meanings: Record<string, string>;
+}> {
+  if (_wordLibrary && _wordMeanings) {
+    return { library: _wordLibrary, meanings: _wordMeanings };
+  }
+
+  const [
+    { WORD_LIBRARY: BASE_LIBRARY },
+    { WORD_LIBRARY_EXTRA },
+    { WORD_LIBRARY_EXTRA2 },
+    { WORD_LIBRARY_EXTRA3 },
+    { WORD_LIBRARY_EXTRA4 },
+    { WORD_LIBRARY_EXTRA5, WORD_MEANINGS_EXTRA5 },
+    { PINYIN_WORD_LIBRARY, PINYIN_MEANINGS },
+    { WORD_MEANINGS: BASE_MEANINGS },
+    { WORD_MEANINGS_EXTRA },
+    { WORD_MEANINGS_EXTRA2 },
+    { WORD_MEANINGS_EXTRA3 },
+    { WORD_MEANINGS_EXTRA4 },
+  ] = await Promise.all([
+    import("./word-library"),
+    import("./word-library-extra"),
+    import("./word-library-extra2"),
+    import("./word-library-extra3"),
+    import("./word-library-extra4"),
+    import("./word-library-extra5"),
+    import("./pinyin-library"),
+    import("./word-meanings"),
+    import("./word-meanings-extra"),
+    import("./word-meanings-extra2"),
+    import("./word-meanings-extra3"),
+    import("./word-meanings-extra4"),
+  ]);
+
+  const library: Record<string, string[]> = { ...BASE_LIBRARY };
+  mergeLibrary(library, WORD_LIBRARY_EXTRA);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA2);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA3);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA4);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA5);
+  mergeLibrary(library, PINYIN_WORD_LIBRARY);
+
+  const meanings: Record<string, string> = {
+    ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA, ...WORD_MEANINGS_EXTRA2,
+    ...WORD_MEANINGS_EXTRA3, ...WORD_MEANINGS_EXTRA4, ...WORD_MEANINGS_EXTRA5,
+    ...PINYIN_MEANINGS,
+  };
+
+  _wordLibrary = library;
+  _wordMeanings = meanings;
+  return { library, meanings };
+}
+
+// Synchronous access after first load (fallback to empty)
+function getLibrary(): Record<string, string[]> {
+  return _wordLibrary || {};
+}
+function getMeanings(): Record<string, string> {
+  return _wordMeanings || {};
+}
+
 function getWordsForTld(tld: string): string[] {
   const tldClean = tld.replace(/^\./, "").toLowerCase();
-  return WORD_LIBRARY[tldClean] || [];
+  return getLibrary()[tldClean] || [];
 }
 
 function generateVariants(keyword: string): string[] {
@@ -94,7 +136,6 @@ function generateVariants(keyword: string): string[] {
     variants.add(doubled + "er");
     variants.add(doubled + "ed");
   }
-  // prefix variants
   const prefixes = ["un", "re", "pre", "mis", "out", "over", "under", "up"];
   for (const p of prefixes) {
     variants.add(p + keyword);
@@ -114,7 +155,6 @@ function findHackPosition(word: string, tldClean: string): number | null {
 function calculateCreativity(prefix: string, word: string, tld: string, isFromLibrary: boolean): number {
   let score = 50;
   const tldClean = tld.replace(/^\./, "");
-
   if ((prefix + tldClean).toLowerCase() === word.toLowerCase()) {
     score += 30;
   }
@@ -126,22 +166,30 @@ function calculateCreativity(prefix: string, word: string, tld: string, isFromLi
   if (prefix.length >= 2 && /^[a-z]+$/i.test(prefix)) score += 3;
   if (prefix.length > 10) score -= 10;
   if (prefix.length > 15) score -= 15;
-
   return Math.min(100, Math.max(0, score));
 }
 
-export type SortMode = "score" | "creativity" | "length" | "alpha";
+/** Preload libraries (call on page mount) */
+export async function preloadLibraries(): Promise<void> {
+  await loadLibraries();
+}
+
+/** Check if libraries are loaded */
+export function isLibraryReady(): boolean {
+  return _wordLibrary !== null;
+}
 
 export function generateDomainHacks(
   keyword: string,
   tlds: string[],
   includeVariants: boolean = true
 ): HackResult[] {
-  if (!keyword.trim()) return [];
+  if (!keyword.trim() || !_wordLibrary) return [];
 
   const cleanKeyword = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!cleanKeyword) return [];
 
+  const meanings = getMeanings();
   const keywordWords = includeVariants
     ? generateVariants(cleanKeyword)
     : [cleanKeyword];
@@ -164,7 +212,7 @@ export function generateDomainHacks(
         const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
         const isExact = (prefix + tldClean).toLowerCase() === cleanKeyword;
 
-        const meaning = WORD_MEANINGS[domain] || "";
+        const meaning = meanings[domain] || "";
         results.push({
           domain, keyword: word, tld, prefix, score, creativity, lengthScore,
           isExact, isFromLibrary: false, meaning,
@@ -193,7 +241,7 @@ export function generateDomainHacks(
       const lengthScore = Math.max(0, 100 - (prefix.length + tldClean.length) * 5);
       const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
 
-      const meaning = WORD_MEANINGS[domain] || "";
+      const meaning = meanings[domain] || "";
       results.push({
         domain, keyword: wordLower, tld, prefix, score, creativity, lengthScore,
         isExact: false, isFromLibrary: true, meaning,
