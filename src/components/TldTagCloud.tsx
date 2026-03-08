@@ -1,12 +1,14 @@
-import { useState, useMemo } from "react";
-import { PRESET_TLDS, POPULAR_TLDS } from "@/lib/tld-list";
+import { useState, useMemo, lazy, Suspense } from "react";
+import { PRESET_TLDS, POPULAR_TLDS, ALL_CCTLDS } from "@/lib/tld-list";
+import { TLD_CATEGORIES, HACKABLE_TLDS } from "@/lib/tld-categories";
 import { WORD_LIBRARY } from "@/lib/word-library";
 import { WORD_LIBRARY_EXTRA } from "@/lib/word-library-extra";
 import { WORD_LIBRARY_EXTRA2 } from "@/lib/word-library-extra2";
 import { WORD_LIBRARY_EXTRA3 } from "@/lib/word-library-extra3";
 import { WORD_LIBRARY_EXTRA4 } from "@/lib/word-library-extra4";
+import { WORD_LIBRARY_EXTRA5 } from "@/lib/word-library-extra5";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowUpDown } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface TldTagCloudProps {
   onSelectTld: (tld: string) => void;
@@ -15,19 +17,27 @@ interface TldTagCloudProps {
 /** 合并所有词库计算词数 */
 function getTldWordCount(tld: string): number {
   const clean = tld.replace(/^\./, "").toLowerCase();
-  const base = (WORD_LIBRARY[clean] || []).length;
-  const extra = (WORD_LIBRARY_EXTRA[clean] || []).length;
-  const extra2 = (WORD_LIBRARY_EXTRA2[clean] || []).length;
-  const extra3 = (WORD_LIBRARY_EXTRA3[clean] || []).length;
-  const extra4 = (WORD_LIBRARY_EXTRA4[clean] || []).length;
-  return base + extra + extra2 + extra3 + extra4;
+  return (
+    (WORD_LIBRARY[clean] || []).length +
+    (WORD_LIBRARY_EXTRA[clean] || []).length +
+    (WORD_LIBRARY_EXTRA2[clean] || []).length +
+    (WORD_LIBRARY_EXTRA3[clean] || []).length +
+    (WORD_LIBRARY_EXTRA4[clean] || []).length +
+    (WORD_LIBRARY_EXTRA5[clean] || []).length
+  );
 }
 
 type SortBy = "popular" | "count" | "alpha";
 
+const ccTldSet = new Set(ALL_CCTLDS);
+const hackableSet = new Set(HACKABLE_TLDS);
+
+const CATEGORY_KEYS = Object.keys(TLD_CATEGORIES);
+
 const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("popular");
+  const [category, setCategory] = useState("all");
 
   const tldStats = useMemo(() => {
     return PRESET_TLDS.map((tld) => ({
@@ -38,6 +48,23 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
 
   const filtered = useMemo(() => {
     let items = tldStats;
+
+    // Category filter
+    if (category === "cctld") {
+      items = items.filter((s) => ccTldSet.has(s.tld));
+    } else if (category === "gtld") {
+      items = items.filter((s) => !ccTldSet.has(s.tld));
+    } else if (category === "hackable") {
+      items = items.filter((s) => hackableSet.has(s.tld));
+    } else if (category !== "all") {
+      const cat = TLD_CATEGORIES[category];
+      if (cat && cat.tlds.length > 0) {
+        const catSet = new Set(cat.tlds);
+        items = items.filter((s) => catSet.has(s.tld));
+      }
+    }
+
+    // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       items = items.filter((s) => s.tld.toLowerCase().includes(q));
@@ -65,7 +92,7 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
         break;
     }
     return sorted;
-  }, [tldStats, search, sortBy]);
+  }, [tldStats, search, sortBy, category]);
 
   const withWords = filtered.filter((s) => s.count > 0);
   const withoutWords = filtered.filter((s) => s.count === 0);
@@ -77,15 +104,48 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
     { key: "alpha", label: "字母" },
   ];
 
+  // Category tabs
+  const categoryTabs = [
+    { key: "all", label: "全部", emoji: "🌍" },
+    { key: "hackable", label: "可拼", emoji: "⚡" },
+    { key: "cctld", label: "国家", emoji: "🏳️" },
+    { key: "gtld", label: "通用", emoji: "🔤" },
+    { key: "asia", label: "亚洲", emoji: "🌏" },
+    { key: "europe", label: "欧洲", emoji: "🇪🇺" },
+    { key: "americas", label: "美洲", emoji: "🌎" },
+    { key: "africa", label: "非洲", emoji: "🌍" },
+    { key: "tech", label: "科技", emoji: "💻" },
+    { key: "business", label: "商业", emoji: "💼" },
+    { key: "creative", label: "创意", emoji: "🎨" },
+  ];
+
   return (
-    <div className="space-y-4">
-      <div className="text-center py-4">
+    <div className="space-y-3">
+      <div className="text-center py-3">
         <p className="text-sm text-muted-foreground mb-1">
           点击后缀开始探索域名短语
         </p>
         <p className="text-xs text-muted-foreground/60">
           共 {PRESET_TLDS.length} 个后缀，其中 {totalWithWords} 个有词库支持
         </p>
+      </div>
+
+      {/* Category filter tabs */}
+      <div className="flex flex-wrap gap-1 justify-center">
+        {categoryTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setCategory(tab.key)}
+            className={`px-2 py-1 text-[11px] rounded-full border transition-colors ${
+              category === tab.key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+            }`}
+          >
+            <span className="mr-0.5">{tab.emoji}</span>
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Search & Sort controls */}
@@ -115,6 +175,11 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
           ))}
         </div>
       </div>
+
+      {/* Count summary for current filter */}
+      <p className="text-center text-[10px] text-muted-foreground/50">
+        当前筛选: {withWords.length} 个有词库 / {filtered.length} 个总计
+      </p>
 
       {/* 有词库的 TLD */}
       <div className="flex flex-wrap gap-1.5 justify-center">
