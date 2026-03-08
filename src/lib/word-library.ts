@@ -809,10 +809,39 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .gl words
-  gl: [],
+  gl: [
+    "angel", "bagel", "camel", "channel", "chapel", "counsel",
+    "equal", "fuel", "gospel", "gravel", "hazel", "jewel",
+    "journal", "kernel", "label", "legal", "level", "local",
+    "marvel", "medal", "mental", "metal", "mineral", "model",
+    "mongrel", "moral", "morsel", "motel", "mural", "mutual",
+    "naval", "nickel", "normal", "novel", "nozzle", "panel",
+    "parcel", "patrol", "pedal", "penal", "pencil", "pistol",
+    "plural", "portal", "postal", "rebel", "rival", "royal",
+    "rural", "scandal", "sequel", "signal", "snorkel", "spiral",
+    "squirrel", "swivel", "symbol", "terminal", "total", "travel",
+    "tunnel", "vessel", "vocal", "vowel",
+  ],
 
   // .gr words
-  gr: [],
+  gr: [
+    "anger", "answer", "beaver", "bigger", "bitter", "bladder",
+    "blister", "blur", "border", "buffer", "burger", "butter",
+    "cedar", "chapter", "cider", "cigar", "cipher", "cluster",
+    "color", "conquer", "danger", "eager", "ember", "error",
+    "feather", "finger", "flavor", "flour", "gender", "ginger",
+    "glamour", "harbor", "hanger", "honor", "hunger", "labor",
+    "lager", "laser", "later", "layer", "leather", "lever",
+    "linger", "liquor", "major", "manor", "matter", "minor",
+    "monster", "murder", "neighbor", "number", "other", "outer",
+    "paper", "plaster", "player", "polar", "poster", "power",
+    "prayer", "premier", "proper", "quiver", "razor", "river",
+    "rubber", "ruler", "rumor", "saucer", "scatter", "scholar",
+    "silver", "slender", "soccer", "solar", "spider", "splinter",
+    "sugar", "super", "timber", "tower", "trigger", "tumor",
+    "vigor", "vulgar", "wander", "water", "weather", "whisper",
+    "winter", "wonder",
+  ],
 
   // .gy words (30+)
   gy: [
