@@ -30,6 +30,7 @@ function mergeLibrary(target: Record<string, string[]>, source: Record<string, s
 const WORD_LIBRARY: Record<string, string[]> = { ...BASE_LIBRARY };
 mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA);
 mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA2);
+mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA3);
 
 export { PRESET_TLDS, POPULAR_TLDS };
 
