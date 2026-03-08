@@ -12,6 +12,7 @@ import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo 
 import { getRegistrarWebsite, getFaviconUrl } from "@/utils/registrar-data";
 import { getDnsProvider } from "@/utils/dns-provider-data";
 import { getCountryName } from "@/utils/country-data";
+import { useDomainMeaning } from "@/hooks/use-domain-meaning";
 
 // 检查是否为隐私保护或空信息
 const isPrivacyRedacted = (value: string | undefined): boolean => {
@@ -66,6 +67,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   const { whois: whoisData, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
+  const domainMeaning = useDomainMeaning(domain);
   
   // 使用传入的displayDomain或使用toUnicode转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
@@ -577,6 +579,9 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               <div className="flex items-center justify-center gap-2 mb-3">
                 <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                 <span className="text-lg sm:text-xl font-bold text-foreground">{displayDomain}</span>
+                {domainMeaning && (
+                  <span className="text-sm sm:text-base text-muted-foreground">— {domainMeaning}</span>
+                )}
               </div>
               <Badge variant="outline" className="text-sm px-3 py-1 mb-3 border-primary/40 text-primary">
                 🎉 该域名尚未注册
@@ -675,9 +680,16 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5 w-[4.5rem] sm:w-[5.5rem] text-right">域名:</span>
                 <div className="flex-1 min-w-0">
-                  <span className="font-bold text-sm sm:text-base text-foreground break-all">
-                    {displayDomain}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm sm:text-base text-foreground break-all">
+                      {displayDomain}
+                    </span>
+                    {domainMeaning && (
+                      <span className="text-xs sm:text-sm text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded">
+                        {domainMeaning}
+                      </span>
+                    )}
+                  </div>
                   {showDualForm && (
                     <div className="mt-1">
                       <span className="text-xs text-muted-foreground font-mono">
