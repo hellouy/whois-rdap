@@ -525,7 +525,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     {/* 注册商 favicon */}
