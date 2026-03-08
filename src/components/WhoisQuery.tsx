@@ -5,7 +5,7 @@ import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, 
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { WhoisSkeleton } from "@/components/WhoisSkeleton";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
 import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo } from "@/utils/domain-status-mapping";
