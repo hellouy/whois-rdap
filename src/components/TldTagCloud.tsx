@@ -76,7 +76,7 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
       tld,
       count: getTldWordCount(tld),
     }));
-  }, []);
+  }, [countsReady]);
 
   const filtered = useMemo(() => {
     let items = tldStats;
