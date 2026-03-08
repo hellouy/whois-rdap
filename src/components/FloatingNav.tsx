@@ -418,7 +418,7 @@ export const FloatingNav = () => {
           <SheetTitle className="text-2xl font-bold">
             {selectedSection 
               ? (selectedSection.isPhrase && selectedTld 
-                  ? `短语 (${selectedTld})` 
+                  ? `HACK (${selectedTld})` 
                   : selectedSection.title)
               : "域名导航"}
           </SheetTitle>
