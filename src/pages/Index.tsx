@@ -59,6 +59,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
     setDomain(queryDomain);
     setDisplayDomain(originalDomain);
     userInteractedRef.current = false;
+    addToHistory(queryDomain, originalDomain, "查询中");
     
     // 更新 URL 为伪静态路径
     navigate(`/${originalDomain}`, { replace: true });
