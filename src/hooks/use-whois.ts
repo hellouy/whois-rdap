@@ -712,38 +712,45 @@ export function useWhois(domain: string) {
           // 全部快速源失败
         }
         
-        // === 慢速兜底：jina.ai who.is 代理 ===
+        // === 慢速兜底：tian.hu 重试（更长超时） ===
         if (!result) {
-          const whoisServer = getWhoisServer(norm);
-          if (whoisServer) {
-            try {
-              console.log(`[WHOIS] 尝试 who.is 代理兜底`);
-              const proxyUrl = `https://r.jina.ai/https://www.who.is/whois/${encodeURIComponent(norm)}`;
-              const response = await fetch(proxyUrl, {
-                signal: AbortSignal.timeout(12000),
-                headers: { 'Accept': 'text/plain' }
-              });
-              if (response.ok) {
-                const text = await response.text();
-                if (!looksLikeNotFoundWhois(text)) {
-                  const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i)
-                    || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
-                    || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
-                  if (rawWhoisMatch) {
-                    const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
-                    if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
-                      result = parsed;
-                      console.log(`[WHOIS] who.is 代理兜底成功`);
-                    }
-                  }
-                } else {
-                  result = { domainName: rawDomain, registered: false, status: ['available'], raw: text };
-                  console.log(`[WHOIS] who.is 代理: 域名未注册`);
+          try {
+            console.log(`[WHOIS] 尝试 tian.hu 长超时兜底`);
+            const response = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
+              signal: AbortSignal.timeout(15000),
+              headers: { 'Accept': 'application/json' }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.code === 200 && data.data) {
+                const payload = data.data;
+                const formatted = payload.formatted;
+                let ns: string[] = [];
+                let creationDate: string | undefined;
+                let expirationDate: string | undefined;
+                let status: string[] = [];
+                if (formatted?.domain) {
+                  ns = formatted.domain.name_servers || [];
+                  status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
+                  creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
+                  expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
                 }
+                result = {
+                  domainName: payload.domain || norm,
+                  registrar: formatted?.registrar?.registrar_name,
+                  registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
+                  creationDate,
+                  expirationDate,
+                  nameServers: ns,
+                  status,
+                  registered: payload.status === 1,
+                  raw: payload.result,
+                };
+                console.log(`[WHOIS] tian.hu 兜底成功`);
               }
-            } catch {
-              console.warn(`[WHOIS] who.is 代理兜底失败`);
             }
+          } catch {
+            console.warn(`[WHOIS] tian.hu 兜底失败`);
           }
           if (!result) lastError = "所有查询源均未返回有效数据";
         }

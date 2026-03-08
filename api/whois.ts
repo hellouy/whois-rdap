@@ -210,16 +210,16 @@ export default async function handler(req: Request) {
     });
   }
 
-  // === PHASE 2: Slower fallbacks (who.is proxy) ===
+  // === PHASE 2: tian.hu retry with longer timeout (if not already tried or failed fast) ===
   try {
-    const resp = await fetch(`https://r.jina.ai/https://www.who.is/whois/${domain}`, {
-      headers: { Accept: 'text/plain' },
-      signal: AbortSignal.timeout(10000),
+    const resp = await fetch(`https://api.tian.hu/whois/${domain}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(12000),
     });
     if (resp.ok) {
-      const text = await resp.text();
-      if (text.length > 100) {
-        return new Response(JSON.stringify({ source: 'whois-proxy', data: text }), {
+      const data = await resp.json();
+      if (data.code === 200) {
+        return new Response(JSON.stringify({ source: 'tianhu', data }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
