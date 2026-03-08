@@ -552,12 +552,11 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               {/* 域名和状态标签 */}
               <div className="flex items-start gap-2 sm:gap-3">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5">域名:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5 w-[4.5rem] sm:w-[5.5rem] text-right">域名:</span>
                 <div className="flex-1 min-w-0">
                   <span className="font-bold text-sm sm:text-base text-foreground break-all">
                     {displayDomain}
                   </span>
-                  {/* IDN 双形态显示 */}
                   {showDualForm && (
                     <div className="mt-1">
                       <span className="text-xs text-muted-foreground font-mono">
@@ -577,7 +576,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               {/* DNSSEC */}
               <div className="flex items-center gap-2 sm:gap-3">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">DNSSEC:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">DNSSEC:</span>
                 <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec || "未启用"}</span>
               </div>
             </div>
@@ -588,7 +587,6 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    {/* 注册商 favicon */}
                     {getRegistrarWebsite(whoisData.registrar) && (
                       <img 
                         src={getFaviconUrl(getRegistrarWebsite(whoisData.registrar)!)} 
@@ -600,7 +598,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     {!getRegistrarWebsite(whoisData.registrar) && (
                       <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                     )}
-                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册商:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">注册商:</span>
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       {isRegistrarLong(whoisData.registrar) && !expandedRegistrar ? (
                         <>
@@ -630,7 +628,6 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                         <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
                       )}
                     </div>
-                    {/* 注册商官网跳转 */}
                     {getRegistrarWebsite(whoisData.registrar) && (
                       <a
                         href={getRegistrarWebsite(whoisData.registrar)!}
@@ -648,7 +645,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                   {whoisData.registrarIanaId && (
                     <div className="flex items-center gap-2 sm:gap-3">
                       <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">IANA ID:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">IANA ID:</span>
                       <span className="font-bold text-sm sm:text-base text-foreground">{whoisData.registrarIanaId}</span>
                     </div>
                   )}
@@ -661,7 +658,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
             <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册时间:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">注册时间:</span>
                 <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.creationDate)}</span>
               </div>
               <p className="absolute bottom-2 sm:bottom-3 right-3 sm:right-4 text-xs text-muted-foreground">
@@ -674,7 +671,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
             <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">过期时间:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">过期时间:</span>
                 <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.expirationDate)}</span>
               </div>
               <p className="absolute bottom-2 sm:bottom-3 right-3 sm:right-4 text-xs text-muted-foreground">
@@ -687,7 +684,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
             <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">更新时间:</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">更新时间:</span>
                 <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.updatedDate)}</span>
               </div>
             </div>
