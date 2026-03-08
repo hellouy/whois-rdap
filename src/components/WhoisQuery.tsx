@@ -624,7 +624,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           )}
 
           {whoisData.updatedDate && (
-            <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">更新时间:</span>
