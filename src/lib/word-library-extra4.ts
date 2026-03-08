@@ -856,27 +856,7 @@ export const WORD_LIBRARY_EXTRA4: Record<string, string[]> = {
     "impact", "react", "interact", "compact", "artifact",
     "habitat", "diplomat", "format", "combat", "acrobat",
   ],
-
-  // .il words (expand)
-  il: [
-    "tail", "mail", "rail", "sail", "trail", "detail", "retail",
-    "email", "cocktail", "ponytail", "fingernail", "thumbnail",
-    "snail", "avail", "prevail", "curtail", "derail",
-    "fail", "jail", "bail", "hail", "nail", "pail", "wail",
-    "oil", "soil", "coil", "foil", "toil", "boil", "spoil",
-    "broil", "recoil", "turmoil",
-    "pencil", "council", "stencil", "fossil", "tonsil",
-    "civil", "devil", "evil", "peril", "pupil", "anvil",
-    "until", "april", "brazil",
-    "nostril", "tendril", "utensil", "lentil",
-    "agile", "fertile", "fragile", "hostile", "futile",
-    "missile", "mobile", "noble", "possible", "profile",
-    "smile", "style", "meanwhile", "compile", "crocodile",
-    "domicile", "exile", "fertile", "fragile", "hostile",
-    "juvenile", "meanwhile", "missile", "mobile", "profile",
-    "projectile", "reconcile", "reptile", "senile", "sterile",
-    "textile", "versatile", "volatile", "worthwhile",
-  ],
+  // .il words already defined above — skipped duplicate
 
   // .ng words (Nigeria — expand)
   ng: [
