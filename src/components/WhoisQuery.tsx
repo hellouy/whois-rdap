@@ -493,7 +493,60 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
         <WhoisSkeleton />
       ) : whoisData ? (
         <div className="space-y-2.5 sm:space-y-4 md:space-y-6">
-          {/* 1. 域名信息 - 最高优先级 */}
+          {/* 0. 域名价格 - 放在最上方 */}
+          <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              
+              {isPriceLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+                  <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  <span className="text-xs sm:text-sm">正在查询价格...</span>
+                </div>
+              )}
+              
+              {priceError && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground">{priceError}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchPrice(domain)}
+                    className="h-6 px-2 text-xs gap-1"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    重试
+                  </Button>
+                </div>
+              )}
+              
+              {priceData && !isPriceLoading && !priceError && (
+                <div className="flex items-center gap-3 sm:gap-4 animate-in fade-in-0 slide-in-from-left-2 duration-300 flex-wrap flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">注册:</span>
+                    <span className="font-bold text-sm sm:text-base text-foreground">
+                      {formatPrice(priceData.registrationPrice)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">续费:</span>
+                    <span className="font-bold text-sm sm:text-base text-foreground">
+                      {formatPrice(priceData.renewalPrice)}
+                    </span>
+                  </div>
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">议价:</span>
+                    <span className={`text-xs sm:text-sm font-bold ${priceData.isNegotiable ? 'text-destructive' : 'text-foreground'}`}>
+                      {priceData.isNegotiable ? '是' : '否'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 1. 域名信息 */}
           <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
             <div className="space-y-3">
               {/* 域名和状态标签 */}

@@ -22,15 +22,6 @@ const EXCHANGE_RATES: Record<string, number> = {
   cny: 1,
 };
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  usd: '$',
-  eur: '€',
-  gbp: '£',
-  jpy: '¥',
-  krw: '₩',
-  cny: '¥',
-};
-
 // 价格缓存
 const priceCache = new Map<string, { data: DomainPrice; timestamp: number }>();
 const PRICE_CACHE_TTL = 10 * 60 * 1000;
@@ -43,56 +34,89 @@ const validatePriceData = (data: any): boolean => {
   return data && data.code === 100 && data.data?.price?.length > 0;
 };
 
-// 通过边缘代理或多个CORS代理竞速获取价格数据
-async function fetchPriceFromApi(apiUrl: string, tld: string, signal: AbortSignal): Promise<any> {
+// Robust price fetching: try multiple sources with smart fallback
+async function fetchPriceFromApi(tld: string, signal: AbortSignal): Promise<any> {
+  const apiUrl = `https://www.nazhumi.com/api/v1?domain=${encodeURIComponent(tld)}`;
+  
   const validate = (d: any) => {
     if (!validatePriceData(d)) throw new Error('invalid');
     return d;
   };
 
-  const directFetch = (proxyUrl: string) =>
-    fetch(proxyUrl, { signal, headers: { Accept: 'application/json' } })
-      .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
-      .then(validate)
-      .catch(() => null);
+  // Helper: fetch with timeout and validation  
+  const tryFetch = async (url: string, parseWrapper?: (d: any) => any): Promise<any> => {
+    const resp = await fetch(url, {
+      signal,
+      headers: { Accept: 'application/json' },
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    
+    // Check if response is actually JSON (not source code from dev server)
+    const contentType = resp.headers.get('content-type') || '';
+    const text = await resp.text();
+    
+    // Detect source code response (happens in dev/preview mode)
+    if (text.startsWith('//') || text.startsWith('export ') || text.startsWith('import ') || text.includes('function handler')) {
+      throw new Error('Got source code instead of API response');
+    }
+    
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error('Not JSON');
+    }
+    
+    if (parseWrapper) data = parseWrapper(data);
+    return validate(data);
+  };
 
-  const fetchers = [
-    // 0. Vercel Edge 代理（部署时最快）
-    directFetch(`/api/price?domain=${encodeURIComponent(tld)}`),
+  // Strategy: try sources sequentially with short timeouts, fall back fast
+  const sources = [
+    // 1. Vercel Edge proxy (fastest when deployed)
+    () => tryFetch(`/api/price?domain=${encodeURIComponent(tld)}`),
     
-    // 1. 直连
-    directFetch(apiUrl),
+    // 2. Direct (works if no CORS issue)
+    () => tryFetch(apiUrl),
     
-    // 2. allorigins
-    fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`, { signal })
-      .then(r => { if (!r.ok) throw new Error('fail'); return r.json(); })
-      .then(w => {
+    // 3. allorigins wrapper
+    () => tryFetch(
+      `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`,
+      (w) => {
         if (!w?.contents) throw new Error('empty');
-        return validate(typeof w.contents === 'string' ? JSON.parse(w.contents) : w.contents);
-      })
-      .catch(() => null),
+        return typeof w.contents === 'string' ? JSON.parse(w.contents) : w.contents;
+      }
+    ),
     
-    // 3. corsproxy.io
-    directFetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`),
+    // 4. corsproxy.io
+    () => tryFetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`),
+    
+    // 5. Alternative CORS proxy
+    () => tryFetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`),
   ];
 
+  // Race approach: start all, first valid wins
   return new Promise<any>((resolve, reject) => {
     let settled = false;
-    let doneCount = 0;
-    const total = fetchers.length;
-    
-    fetchers.forEach(p => {
-      p.then(result => {
-        doneCount++;
-        if (result && !settled) {
-          settled = true;
-          resolve(result);
-        } else if (doneCount === total && !settled) {
-          settled = true;
-          reject(new Error("全部代理失败"));
-        }
-      });
-    });
+    let failCount = 0;
+    const total = sources.length;
+
+    for (const sourceFn of sources) {
+      sourceFn()
+        .then(result => {
+          if (!settled) {
+            settled = true;
+            resolve(result);
+          }
+        })
+        .catch(() => {
+          failCount++;
+          if (failCount === total && !settled) {
+            settled = true;
+            reject(new Error("全部代理失败"));
+          }
+        });
+    }
   });
 }
 
@@ -124,14 +148,12 @@ export const useDomainPrice = () => {
         throw new Error("暂无价格数据");
       }
       
-      const apiUrl = `https://www.nazhumi.com/api/v1?domain=${encodeURIComponent(tld)}`;
-      
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       let res: any;
       try {
-        res = await fetchPriceFromApi(apiUrl, tld, controller.signal);
+        res = await fetchPriceFromApi(tld, controller.signal);
       } catch {
         clearTimeout(timeoutId);
         noPriceCache.set(tld, Date.now());
@@ -206,7 +228,6 @@ export const useDomainPrice = () => {
         ? (err.name === 'AbortError' ? "查询超时，请重试" : err.message)
         : "查询失败";
       setError(msg);
-      console.error('域名价格查询错误:', err);
     } finally {
       setIsLoading(false);
     }
@@ -219,7 +240,8 @@ export const useDomainPrice = () => {
 
   const formatOriginalPrice = (original?: { price: number; currency: string }): string | null => {
     if (!original) return null;
-    const symbol = CURRENCY_SYMBOLS[original.currency] || '';
+    const symbols: Record<string, string> = { usd: '$', eur: '€', gbp: '£', jpy: '¥', krw: '₩', cny: '¥' };
+    const symbol = symbols[original.currency] || '';
     return `${symbol}${original.price.toFixed(2)}`;
   };
 
