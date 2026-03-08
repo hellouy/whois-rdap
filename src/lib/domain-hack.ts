@@ -1,6 +1,7 @@
 // Domain Hack Generator Logic — imports from modular files
 
 import { WORD_LIBRARY } from "./word-library";
+import { WORD_MEANINGS } from "./word-meanings";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
 
 export { PRESET_TLDS, POPULAR_TLDS };
