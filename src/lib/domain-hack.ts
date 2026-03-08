@@ -4,14 +4,16 @@ import { WORD_LIBRARY as BASE_LIBRARY } from "./word-library";
 import { WORD_LIBRARY_EXTRA } from "./word-library-extra";
 import { WORD_LIBRARY_EXTRA2 } from "./word-library-extra2";
 import { WORD_LIBRARY_EXTRA3 } from "./word-library-extra3";
+import { WORD_LIBRARY_EXTRA4 } from "./word-library-extra4";
 import { WORD_MEANINGS as BASE_MEANINGS } from "./word-meanings";
 import { WORD_MEANINGS_EXTRA } from "./word-meanings-extra";
 import { WORD_MEANINGS_EXTRA2 } from "./word-meanings-extra2";
 import { WORD_MEANINGS_EXTRA3 } from "./word-meanings-extra3";
+import { WORD_MEANINGS_EXTRA4 } from "./word-meanings-extra4";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
 
 // Merge meanings
-const WORD_MEANINGS: Record<string, string> = { ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA, ...WORD_MEANINGS_EXTRA2, ...WORD_MEANINGS_EXTRA3 };
+const WORD_MEANINGS: Record<string, string> = { ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA, ...WORD_MEANINGS_EXTRA2, ...WORD_MEANINGS_EXTRA3, ...WORD_MEANINGS_EXTRA4 };
 
 // Merge base + extra libraries
 function mergeLibrary(target: Record<string, string[]>, source: Record<string, string[]>) {
