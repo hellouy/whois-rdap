@@ -515,303 +515,238 @@ export function useWhois(domain: string) {
         let result: WhoisData | null = null;
         let lastError = "";
         
-        // === 0. 优先尝试 Vercel Edge 代理（部署在 Vercel 时可用） ===
-        try {
-          const edgeUrl = `/api/whois?domain=${encodeURIComponent(norm)}`;
-          const controller0 = new AbortController();
-          const t0 = setTimeout(() => controller0.abort(), 6000);
-          const edgeResp = await fetch(edgeUrl, {
-            signal: controller0.signal,
-            headers: { Accept: 'application/json' },
-          });
-          clearTimeout(t0);
-          if (edgeResp.ok) {
-            const edgeData = await edgeResp.json();
-            if (edgeData.source === 'rdap' && edgeData.data) {
-              result = parseRdap(edgeData.data);
-              result.raw = JSON.stringify(edgeData.data, null, 2);
-              console.log(`[WHOIS] Edge RDAP 查询成功`);
-            } else if (edgeData.source === 'tianhu' && edgeData.data?.code === 200) {
-              const payload = edgeData.data.data;
-              const formatted = payload?.formatted;
-              let ns: string[] = [];
-              let creationDate: string | undefined;
-              let expirationDate: string | undefined;
-              let status: string[] = [];
-              if (formatted?.domain) {
-                ns = formatted.domain.name_servers || [];
-                status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
-                creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
-                expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
-              }
-              result = {
-                domainName: payload?.domain || norm,
-                registrar: formatted?.registrar?.registrar_name,
-                registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
-                creationDate,
-                expirationDate,
-                nameServers: ns,
-                status,
-                registered: payload?.status === 1,
-                raw: payload?.result,
-              };
-              console.log(`[WHOIS] Edge tian.hu 查询成功`);
-            } else if (edgeData.source === 'whois-proxy' && edgeData.data) {
-              const text = edgeData.data;
-              if (!looksLikeNotFoundWhois(text)) {
-                const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i)
-                  || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
-                  || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
-                if (rawWhoisMatch) {
-                  const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
-                  if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
-                    result = parsed;
-                    console.log(`[WHOIS] Edge WHOIS代理查询成功`);
-                  }
-                }
-              }
-            } else if (edgeData.source === 'dns-fallback' && edgeData.data) {
-              if (edgeData.data.exists === true) {
-                result = {
-                  domainName: rawDomain,
-                  registered: true,
-                  raw: 'DNS 记录存在，WHOIS 数据暂不可用',
-                };
-                console.log(`[WHOIS] Edge DNS回退：域名存在`);
-              } else if (edgeData.data.exists === false) {
-                result = {
-                  domainName: rawDomain,
-                  registered: false,
-                  status: ['available'],
-                };
-                console.log(`[WHOIS] Edge DNS回退：域名不存在`);
-              }
-            }
-          }
-        } catch (err) {
-          console.log(`[WHOIS] Edge 代理不可用，回退到直查`);
-        }
+        // === 全并发竞速架构：Edge + RDAP直查 + rdap.org + tian.hu 同时发起 ===
+        const allPromises: Promise<WhoisData | null>[] = [];
         
-        if (result) {
-          // Edge 成功，跳过后续
-        }
-        // === 1. 优先尝试RDAP查询 ===
-        else {
-        const rdapServer = getRdapServer(norm);
-        if (rdapServer) {
-          try {
-            console.log(`[WHOIS] 尝试RDAP: ${rdapServer}/domain/${norm}`);
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
-            
-            const response = await fetch(`${rdapServer}/domain/${encodeURIComponent(norm)}`, {
-              signal: controller.signal,
-              headers: { 'Accept': 'application/rdap+json, application/json' }
-            });
-            clearTimeout(timeoutId);
-            
-            if (response.ok) {
-              const rdapData = await response.json();
-              result = parseRdap(rdapData);
-              result.raw = JSON.stringify(rdapData, null, 2);
-              console.log(`[WHOIS] RDAP查询成功`);
-            } else {
-              lastError = `RDAP: HTTP ${response.status}`;
-              console.warn(`[WHOIS] RDAP失败: ${response.status}`);
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : "未知错误";
-            lastError = `RDAP: ${msg}`;
-            console.warn(`[WHOIS] RDAP异常: ${msg}`);
-          }
-        }
-        
-        // === 2. RDAP失败，同时尝试 rdap.org 和 whois代理（竞速） ===
-        if (!result) {
-          const whoisServer = getWhoisServer(norm);
-          
-          // 创建并发请求数组
-          const fallbackPromises: Promise<WhoisData | null>[] = [];
-          
-          // 2a. rdap.org（通常比 jina.ai 代理快很多）
-          fallbackPromises.push(
-            (async (): Promise<WhoisData | null> => {
-              try {
-                console.log(`[WHOIS] 尝试 rdap.org`);
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const response = await fetch(`https://rdap.org/domain/${encodeURIComponent(norm)}`, {
-                  signal: controller.signal,
-                  headers: { 'Accept': 'application/rdap+json, application/json' }
-                });
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                  const contentType = response.headers.get('content-type') || '';
-                  if (contentType.includes('json')) {
-                    const rdapData = await response.json();
-                    const parsed = parseRdap(rdapData);
-                    parsed.raw = JSON.stringify(rdapData, null, 2);
-                    console.log(`[WHOIS] rdap.org 查询成功`);
-                    return parsed;
+        // 1. Vercel Edge 代理（部署时可用，聚合了RDAP+tian.hu+whois竞速）
+        allPromises.push(
+          (async (): Promise<WhoisData | null> => {
+            try {
+              const edgeUrl = `/api/whois?domain=${encodeURIComponent(norm)}`;
+              const edgeResp = await fetch(edgeUrl, {
+                signal: AbortSignal.timeout(6000),
+                headers: { Accept: 'application/json' },
+              });
+              if (edgeResp.ok) {
+                const edgeData = await edgeResp.json();
+                if (edgeData.source === 'rdap' && edgeData.data) {
+                  const r = parseRdap(edgeData.data);
+                  r.raw = JSON.stringify(edgeData.data, null, 2);
+                  console.log(`[WHOIS] Edge RDAP 查询成功`);
+                  return r;
+                } else if (edgeData.source === 'tianhu' && edgeData.data?.code === 200) {
+                  const payload = edgeData.data.data;
+                  const formatted = payload?.formatted;
+                  let ns: string[] = [];
+                  let creationDate: string | undefined;
+                  let expirationDate: string | undefined;
+                  let status: string[] = [];
+                  if (formatted?.domain) {
+                    ns = formatted.domain.name_servers || [];
+                    status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
+                    creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
+                    expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
                   }
-                  // 如果不是JSON，尝试解析文本中的JSON
-                  const text = await response.text();
-                  const parsed = safeParseJson(text);
-                  if (parsed) {
-                    const rdapResult = parseRdap(parsed);
-                    rdapResult.raw = JSON.stringify(parsed, null, 2);
-                    return rdapResult;
-                  }
-                }
-              } catch (err) {
-                console.warn(`[WHOIS] rdap.org 异常:`, err);
-              }
-              return null;
-            })()
-          );
-          
-          // 2b. tian.hu API（通常也比jina代理快）
-          fallbackPromises.push(
-            (async (): Promise<WhoisData | null> => {
-              try {
-                console.log(`[WHOIS] 尝试 tian.hu API`);
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const response = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
-                  signal: controller.signal,
-                  headers: { 'Accept': 'application/json' }
-                });
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  if (data.code === 200 && data.data) {
-                    const payload = data.data;
-                    const formatted = payload.formatted;
-                    
-                    let ns: string[] = [];
-                    let creationDate: string | undefined;
-                    let expirationDate: string | undefined;
-                    let status: string[] = [];
-                    
-                    if (formatted?.domain) {
-                      ns = formatted.domain.name_servers || [];
-                      status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
-                      creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
-                      expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
-                    }
-                    
-                    if (ns.length === 0 && payload.result) {
-                      const nsMatches = payload.result.match(/nserver:\s*([^\s<\r\n]+)/gi) || [];
-                      ns = nsMatches.map((m: string) => {
-                        const parts = m.split(/:\s*/);
-                        return parts[1]?.trim();
-                      }).filter(Boolean);
-                    }
-                    
-                    console.log(`[WHOIS] tian.hu API 查询成功`);
-                    return {
-                      domainName: payload.domain || norm,
-                      registrar: formatted?.registrar?.registrar_name,
-                      registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
-                      registrantCountry: formatted?.registrant?.registrant_street?.split(',').pop()?.trim(),
-                      creationDate,
-                      expirationDate,
-                      nameServers: ns,
-                      status,
-                      registered: payload.status === 1,
-                      raw: payload.result,
-                    };
-                  }
-                }
-              } catch (err) {
-                console.warn(`[WHOIS] tian.hu 异常:`, err);
-              }
-              return null;
-            })()
-          );
-          
-          // 2c. jina.ai 代理 who.is（最慢，作为最后手段）
-          if (whoisServer) {
-            fallbackPromises.push(
-              (async (): Promise<WhoisData | null> => {
-                try {
-                  console.log(`[WHOIS] 尝试WHOIS代理: ${whoisServer} -> ${norm}`);
-                  const controller = new AbortController();
-                  const timeoutId = setTimeout(() => controller.abort(), 12000);
-                  
-                  const proxyUrl = `https://r.jina.ai/https://www.who.is/whois/${encodeURIComponent(norm)}`;
-                  
-                  const response = await fetch(proxyUrl, {
-                    signal: controller.signal,
-                    headers: { 'Accept': 'text/plain' }
-                  });
-                  clearTimeout(timeoutId);
-                  
-                  if (response.ok) {
-                    const text = await response.text();
-                    
-                    const noDataPatterns = [
-                      /No WHOIS data was found/i,
-                      /No match for/i,
-                      /NOT FOUND/i,
-                      /No entries found/i,
-                      /Domain not found/i,
-                      /No information available/i,
-                      /Status:\s*AVAILABLE/i,
-                    ];
-                    
-                    const hasNoData = noDataPatterns.some(pattern => pattern.test(text));
-                    
-                    if (!hasNoData) {
-                      const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i) 
-                        || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
-                        || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
-                      
-                      if (rawWhoisMatch) {
-                        const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
-                        if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
-                          console.log(`[WHOIS] WHOIS代理查询成功 (who.is)`);
-                          return parsed;
-                        }
+                  console.log(`[WHOIS] Edge tian.hu 查询成功`);
+                  return {
+                    domainName: payload?.domain || norm,
+                    registrar: formatted?.registrar?.registrar_name,
+                    registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
+                    creationDate,
+                    expirationDate,
+                    nameServers: ns,
+                    status,
+                    registered: payload?.status === 1,
+                    raw: payload?.result,
+                  };
+                } else if (edgeData.source === 'whois-proxy' && edgeData.data) {
+                  const text = edgeData.data;
+                  if (!looksLikeNotFoundWhois(text)) {
+                    const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i)
+                      || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
+                      || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
+                    if (rawWhoisMatch) {
+                      const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
+                      if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
+                        console.log(`[WHOIS] Edge WHOIS代理查询成功`);
+                        return parsed;
                       }
                     }
                   }
-                } catch (err) {
-                  console.warn(`[WHOIS] WHOIS代理异常:`, err);
+                } else if (edgeData.source === 'dns-fallback' && edgeData.data) {
+                  if (edgeData.data.exists === true) {
+                    console.log(`[WHOIS] Edge DNS回退：域名存在`);
+                    return { domainName: rawDomain, registered: true, raw: 'DNS 记录存在，WHOIS 数据暂不可用' };
+                  } else if (edgeData.data.exists === false) {
+                    console.log(`[WHOIS] Edge DNS回退：域名不存在`);
+                    return { domainName: rawDomain, registered: false, status: ['available'] };
+                  }
                 }
-                return null;
-              })()
-            );
-          }
-          
-          // 竞速：手动实现 Promise.any 取第一个成功的结果
-          try {
-            result = await new Promise<WhoisData>((resolve, reject) => {
-              let rejectedCount = 0;
-              const total = fallbackPromises.length;
-              fallbackPromises.forEach(p => {
-                p.then(r => {
-                  if (r) resolve(r);
-                  else throw new Error('empty');
-                }).catch(() => {
-                  rejectedCount++;
-                  if (rejectedCount === total) reject(new Error("全部失败"));
+              }
+            } catch {
+              console.log(`[WHOIS] Edge 代理不可用`);
+            }
+            return null;
+          })()
+        );
+        
+        // 2. 直接 RDAP 查询（浏览器端，快速TLD有时比Edge更快）
+        const rdapServer = getRdapServer(norm);
+        if (rdapServer) {
+          allPromises.push(
+            (async (): Promise<WhoisData | null> => {
+              try {
+                console.log(`[WHOIS] 尝试RDAP直查: ${rdapServer}`);
+                const response = await fetch(`${rdapServer}/domain/${encodeURIComponent(norm)}`, {
+                  signal: AbortSignal.timeout(5000),
+                  headers: { 'Accept': 'application/rdap+json, application/json' }
                 });
-              });
-            });
-          } catch {
-            // 全部失败
-          }
-          
-          if (!result) {
-            lastError = "所有备选查询源均未返回有效数据";
-          }
+                if (response.ok) {
+                  const rdapData = await response.json();
+                  const r = parseRdap(rdapData);
+                  r.raw = JSON.stringify(rdapData, null, 2);
+                  console.log(`[WHOIS] RDAP直查成功`);
+                  return r;
+                }
+              } catch (err) {
+                console.warn(`[WHOIS] RDAP直查异常`);
+              }
+              return null;
+            })()
+          );
         }
-        } // end else (Edge not available)
+        
+        // 3. rdap.org 通用查询
+        allPromises.push(
+          (async (): Promise<WhoisData | null> => {
+            try {
+              const response = await fetch(`https://rdap.org/domain/${encodeURIComponent(norm)}`, {
+                signal: AbortSignal.timeout(7000),
+                headers: { 'Accept': 'application/rdap+json, application/json' }
+              });
+              if (response.ok) {
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('json')) {
+                  const rdapData = await response.json();
+                  const parsed = parseRdap(rdapData);
+                  parsed.raw = JSON.stringify(rdapData, null, 2);
+                  console.log(`[WHOIS] rdap.org 查询成功`);
+                  return parsed;
+                }
+                const text = await response.text();
+                const jsonParsed = safeParseJson(text);
+                if (jsonParsed) {
+                  const rdapResult = parseRdap(jsonParsed);
+                  rdapResult.raw = JSON.stringify(jsonParsed, null, 2);
+                  return rdapResult;
+                }
+              }
+            } catch {}
+            return null;
+          })()
+        );
+        
+        // 4. tian.hu WHOIS API
+        allPromises.push(
+          (async (): Promise<WhoisData | null> => {
+            try {
+              const response = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
+                signal: AbortSignal.timeout(8000),
+                headers: { 'Accept': 'application/json' }
+              });
+              if (response.ok) {
+                const data = await response.json();
+                if (data.code === 200 && data.data) {
+                  const payload = data.data;
+                  const formatted = payload.formatted;
+                  let ns: string[] = [];
+                  let creationDate: string | undefined;
+                  let expirationDate: string | undefined;
+                  let status: string[] = [];
+                  if (formatted?.domain) {
+                    ns = formatted.domain.name_servers || [];
+                    status = Array.isArray(formatted.domain.status) ? formatted.domain.status : [];
+                    creationDate = formatDate(formatted.domain.created_date || formatted.domain.created_date_utc);
+                    expirationDate = formatDate(formatted.domain.expired_date || formatted.domain.expired_date_utc);
+                  }
+                  if (ns.length === 0 && payload.result) {
+                    const nsMatches = payload.result.match(/nserver:\s*([^\s<\r\n]+)/gi) || [];
+                    ns = nsMatches.map((m: string) => m.split(/:\s*/)[1]?.trim()).filter(Boolean);
+                  }
+                  console.log(`[WHOIS] tian.hu API 查询成功`);
+                  return {
+                    domainName: payload.domain || norm,
+                    registrar: formatted?.registrar?.registrar_name,
+                    registrantOrg: formatted?.registrant?.registrant_organization || formatted?.registrant?.name,
+                    registrantCountry: formatted?.registrant?.registrant_street?.split(',').pop()?.trim(),
+                    creationDate,
+                    expirationDate,
+                    nameServers: ns,
+                    status,
+                    registered: payload.status === 1,
+                    raw: payload.result,
+                  };
+                }
+              }
+            } catch {}
+            return null;
+          })()
+        );
+        
+        // === 竞速：取第一个成功结果 ===
+        try {
+          result = await new Promise<WhoisData>((resolve, reject) => {
+            let rejectedCount = 0;
+            const total = allPromises.length;
+            for (const p of allPromises) {
+              p.then(r => {
+                if (r) resolve(r);
+                else throw new Error('empty');
+              }).catch(() => {
+                rejectedCount++;
+                if (rejectedCount === total) reject(new Error("全部失败"));
+              });
+            }
+          });
+        } catch {
+          // 全部快速源失败
+        }
+        
+        // === 慢速兜底：jina.ai who.is 代理 ===
+        if (!result) {
+          const whoisServer = getWhoisServer(norm);
+          if (whoisServer) {
+            try {
+              console.log(`[WHOIS] 尝试 who.is 代理兜底`);
+              const proxyUrl = `https://r.jina.ai/https://www.who.is/whois/${encodeURIComponent(norm)}`;
+              const response = await fetch(proxyUrl, {
+                signal: AbortSignal.timeout(12000),
+                headers: { 'Accept': 'text/plain' }
+              });
+              if (response.ok) {
+                const text = await response.text();
+                if (!looksLikeNotFoundWhois(text)) {
+                  const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i)
+                    || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
+                    || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
+                  if (rawWhoisMatch) {
+                    const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
+                    if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
+                      result = parsed;
+                      console.log(`[WHOIS] who.is 代理兜底成功`);
+                    }
+                  }
+                } else {
+                  result = { domainName: rawDomain, registered: false, status: ['available'], raw: text };
+                  console.log(`[WHOIS] who.is 代理: 域名未注册`);
+                }
+              }
+            } catch {
+              console.warn(`[WHOIS] who.is 代理兜底失败`);
+            }
+          }
+          if (!result) lastError = "所有查询源均未返回有效数据";
+        }
         
         
         if (!mounted.current) return;

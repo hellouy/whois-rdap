@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useDomainAvailability } from "@/hooks/use-domain-availability";
 import {
   generateDomainHacks,
   sortHacks,
@@ -42,6 +43,7 @@ const HackGenerator = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [copiedAll, setCopiedAll] = useState(false);
+  const { availability, isChecking, checkDomains, reset: resetAvailability } = useDomainAvailability();
 
   // Determine which TLDs to search
   const activeTlds = useMemo(() => {
@@ -88,8 +90,15 @@ const HackGenerator = () => {
     return allResults.slice(start, start + pageSize);
   }, [allResults, safePageNum, pageSize]);
 
+  // Auto-check availability for visible results
+  useEffect(() => {
+    if (paginatedResults.length > 0) {
+      checkDomains(paginatedResults.map(r => r.domain));
+    }
+  }, [paginatedResults, checkDomains]);
+
   // Reset page on filter change
-  const resetPage = useCallback(() => setPage(1), []);
+  const resetPage = useCallback(() => { setPage(1); resetAvailability(); }, [resetAvailability]);
 
   const copyAll = useCallback(async () => {
     const text = allResults.map((r) => r.domain).join("\n");
@@ -273,7 +282,7 @@ const HackGenerator = () => {
         {/* Table */}
         <div className="border border-border rounded-md overflow-hidden bg-card">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_1fr] border-b border-border bg-muted/50">
+          <div className="grid grid-cols-[1fr_1fr_4.5rem] border-b border-border bg-muted/50">
             <button
               onClick={() => {
                 if (sortMode === "alpha") setSortAsc(!sortAsc);
@@ -288,12 +297,15 @@ const HackGenerator = () => {
             <div className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
               释义
             </div>
+            <div className="px-2 py-2.5 text-xs font-medium text-muted-foreground text-center">
+              状态
+            </div>
           </div>
 
           {/* Table body */}
           {paginatedResults.length > 0 ? (
             paginatedResults.map((hack) => (
-              <HackRow key={hack.domain} hack={hack} />
+              <HackRow key={hack.domain} hack={hack} status={availability[hack.domain]} />
             ))
           ) : (
             <div className="px-4 py-12 text-center text-muted-foreground text-sm">
@@ -368,7 +380,7 @@ const HackGenerator = () => {
   );
 };
 
-function HackRow({ hack }: { hack: HackResult }) {
+function HackRow({ hack, status }: { hack: HackResult; status?: boolean | null }) {
   const dotIndex = hack.domain.indexOf(".");
   const prefix = hack.domain.substring(0, dotIndex);
   const tldPart = hack.domain.substring(dotIndex);
@@ -376,7 +388,7 @@ function HackRow({ hack }: { hack: HackResult }) {
   return (
     <Link
       to={`/${hack.domain}`}
-      className="grid grid-cols-[1fr_1fr] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
+      className="grid grid-cols-[1fr_1fr_4.5rem] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
     >
       <div className="px-4 py-3 font-mono text-sm font-bold">
         <span className="text-foreground">{prefix}</span>
@@ -384,6 +396,17 @@ function HackRow({ hack }: { hack: HackResult }) {
       </div>
       <div className="px-4 py-3 text-sm text-muted-foreground truncate">
         {hack.meaning || hack.keyword}
+      </div>
+      <div className="px-2 py-3 text-center">
+        {status === undefined ? (
+          <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />
+        ) : status === true ? (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">已注册</span>
+        ) : status === false ? (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground">可注册</span>
+        ) : (
+          <span className="text-[10px] text-muted-foreground">—</span>
+        )}
       </div>
     </Link>
   );
