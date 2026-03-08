@@ -282,7 +282,7 @@ const HackGenerator = () => {
         {/* Table */}
         <div className="border border-border rounded-md overflow-hidden bg-card">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_1fr] border-b border-border bg-muted/50">
+          <div className="grid grid-cols-[1fr_1fr_4.5rem] border-b border-border bg-muted/50">
             <button
               onClick={() => {
                 if (sortMode === "alpha") setSortAsc(!sortAsc);
@@ -297,12 +297,15 @@ const HackGenerator = () => {
             <div className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
               释义
             </div>
+            <div className="px-2 py-2.5 text-xs font-medium text-muted-foreground text-center">
+              状态
+            </div>
           </div>
 
           {/* Table body */}
           {paginatedResults.length > 0 ? (
             paginatedResults.map((hack) => (
-              <HackRow key={hack.domain} hack={hack} />
+              <HackRow key={hack.domain} hack={hack} status={availability[hack.domain]} />
             ))
           ) : (
             <div className="px-4 py-12 text-center text-muted-foreground text-sm">
