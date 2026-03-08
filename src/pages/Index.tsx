@@ -158,7 +158,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
       {domain && (
         <div ref={resultsRef} className="container mx-auto px-2 sm:px-4 py-4 md:py-12 max-w-full overflow-hidden flex-1">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full animate-fade-in" style={{ WebkitTapHighlightColor: 'transparent' }}>
-            <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg">
+            <TabsList className="grid w-full grid-cols-4 mb-3 sm:mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg sticky top-0 z-10">
               <TabsTrigger 
                 value="whois" 
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02] flex items-center justify-center"
