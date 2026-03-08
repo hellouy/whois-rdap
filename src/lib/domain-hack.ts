@@ -2,25 +2,32 @@
 
 import { WORD_LIBRARY as BASE_LIBRARY } from "./word-library";
 import { WORD_LIBRARY_EXTRA } from "./word-library-extra";
+import { WORD_LIBRARY_EXTRA2 } from "./word-library-extra2";
 import { WORD_MEANINGS as BASE_MEANINGS } from "./word-meanings";
 import { WORD_MEANINGS_EXTRA } from "./word-meanings-extra";
+import { WORD_MEANINGS_EXTRA2 } from "./word-meanings-extra2";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
 
 // Merge meanings
-const WORD_MEANINGS: Record<string, string> = { ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA };
+const WORD_MEANINGS: Record<string, string> = { ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA, ...WORD_MEANINGS_EXTRA2 };
 
 // Merge base + extra libraries
-const WORD_LIBRARY: Record<string, string[]> = { ...BASE_LIBRARY };
-for (const [tld, words] of Object.entries(WORD_LIBRARY_EXTRA)) {
-  if (!WORD_LIBRARY[tld] || WORD_LIBRARY[tld].length === 0) {
-    WORD_LIBRARY[tld] = words;
-  } else if (words.length > 0) {
-    const existing = new Set(WORD_LIBRARY[tld]);
-    for (const w of words) {
-      if (!existing.has(w)) WORD_LIBRARY[tld].push(w);
+function mergeLibrary(target: Record<string, string[]>, source: Record<string, string[]>) {
+  for (const [tld, words] of Object.entries(source)) {
+    if (!target[tld] || target[tld].length === 0) {
+      target[tld] = words;
+    } else if (words.length > 0) {
+      const existing = new Set(target[tld]);
+      for (const w of words) {
+        if (!existing.has(w)) target[tld].push(w);
+      }
     }
   }
 }
+
+const WORD_LIBRARY: Record<string, string[]> = { ...BASE_LIBRARY };
+mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA);
+mergeLibrary(WORD_LIBRARY, WORD_LIBRARY_EXTRA2);
 
 export { PRESET_TLDS, POPULAR_TLDS };
 
