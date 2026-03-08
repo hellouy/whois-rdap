@@ -213,6 +213,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
                 domain={domain} 
                 displayDomain={displayDomain} 
                 onLoadComplete={() => setTabLoaded('whois', 'loaded')}
+                onStatusDetected={(status) => updateStatus(domain, status)}
               />
             </TabsContent>
 
