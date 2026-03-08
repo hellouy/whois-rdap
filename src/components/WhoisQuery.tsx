@@ -487,7 +487,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
       ) : whoisData ? (
         <div className="space-y-2.5 sm:space-y-4 md:space-y-6">
           {/* 1. 域名信息 - 最高优先级 */}
-          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
             <div className="space-y-3">
               {/* 域名和状态标签 */}
               <div className="flex items-start gap-2 sm:gap-3">
