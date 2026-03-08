@@ -697,7 +697,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                   {whoisData.registrantOrg && (
                     <div className="flex items-center gap-2 sm:gap-3">
                       <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册主体:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">注册主体:</span>
                       <span className={`font-bold text-sm sm:text-base break-all ${isPrivacyRedacted(whoisData.registrantOrg) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
                         {formatDisplayValue(whoisData.registrantOrg)}
                       </span>
@@ -706,7 +706,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                   {whoisData.registrantCountry && (
                     <div className="flex items-center gap-2 sm:gap-3">
                       <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">国家/地区:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">国家/地区:</span>
                       <span className="font-bold text-sm sm:text-base text-foreground">{getCountryName(whoisData.registrantCountry)}</span>
                     </div>
                   )}
