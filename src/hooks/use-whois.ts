@@ -559,20 +559,6 @@ export function useWhois(domain: string) {
                     registered: payload?.status === 1,
                     raw: payload?.result,
                   };
-                } else if (edgeData.source === 'whois-proxy' && edgeData.data) {
-                  const text = edgeData.data;
-                  if (!looksLikeNotFoundWhois(text)) {
-                    const rawWhoisMatch = text.match(/```\s*([\s\S]*?Domain Name[\s\S]*?)```/i)
-                      || text.match(/Raw Whois Data[\s\S]*?```\s*([\s\S]*?)```/i)
-                      || text.match(/Whois Data[\s\S]*?\n([\s\S]*)/i);
-                    if (rawWhoisMatch) {
-                      const parsed = parseWhoisText(rawWhoisMatch[1] || text, norm);
-                      if (parsed.registrar || parsed.creationDate || (parsed.nameServers && parsed.nameServers.length > 0)) {
-                        console.log(`[WHOIS] Edge WHOIS代理查询成功`);
-                        return parsed;
-                      }
-                    }
-                  }
                 } else if (edgeData.source === 'dns-fallback' && edgeData.data) {
                   if (edgeData.data.exists === true) {
                     console.log(`[WHOIS] Edge DNS回退：域名存在`);
