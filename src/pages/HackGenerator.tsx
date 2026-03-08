@@ -91,8 +91,21 @@ const HackGenerator = () => {
       });
     }
 
+    // Pinyin mode: prioritize results with Chinese meanings
+    if (pinyinMode) {
+      // Filter to only results with Chinese meanings
+      results = results.filter((r) => r.meaning && /[\u4e00-\u9fff]/.test(r.meaning));
+      // Sort by: shorter domain first (more creative), then score
+      results.sort((a, b) => {
+        const aLen = a.domain.length;
+        const bLen = b.domain.length;
+        if (aLen !== bLen) return aLen - bLen;
+        return b.score - a.score;
+      });
+    }
+
     return results;
-  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith]);
+  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith, pinyinMode]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(allResults.length / pageSize));
