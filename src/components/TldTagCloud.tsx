@@ -63,6 +63,13 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("popular");
   const [category, setCategory] = useState("all");
+  const [countsReady, setCountsReady] = useState(wordCountLoaded);
+
+  useEffect(() => {
+    if (!countsReady) {
+      loadWordCounts().then(() => setCountsReady(true));
+    }
+  }, [countsReady]);
 
   const tldStats = useMemo(() => {
     return PRESET_TLDS.map((tld) => ({
