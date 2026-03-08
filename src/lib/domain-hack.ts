@@ -1,8 +1,22 @@
 // Domain Hack Generator Logic — imports from modular files
 
-import { WORD_LIBRARY } from "./word-library";
+import { WORD_LIBRARY as BASE_LIBRARY } from "./word-library";
+import { WORD_LIBRARY_EXTRA } from "./word-library-extra";
 import { WORD_MEANINGS } from "./word-meanings";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
+
+// Merge base + extra libraries
+const WORD_LIBRARY: Record<string, string[]> = { ...BASE_LIBRARY };
+for (const [tld, words] of Object.entries(WORD_LIBRARY_EXTRA)) {
+  if (!WORD_LIBRARY[tld] || WORD_LIBRARY[tld].length === 0) {
+    WORD_LIBRARY[tld] = words;
+  } else if (words.length > 0) {
+    const existing = new Set(WORD_LIBRARY[tld]);
+    for (const w of words) {
+      if (!existing.has(w)) WORD_LIBRARY[tld].push(w);
+    }
+  }
+}
 
 export { PRESET_TLDS, POPULAR_TLDS };
 
