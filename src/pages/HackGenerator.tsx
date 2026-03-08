@@ -47,6 +47,14 @@ const HackGenerator = () => {
   const [pageSize, setPageSize] = useState(50);
   const [copiedAll, setCopiedAll] = useState(false);
   const { availability, isChecking, checkDomains, reset: resetAvailability } = useDomainAvailability();
+  const [libraryLoaded, setLibraryLoaded] = useState(isLibraryReady());
+
+  // Preload word libraries on mount
+  useEffect(() => {
+    if (!libraryLoaded) {
+      preloadLibraries().then(() => setLibraryLoaded(true));
+    }
+  }, [libraryLoaded]);
 
   // Determine which TLDs to search
   const activeTlds = useMemo(() => {
