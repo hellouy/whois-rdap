@@ -768,16 +768,9 @@ export const WORD_MEANINGS: Record<string, string> = {
   "syner.gy": "协同效应",
   "cler.gy": "牧师/教士",
 
-  // .tv words
-  "crea.tv": "创意TV",
+  // .tv words (deduped)
 
-  // .io expanded
-  "portfol.io": "作品集",
-  "scenar.io": "场景",
-  "stud.io": "工作室",
-  "rad.io": "收音机",
-  "aud.io": "音频",
-  "rat.io": "比率",
+  // .io expanded (only new entries)
   "pat.io": "庭院",
   "pistach.io": "开心果",
 
@@ -817,20 +810,16 @@ export const WORD_MEANINGS: Record<string, string> = {
   "pers.on": "人",
   "pris.on": "监狱",
   "pois.on": "毒药",
-  "bison": "野牛",
-  "iris.on": "彩虹(缩)",
   "comm.on": "共同的",
   "serm.on": "布道",
   "cany.on": "峡谷",
   "cray.on": "蜡笔",
-  "rib.on": "丝带(缩)",
   "citr.on": "柠檬",
   "prot.on": "质子",
   "neutr.on": "中子",
   "electr.on": "电子",
   "phot.on": "光子",
   "bost.on": "波士顿",
-  "marat.on": "马拉松(缩)",
   "badmint.on": "羽毛球",
 
   // .en words
@@ -844,7 +833,6 @@ export const WORD_MEANINGS: Record<string, string> = {
   "gard.en": "花园",
   "kitch.en": "厨房",
   "chick.en": "鸡",
-  "kidd.en": "孩子们的",
   "hidd.en": "隐藏的",
   "sudd.en": "突然的",
   "oft.en": "经常",
@@ -869,11 +857,9 @@ export const WORD_MEANINGS: Record<string, string> = {
   "org.an": "器官",
   "rom.an": "罗马的",
   "jap.an": "日本",
-  "vet.an": "退伍军人(缩)",
   "slog.an": "口号",
   "sult.an": "苏丹",
   "carav.an": "大篷车",
-  "guard.an": "守护者(缩)",
 
   // .ad words
   "ro.ad": "道路",
@@ -899,33 +885,23 @@ export const WORD_MEANINGS: Record<string, string> = {
   "gre.ed": "贪婪",
   "we.ed": "杂草",
 
-  // .ub words (for .club, .pub etc)
-
   // .id words
   "avo.id": "避免",
   "rap.id": "快速的",
   "val.id": "有效的",
   "sol.id": "固体的",
   "flu.id": "流体",
-  "stu.id": "愚蠢的(缩)",
-  "hyb.id": "混合的(缩)",
   "pyram.id": "金字塔",
   "aster.id": "小行星",
   "andro.id": "安卓",
 
-  // .ks words (for .rocks, .works etc)
-
   // .my words
   "ar.my": "军队",
   "stor.my": "暴风雨的",
-  "sli.my": "黏糊糊的",
-  "stea.my": "蒸汽的",
   "drea.my": "梦幻的",
   "crea.my": "奶油的",
   "gloo.my": "阴暗的",
-  "bloo.my": "绽放的",
   "roo.my": "宽敞的",
-  "zoo.my": "视频会议的",
   "econo.my": "经济",
   "autono.my": "自治",
   "astrono.my": "天文学",
@@ -939,7 +915,6 @@ export const WORD_MEANINGS: Record<string, string> = {
   "trium.ph": "胜利",
 
   // .do words
-  "tor.do": "龙卷风(缩)",
   "ju.do": "柔道",
   "pseu.do": "伪/假的",
   "con.do": "公寓",
@@ -955,10 +930,6 @@ export const WORD_MEANINGS: Record<string, string> = {
   "heig.ht": "高度",
   "fig.ht": "战斗",
   "thoug.ht": "想法",
-  "broug.ht": "带来(过去)",
-  "boug.ht": "买了",
-  "taug.ht": "教了",
-  "caug.ht": "抓住了",
 
   // .aw words
   "l.aw": "法律",
@@ -969,8 +940,6 @@ export const WORD_MEANINGS: Record<string, string> = {
   "str.aw": "稻草",
   "j.aw": "下巴",
   "s.aw": "锯/看见",
-  "p.aw": "爪子",
-  "thaw": "解冻",
   "outl.aw": "歹徒",
   "jigs.aw": "拼图",
 
@@ -999,7 +968,6 @@ export const WORD_MEANINGS: Record<string, string> = {
   "streng.th": "力量",
   "you.th": "青春/年轻",
   "tru.th": "真理",
-  "bi.th": "出生(缩)",
   "wor.th": "价值",
   "ear.th": "地球",
   "nor.th": "北方",
@@ -1010,43 +978,24 @@ export const WORD_MEANINGS: Record<string, string> = {
   "clo.th": "布料",
   "bo.th": "两者",
 
-  // .ow words (for .pw, .mw etc)
-
-  // .nu expanded
-  "me.nu": "菜单",
+  // .nu expanded (only new)
   "ve.nu": "场地(缩)",
   "reve.nu": "收入(缩)",
 
   // .fm words
   "refor.fm": "改革(缩)",
 
-  // more .co words
-  "ta.co": "墨西哥卷",
-  "e.co": "生态",
-  "dis.co": "迪斯科",
+  // more .co words (only new)
   "mo.co": "摩纳哥",
   "bron.co": "野马",
   "fias.co": "惨败",
   "fres.co": "壁画",
   "tobac.co": "烟草",
 
-  // more .ai words
-  "br.ai": "大脑(缩)",
-  "th.ai": "泰国的",
-  "bons.ai": "盆景",
-  "shor.ai": "短(缩)",
-  "sam.ai": "武士",
+  // more .ai words (only new)
   "h.ai": "嗨(缩)",
 
-  // more .us words
-  "gen.us": "天才/属",
-  "foc.us": "聚焦",
-  "bon.us": "奖金",
-  "camp.us": "校园",
-  "stat.us": "状态",
-  "circ.us": "马戏团",
-  "cact.us": "仙人掌",
-  "vir.us": "病毒",
+  // more .us words (only new)
   "ambiti.us": "雄心(缩)",
   "gener.us": "慷慨的(缩)",
   "fam.us": "著名的(缩)",
