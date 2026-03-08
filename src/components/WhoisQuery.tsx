@@ -67,6 +67,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   const { whois: whoisData, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
+  const domainMeaning = useDomainMeaning(domain);
   
   // 使用传入的displayDomain或使用toUnicode转换
   const displayDomain = propDisplayDomain || (isIDN(domain) ? toUnicode(domain) : domain);
