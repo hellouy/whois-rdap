@@ -41,6 +41,7 @@ const HackGenerator = () => {
   const [prefixMaxLength, setPrefixMaxLength] = useState(5);
   const [modeStartsWith, setModeStartsWith] = useState(false);
   const [modeEndsWith, setModeEndsWith] = useState(false);
+  const [pinyinMode, setPinyinMode] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("score");
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
