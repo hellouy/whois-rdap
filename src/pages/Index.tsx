@@ -36,6 +36,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
   const [displayDomain, setDisplayDomain] = useState("");
   const navigate = useNavigate();
   const [isQuerying, setIsQuerying] = useState(false);
+  const { history, addToHistory, updateStatus, clearHistory, removeItem } = useQueryHistory();
   
   const {
     activeTab,
