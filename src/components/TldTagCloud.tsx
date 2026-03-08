@@ -3,6 +3,8 @@ import { PRESET_TLDS, POPULAR_TLDS } from "@/lib/tld-list";
 import { WORD_LIBRARY } from "@/lib/word-library";
 import { WORD_LIBRARY_EXTRA } from "@/lib/word-library-extra";
 import { WORD_LIBRARY_EXTRA2 } from "@/lib/word-library-extra2";
+import { WORD_LIBRARY_EXTRA3 } from "@/lib/word-library-extra3";
+import { WORD_LIBRARY_EXTRA4 } from "@/lib/word-library-extra4";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowUpDown } from "lucide-react";
 
@@ -16,7 +18,9 @@ function getTldWordCount(tld: string): number {
   const base = (WORD_LIBRARY[clean] || []).length;
   const extra = (WORD_LIBRARY_EXTRA[clean] || []).length;
   const extra2 = (WORD_LIBRARY_EXTRA2[clean] || []).length;
-  return base + extra + extra2;
+  const extra3 = (WORD_LIBRARY_EXTRA3[clean] || []).length;
+  const extra4 = (WORD_LIBRARY_EXTRA4[clean] || []).length;
+  return base + extra + extra2 + extra3 + extra4;
 }
 
 type SortBy = "popular" | "count" | "alpha";
