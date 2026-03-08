@@ -744,7 +744,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     )}
                   </div>
                   {/* NS 列表：NS1, NS2, NS3... */}
-                  <div className="ml-6 sm:ml-8 space-y-1.5">
+                  <div className="ml-[6.5rem] sm:ml-[8rem] space-y-1.5">
                     {whoisData.nameServers.map((ns, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">NS{index + 1}:</span>
@@ -764,7 +764,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">域名状态:</span>
                   </div>
-                  <div className="ml-6 sm:ml-8 flex flex-wrap gap-1.5 sm:gap-2">
+                  <div className="ml-[6.5rem] sm:ml-[8rem] flex flex-wrap gap-1.5 sm:gap-2">
                     {whoisData.status.map((status, index) => {
                       const statusInfo = getStatusInfo(status);
                       const severity = statusInfo?.severity || 'info';
