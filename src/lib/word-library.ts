@@ -1759,10 +1759,6 @@ export const WORD_LIBRARY: Record<string, string[]> = {
     "horsepower", "manpower", "firepower", "willpower", "superpower",
   ],
 
-  money: [
-    "money", "honey",
-  ],
-
   gold: [
     "gold", "bold", "cold", "fold", "hold", "mold", "old", "sold",
     "told", "behold", "unfold", "withhold", "manifold", "threshold",
