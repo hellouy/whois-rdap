@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { QueryInput } from "@/components/QueryInput";
+import { QueryHistory } from "@/components/QueryHistory";
 import { DnsQuery } from "@/components/DnsQuery";
 import { WhoisQuery } from "@/components/WhoisQuery";
 import { SslCertQuery } from "@/components/SslCertQuery";
@@ -8,6 +9,7 @@ import { DnsMap } from "@/components/DnsMap";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabLoading } from "@/hooks/use-tab-loading";
+import { useQueryHistory } from "@/hooks/use-query-history";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 
 // Tab 加载状态指示器组件
