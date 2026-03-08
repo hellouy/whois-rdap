@@ -380,7 +380,7 @@ const HackGenerator = () => {
   );
 };
 
-function HackRow({ hack }: { hack: HackResult }) {
+function HackRow({ hack, status }: { hack: HackResult; status?: boolean | null }) {
   const dotIndex = hack.domain.indexOf(".");
   const prefix = hack.domain.substring(0, dotIndex);
   const tldPart = hack.domain.substring(dotIndex);
@@ -388,7 +388,7 @@ function HackRow({ hack }: { hack: HackResult }) {
   return (
     <Link
       to={`/${hack.domain}`}
-      className="grid grid-cols-[1fr_1fr] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
+      className="grid grid-cols-[1fr_1fr_4.5rem] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
     >
       <div className="px-4 py-3 font-mono text-sm font-bold">
         <span className="text-foreground">{prefix}</span>
@@ -396,6 +396,17 @@ function HackRow({ hack }: { hack: HackResult }) {
       </div>
       <div className="px-4 py-3 text-sm text-muted-foreground truncate">
         {hack.meaning || hack.keyword}
+      </div>
+      <div className="px-2 py-3 text-center">
+        {status === undefined ? (
+          <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />
+        ) : status === true ? (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">已注册</span>
+        ) : status === false ? (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground">可注册</span>
+        ) : (
+          <span className="text-[10px] text-muted-foreground">—</span>
+        )}
       </div>
     </Link>
   );
