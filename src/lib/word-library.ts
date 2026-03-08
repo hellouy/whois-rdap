@@ -531,8 +531,12 @@ export const WORD_LIBRARY: Record<string, string[]> = {
     "papers", "scrapers", "wallpapers", "newspapers", "skyscrapers",
   ],
 
-  // .tv words (20+)
-  tv: [],
+  // .tv words
+  tv: [
+    "captive", "active", "motive", "native", "creative", "festive",
+    "positive", "negative", "massive", "passive", "detective",
+    "collective", "objective", "sensitive", "primitive", "fugitive",
+  ],
 
   // .re words (200+)
   re: [
@@ -694,7 +698,14 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .tf words
-  tf: [],
+  tf: [
+    "craft", "draft", "shaft", "raft", "daft", "graft", "haft",
+    "kraft", "aircraft", "spacecraft", "witchcraft", "watercraft",
+    "loft", "soft", "aloft", "microsoft",
+    "left", "theft", "deft", "cleft", "bereft", "heft",
+    "lift", "gift", "shift", "drift", "swift", "thrift",
+    "rift", "uplift", "airlift", "forklift",
+  ],
 
   // .uk words (30+)
   uk: [
@@ -778,7 +789,12 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .fm words
-  fm: [],
+  fm: [
+    "reform", "inform", "perform", "transform", "conform", "uniform",
+    "platform", "brainstorm", "firestorm", "snowstorm", "thunderstorm",
+    "worm", "form", "norm", "storm", "warm", "farm", "charm", "harm",
+    "alarm", "disarm", "forearm", "firearm",
+  ],
 
   // .ga words (20+)
   ga: [
@@ -793,10 +809,39 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .gl words
-  gl: [],
+  gl: [
+    "angel", "bagel", "camel", "channel", "chapel", "counsel",
+    "equal", "fuel", "gospel", "gravel", "hazel", "jewel",
+    "journal", "kernel", "label", "legal", "level", "local",
+    "marvel", "medal", "mental", "metal", "mineral", "model",
+    "mongrel", "moral", "morsel", "motel", "mural", "mutual",
+    "naval", "nickel", "normal", "novel", "nozzle", "panel",
+    "parcel", "patrol", "pedal", "penal", "pencil", "pistol",
+    "plural", "portal", "postal", "rebel", "rival", "royal",
+    "rural", "scandal", "sequel", "signal", "snorkel", "spiral",
+    "squirrel", "swivel", "symbol", "terminal", "total", "travel",
+    "tunnel", "vessel", "vocal", "vowel",
+  ],
 
   // .gr words
-  gr: [],
+  gr: [
+    "anger", "answer", "beaver", "bigger", "bitter", "bladder",
+    "blister", "blur", "border", "buffer", "burger", "butter",
+    "cedar", "chapter", "cider", "cigar", "cipher", "cluster",
+    "color", "conquer", "danger", "eager", "ember", "error",
+    "feather", "finger", "flavor", "flour", "gender", "ginger",
+    "glamour", "harbor", "hanger", "honor", "hunger", "labor",
+    "lager", "laser", "later", "layer", "leather", "lever",
+    "linger", "liquor", "major", "manor", "matter", "minor",
+    "monster", "murder", "neighbor", "number", "other", "outer",
+    "paper", "plaster", "player", "polar", "poster", "power",
+    "prayer", "premier", "proper", "quiver", "razor", "river",
+    "rubber", "ruler", "rumor", "saucer", "scatter", "scholar",
+    "silver", "slender", "soccer", "solar", "spider", "splinter",
+    "sugar", "super", "timber", "tower", "trigger", "tumor",
+    "vigor", "vulgar", "wander", "water", "weather", "whisper",
+    "winter", "wonder",
+  ],
 
   // .gy words (30+)
   gy: [
@@ -893,7 +938,11 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   md: [],
 
   // .mk words
-  mk: [],
+  mk: [
+    "bookmark", "hallmark", "landmark", "trademark", "benchmark",
+    "birthmark", "checkmark", "earmark", "footmark", "postmark",
+    "remark", "watermark",
+  ],
 
   // .mn words
   mn: [
@@ -1052,7 +1101,11 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .sg words
-  sg: [],
+  sg: [
+    "song", "long", "strong", "wrong", "along", "belong",
+    "king", "ring", "sing", "wing", "bring", "thing", "string",
+    "spring", "swing", "sting", "cling", "fling",
+  ],
 
   // .sm words (10+)
   sm: [
