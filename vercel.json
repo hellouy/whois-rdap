@@ -9,6 +9,10 @@
       "destination": "/api/price"
     },
     {
+      "source": "/hack",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
