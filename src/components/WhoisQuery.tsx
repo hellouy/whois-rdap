@@ -83,10 +83,16 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   // 当加载完成时调用回调
   const onLoadCompleteRef = useRef(onLoadComplete);
   onLoadCompleteRef.current = onLoadComplete;
+  const onStatusDetectedRef = useRef(onStatusDetected);
+  onStatusDetectedRef.current = onStatusDetected;
   
   useEffect(() => {
-    if (!isLoading && onLoadCompleteRef.current) {
-      onLoadCompleteRef.current();
+    if (!isLoading) {
+      onLoadCompleteRef.current?.();
+      if (whoisData && onStatusDetectedRef.current) {
+        const status = getDomainStatus();
+        onStatusDetectedRef.current(status.label);
+      }
     }
   }, [isLoading]);
   
