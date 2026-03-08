@@ -45,14 +45,6 @@ const HackGenerator = () => {
   const [copiedAll, setCopiedAll] = useState(false);
   const { availability, isChecking, checkDomains, reset: resetAvailability } = useDomainAvailability();
 
-  // Auto-check availability for visible (paginated) results
-  useEffect(() => {
-    if (paginatedResults.length > 0) {
-      const domains = paginatedResults.map(r => r.domain);
-      checkDomains(domains);
-    }
-  }, [paginatedResults, checkDomains]);
-
   // Determine which TLDs to search
   const activeTlds = useMemo(() => {
     if (selectedTld) return [selectedTld];
