@@ -321,7 +321,6 @@ const HackGenerator = () => {
             <TldTagCloud onSelectTld={(tld) => { setSelectedTld(tld); setTldDropdownOpen(false); }} />
           </div>
         )}
-        </div>
 
         {/* Pagination */}
         {allResults.length > 0 && (
