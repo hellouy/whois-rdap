@@ -12,6 +12,7 @@ import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo 
 import { getRegistrarWebsite, getFaviconUrl } from "@/utils/registrar-data";
 import { getDnsProvider } from "@/utils/dns-provider-data";
 import { getCountryName } from "@/utils/country-data";
+import { useDomainMeaning } from "@/hooks/use-domain-meaning";
 
 // 检查是否为隐私保护或空信息
 const isPrivacyRedacted = (value: string | undefined): boolean => {
