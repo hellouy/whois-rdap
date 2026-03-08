@@ -659,7 +659,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 5. 域名NS */}
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-2">
                   {/* 标题行：名称服务器 + DNS提供商标识 */}
                   <div className="flex items-center gap-2 sm:gap-3">
