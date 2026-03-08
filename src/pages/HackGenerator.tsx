@@ -278,6 +278,21 @@ const HackGenerator = () => {
               <span className="text-muted-foreground">前缀结尾</span>
             </label>
           </div>
+
+          {/* Pinyin mode */}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={pinyinMode}
+                onChange={(e) => { setPinyinMode(e.target.checked); resetPage(); }}
+                className="rounded border-border"
+              />
+              <span className={`text-xs font-medium ${pinyinMode ? "text-primary" : "text-muted-foreground"}`}>
+                🀄 拼音模式
+              </span>
+            </label>
+          </div>
         </div>
 
         {/* Results header */}
