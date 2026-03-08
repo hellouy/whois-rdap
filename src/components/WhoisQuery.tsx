@@ -54,6 +54,7 @@ interface WhoisQueryProps {
   domain: string;
   displayDomain?: string;
   onLoadComplete?: () => void;
+  onStatusDetected?: (status: string) => void;
 }
 
 
@@ -61,7 +62,7 @@ interface WhoisQueryProps {
 
 
 
-export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete }: WhoisQueryProps) => {
+export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete, onStatusDetected }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
@@ -82,10 +83,16 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   // 当加载完成时调用回调
   const onLoadCompleteRef = useRef(onLoadComplete);
   onLoadCompleteRef.current = onLoadComplete;
+  const onStatusDetectedRef = useRef(onStatusDetected);
+  onStatusDetectedRef.current = onStatusDetected;
   
   useEffect(() => {
-    if (!isLoading && onLoadCompleteRef.current) {
-      onLoadCompleteRef.current();
+    if (!isLoading) {
+      onLoadCompleteRef.current?.();
+      if (whoisData && onStatusDetectedRef.current) {
+        const status = getDomainStatus();
+        onStatusDetectedRef.current(status.label);
+      }
     }
   }, [isLoading]);
   

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { QueryInput } from "@/components/QueryInput";
+import { QueryHistory } from "@/components/QueryHistory";
 import { DnsQuery } from "@/components/DnsQuery";
 import { WhoisQuery } from "@/components/WhoisQuery";
 import { SslCertQuery } from "@/components/SslCertQuery";
@@ -8,6 +9,7 @@ import { DnsMap } from "@/components/DnsMap";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabLoading } from "@/hooks/use-tab-loading";
+import { useQueryHistory } from "@/hooks/use-query-history";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 
 // Tab 加载状态指示器组件
@@ -34,6 +36,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
   const [displayDomain, setDisplayDomain] = useState("");
   const navigate = useNavigate();
   const [isQuerying, setIsQuerying] = useState(false);
+  const { history, addToHistory, updateStatus, clearHistory, removeItem } = useQueryHistory();
   
   const {
     activeTab,
@@ -56,6 +59,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
     setDomain(queryDomain);
     setDisplayDomain(originalDomain);
     userInteractedRef.current = false;
+    addToHistory(queryDomain, originalDomain, "查询中");
     
     // 更新 URL 为伪静态路径
     navigate(`/${originalDomain}`, { replace: true });
@@ -151,6 +155,16 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
             placeholder="输入域名，如：NIC.RW"
             value={displayDomain}
           />
+          
+          {/* 查询历史 */}
+          {!domain && (
+            <QueryHistory
+              history={history}
+              onSelect={(d, dd) => handleQuery(d, dd)}
+              onRemove={removeItem}
+              onClear={clearHistory}
+            />
+          )}
         </div>
       </div>
 
@@ -199,6 +213,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
                 domain={domain} 
                 displayDomain={displayDomain} 
                 onLoadComplete={() => setTabLoaded('whois', 'loaded')}
+                onStatusDetected={(status) => updateStatus(domain, status)}
               />
             </TabsContent>
 
