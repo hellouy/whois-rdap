@@ -2,8 +2,12 @@
 
 import { WORD_LIBRARY as BASE_LIBRARY } from "./word-library";
 import { WORD_LIBRARY_EXTRA } from "./word-library-extra";
-import { WORD_MEANINGS } from "./word-meanings";
+import { WORD_MEANINGS as BASE_MEANINGS } from "./word-meanings";
+import { WORD_MEANINGS_EXTRA } from "./word-meanings-extra";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
+
+// Merge meanings
+const WORD_MEANINGS: Record<string, string> = { ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA };
 
 // Merge base + extra libraries
 const WORD_LIBRARY: Record<string, string[]> = { ...BASE_LIBRARY };

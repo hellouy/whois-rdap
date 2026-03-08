@@ -1005,9 +1005,7 @@ export const WORD_MEANINGS: Record<string, string> = {
   "obvi.us": "明显的(缩)",
   "curio.us": "好奇的(缩)",
   "preci.us": "珍贵的(缩)",
-
-  // .ve words
-  "lo.ve": "爱",
+};
   "mo.ve": "移动",
   "li.ve": "生活/直播",
   "gi.ve": "给予",
