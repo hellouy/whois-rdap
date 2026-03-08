@@ -1,13 +1,6 @@
-import { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PRESET_TLDS, POPULAR_TLDS, ALL_CCTLDS } from "@/lib/tld-list";
 import { TLD_CATEGORIES, HACKABLE_TLDS } from "@/lib/tld-categories";
-import { WORD_LIBRARY } from "@/lib/word-library";
-import { WORD_LIBRARY_EXTRA } from "@/lib/word-library-extra";
-import { WORD_LIBRARY_EXTRA2 } from "@/lib/word-library-extra2";
-import { WORD_LIBRARY_EXTRA3 } from "@/lib/word-library-extra3";
-import { WORD_LIBRARY_EXTRA4 } from "@/lib/word-library-extra4";
-import { WORD_LIBRARY_EXTRA5 } from "@/lib/word-library-extra5";
-import { PINYIN_WORD_LIBRARY } from "@/lib/pinyin-library";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
@@ -15,18 +8,48 @@ interface TldTagCloudProps {
   onSelectTld: (tld: string) => void;
 }
 
-/** 合并所有词库计算词数 */
+/** Lazily compute TLD word counts via dynamic imports */
+const wordCountCache: Record<string, number> = {};
+let wordCountLoaded = false;
+
+async function loadWordCounts(): Promise<Record<string, number>> {
+  if (wordCountLoaded) return wordCountCache;
+  
+  const [
+    { WORD_LIBRARY },
+    { WORD_LIBRARY_EXTRA },
+    { WORD_LIBRARY_EXTRA2 },
+    { WORD_LIBRARY_EXTRA3 },
+    { WORD_LIBRARY_EXTRA4 },
+    { WORD_LIBRARY_EXTRA5 },
+    { PINYIN_WORD_LIBRARY },
+  ] = await Promise.all([
+    import("@/lib/word-library"),
+    import("@/lib/word-library-extra"),
+    import("@/lib/word-library-extra2"),
+    import("@/lib/word-library-extra3"),
+    import("@/lib/word-library-extra4"),
+    import("@/lib/word-library-extra5"),
+    import("@/lib/pinyin-library"),
+  ]);
+
+  const libs = [WORD_LIBRARY, WORD_LIBRARY_EXTRA, WORD_LIBRARY_EXTRA2, WORD_LIBRARY_EXTRA3, WORD_LIBRARY_EXTRA4, WORD_LIBRARY_EXTRA5, PINYIN_WORD_LIBRARY];
+  
+  for (const tld of PRESET_TLDS) {
+    const clean = tld.replace(/^\./, "").toLowerCase();
+    let count = 0;
+    for (const lib of libs) {
+      count += (lib[clean] || []).length;
+    }
+    wordCountCache[tld] = count;
+  }
+  
+  wordCountLoaded = true;
+  return wordCountCache;
+}
+
 function getTldWordCount(tld: string): number {
-  const clean = tld.replace(/^\./, "").toLowerCase();
-  return (
-    (WORD_LIBRARY[clean] || []).length +
-    (WORD_LIBRARY_EXTRA[clean] || []).length +
-    (WORD_LIBRARY_EXTRA2[clean] || []).length +
-    (WORD_LIBRARY_EXTRA3[clean] || []).length +
-    (WORD_LIBRARY_EXTRA4[clean] || []).length +
-    (WORD_LIBRARY_EXTRA5[clean] || []).length +
-    (PINYIN_WORD_LIBRARY[clean] || []).length
-  );
+  return wordCountCache[tld] || 0;
 }
 
 type SortBy = "popular" | "count" | "alpha";
