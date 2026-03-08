@@ -531,8 +531,12 @@ export const WORD_LIBRARY: Record<string, string[]> = {
     "papers", "scrapers", "wallpapers", "newspapers", "skyscrapers",
   ],
 
-  // .tv words (20+)
-  tv: [],
+  // .tv words
+  tv: [
+    "captive", "active", "motive", "native", "creative", "festive",
+    "positive", "negative", "massive", "passive", "detective",
+    "collective", "objective", "sensitive", "primitive", "fugitive",
+  ],
 
   // .re words (200+)
   re: [
