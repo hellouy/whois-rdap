@@ -698,7 +698,14 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .tf words
-  tf: [],
+  tf: [
+    "craft", "draft", "shaft", "raft", "daft", "graft", "haft",
+    "kraft", "aircraft", "spacecraft", "witchcraft", "watercraft",
+    "loft", "soft", "aloft", "microsoft",
+    "left", "theft", "deft", "cleft", "bereft", "heft",
+    "lift", "gift", "shift", "drift", "swift", "thrift",
+    "rift", "uplift", "airlift", "forklift",
+  ],
 
   // .uk words (30+)
   uk: [
