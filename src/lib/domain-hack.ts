@@ -125,9 +125,10 @@ export function generateDomainHacks(
         const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
         const isExact = (prefix + tldClean).toLowerCase() === cleanKeyword;
 
+        const meaning = WORD_MEANINGS[domain] || "";
         results.push({
           domain, keyword: word, tld, prefix, score, creativity, lengthScore,
-          isExact, isFromLibrary: false,
+          isExact, isFromLibrary: false, meaning,
         });
       }
     }
