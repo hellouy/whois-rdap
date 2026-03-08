@@ -680,9 +680,16 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 mt-0.5 w-[4.5rem] sm:w-[5.5rem] text-right">域名:</span>
                 <div className="flex-1 min-w-0">
-                  <span className="font-bold text-sm sm:text-base text-foreground break-all">
-                    {displayDomain}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm sm:text-base text-foreground break-all">
+                      {displayDomain}
+                    </span>
+                    {domainMeaning && (
+                      <span className="text-xs sm:text-sm text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded">
+                        {domainMeaning}
+                      </span>
+                    )}
+                  </div>
                   {showDualForm && (
                     <div className="mt-1">
                       <span className="text-xs text-muted-foreground font-mono">
