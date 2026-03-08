@@ -1101,7 +1101,11 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .sg words
-  sg: [],
+  sg: [
+    "song", "long", "strong", "wrong", "along", "belong",
+    "king", "ring", "sing", "wing", "bring", "thing", "string",
+    "spring", "swing", "sting", "cling", "fling",
+  ],
 
   // .sm words (10+)
   sm: [
