@@ -764,7 +764,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">域名状态:</span>
                   </div>
-                  <div className="ml-6 sm:ml-8 flex flex-wrap gap-1.5 sm:gap-2">
+                  <div className="ml-[6.5rem] sm:ml-[8rem] flex flex-wrap gap-1.5 sm:gap-2">
                     {whoisData.status.map((status, index) => {
                       const statusInfo = getStatusInfo(status);
                       const severity = statusInfo?.severity || 'info';
