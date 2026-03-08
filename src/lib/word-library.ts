@@ -789,7 +789,12 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   ],
 
   // .fm words
-  fm: [],
+  fm: [
+    "reform", "inform", "perform", "transform", "conform", "uniform",
+    "platform", "brainstorm", "firestorm", "snowstorm", "thunderstorm",
+    "worm", "form", "norm", "storm", "warm", "farm", "charm", "harm",
+    "alarm", "disarm", "forearm", "firearm",
+  ],
 
   // .ga words (20+)
   ga: [
