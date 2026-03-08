@@ -10,6 +10,8 @@ import {
   exportHacks,
   POPULAR_TLDS,
   PRESET_TLDS,
+  preloadLibraries,
+  isLibraryReady,
   type HackResult,
   type SortMode,
 } from "@/lib/domain-hack";
