@@ -41,6 +41,7 @@ const HackGenerator = () => {
   const [prefixMaxLength, setPrefixMaxLength] = useState(5);
   const [modeStartsWith, setModeStartsWith] = useState(false);
   const [modeEndsWith, setModeEndsWith] = useState(false);
+  const [pinyinMode, setPinyinMode] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("score");
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
@@ -90,8 +91,21 @@ const HackGenerator = () => {
       });
     }
 
+    // Pinyin mode: prioritize results with Chinese meanings
+    if (pinyinMode) {
+      // Filter to only results with Chinese meanings
+      results = results.filter((r) => r.meaning && /[\u4e00-\u9fff]/.test(r.meaning));
+      // Sort by: shorter domain first (more creative), then score
+      results.sort((a, b) => {
+        const aLen = a.domain.length;
+        const bLen = b.domain.length;
+        if (aLen !== bLen) return aLen - bLen;
+        return b.score - a.score;
+      });
+    }
+
     return results;
-  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith]);
+  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith, pinyinMode]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(allResults.length / pageSize));
@@ -262,6 +276,21 @@ const HackGenerator = () => {
                 className="rounded border-border"
               />
               <span className="text-muted-foreground">前缀结尾</span>
+            </label>
+          </div>
+
+          {/* Pinyin mode */}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={pinyinMode}
+                onChange={(e) => { setPinyinMode(e.target.checked); resetPage(); }}
+                className="rounded border-border"
+              />
+              <span className={`text-xs font-medium ${pinyinMode ? "text-primary" : "text-muted-foreground"}`}>
+                🀄 拼音模式
+              </span>
             </label>
           </div>
         </div>
