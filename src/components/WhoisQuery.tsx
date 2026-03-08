@@ -925,6 +925,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 价格已移至顶部 */}
         </div>
+        )
       ) : error ? (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto mb-3 text-destructive opacity-50" />
