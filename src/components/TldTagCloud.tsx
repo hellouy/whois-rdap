@@ -1,39 +1,77 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { PRESET_TLDS, POPULAR_TLDS } from "@/lib/tld-list";
 import { WORD_LIBRARY } from "@/lib/word-library";
+import { WORD_LIBRARY_EXTRA } from "@/lib/word-library-extra";
+import { WORD_LIBRARY_EXTRA2 } from "@/lib/word-library-extra2";
+import { Input } from "@/components/ui/input";
+import { Search, ArrowUpDown } from "lucide-react";
 
 interface TldTagCloudProps {
   onSelectTld: (tld: string) => void;
 }
 
-/** 计算每个 TLD 的词库数量 */
+/** 合并所有词库计算词数 */
 function getTldWordCount(tld: string): number {
   const clean = tld.replace(/^\./, "").toLowerCase();
-  return (WORD_LIBRARY[clean] || []).length;
+  const base = (WORD_LIBRARY[clean] || []).length;
+  const extra = (WORD_LIBRARY_EXTRA[clean] || []).length;
+  const extra2 = (WORD_LIBRARY_EXTRA2[clean] || []).length;
+  return base + extra + extra2;
 }
 
+type SortBy = "popular" | "count" | "alpha";
+
 const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
-  // 按词库数量排序，有词的排前面
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("popular");
+
   const tldStats = useMemo(() => {
-    const stats = PRESET_TLDS.map((tld) => ({
+    return PRESET_TLDS.map((tld) => ({
       tld,
       count: getTldWordCount(tld),
     }));
-    // 优先显示 POPULAR_TLDS 中有词的，再显示其他有词的，最后无词的
-    const popularSet = new Set(POPULAR_TLDS);
-    stats.sort((a, b) => {
-      const aPop = popularSet.has(a.tld) ? 1 : 0;
-      const bPop = popularSet.has(b.tld) ? 1 : 0;
-      if (a.count > 0 && b.count === 0) return -1;
-      if (a.count === 0 && b.count > 0) return 1;
-      if (bPop !== aPop) return bPop - aPop;
-      return b.count - a.count;
-    });
-    return stats;
   }, []);
 
-  const withWords = tldStats.filter((s) => s.count > 0);
-  const withoutWords = tldStats.filter((s) => s.count === 0);
+  const filtered = useMemo(() => {
+    let items = tldStats;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      items = items.filter((s) => s.tld.toLowerCase().includes(q));
+    }
+
+    const popularSet = new Set(POPULAR_TLDS);
+    const sorted = [...items];
+
+    switch (sortBy) {
+      case "popular":
+        sorted.sort((a, b) => {
+          if (a.count > 0 && b.count === 0) return -1;
+          if (a.count === 0 && b.count > 0) return 1;
+          const aPop = popularSet.has(a.tld) ? 1 : 0;
+          const bPop = popularSet.has(b.tld) ? 1 : 0;
+          if (bPop !== aPop) return bPop - aPop;
+          return b.count - a.count;
+        });
+        break;
+      case "count":
+        sorted.sort((a, b) => b.count - a.count);
+        break;
+      case "alpha":
+        sorted.sort((a, b) => a.tld.localeCompare(b.tld));
+        break;
+    }
+    return sorted;
+  }, [tldStats, search, sortBy]);
+
+  const withWords = filtered.filter((s) => s.count > 0);
+  const withoutWords = filtered.filter((s) => s.count === 0);
+  const totalWithWords = tldStats.filter((s) => s.count > 0).length;
+
+  const sortOptions: { key: SortBy; label: string }[] = [
+    { key: "popular", label: "推荐" },
+    { key: "count", label: "词数" },
+    { key: "alpha", label: "字母" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -42,14 +80,41 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
           点击后缀开始探索域名短语
         </p>
         <p className="text-xs text-muted-foreground/60">
-          共 {PRESET_TLDS.length} 个后缀，其中 {withWords.length} 个有词库支持
+          共 {PRESET_TLDS.length} 个后缀，其中 {totalWithWords} 个有词库支持
         </p>
+      </div>
+
+      {/* Search & Sort controls */}
+      <div className="flex items-center gap-2 max-w-md mx-auto">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="搜索后缀..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-0.5 border border-border rounded-md p-0.5">
+          {sortOptions.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setSortBy(opt.key)}
+              className={`px-2 py-1 text-[10px] rounded transition-colors ${
+                sortBy === opt.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 有词库的 TLD */}
       <div className="flex flex-wrap gap-1.5 justify-center">
         {withWords.map(({ tld, count }) => {
-          // 根据词数量调整大小
           const isLarge = count >= 100;
           const isMedium = count >= 30;
           return (
@@ -69,10 +134,7 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
               `}
             >
               <span>{tld}</span>
-              <span className={`
-                font-mono opacity-60
-                ${isLarge ? "text-xs" : "text-[10px]"}
-              `}>
+              <span className={`font-mono opacity-60 ${isLarge ? "text-xs" : "text-[10px]"}`}>
                 {count}
               </span>
             </button>
@@ -80,7 +142,7 @@ const TldTagCloud = ({ onSelectTld }: TldTagCloudProps) => {
         })}
       </div>
 
-      {/* 无词库的 TLD（折叠显示） */}
+      {/* 无词库的 TLD */}
       {withoutWords.length > 0 && (
         <details className="text-center">
           <summary className="text-xs text-muted-foreground/50 cursor-pointer hover:text-muted-foreground transition-colors">
