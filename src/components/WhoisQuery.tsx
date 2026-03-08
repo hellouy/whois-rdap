@@ -481,13 +481,13 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   };
 
   return (
-    <Card className="p-4 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
+    <Card className="p-3 sm:p-6 md:p-8 bg-card/60 backdrop-blur-md border border-border shadow-md">
       {isLoading ? (
         <WhoisSkeleton />
       ) : whoisData ? (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-2.5 sm:space-y-4 md:space-y-6">
           {/* 1. 域名信息 - 最高优先级 */}
-          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
             <div className="space-y-3">
               {/* 域名和状态标签 */}
               <div className="flex items-start gap-2 sm:gap-3">
@@ -525,7 +525,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     {/* 注册商 favicon */}
@@ -598,7 +598,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 3. 时间信息 */}
           {whoisData.creationDate && (
-            <div className="relative p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8 sm:pb-8">
+            <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">注册时间:</span>
@@ -611,7 +611,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           )}
 
           {whoisData.expirationDate && (
-            <div className="relative p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md pb-8 sm:pb-8">
+            <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">过期时间:</span>
@@ -624,7 +624,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           )}
 
           {whoisData.updatedDate && (
-            <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+            <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">更新时间:</span>
@@ -635,7 +635,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 4. 注册人信息 */}
           {(whoisData.registrantOrg || whoisData.registrantCountry) && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {whoisData.registrantOrg && (
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -659,7 +659,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 5. 域名NS */}
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-2">
                   {/* 标题行：名称服务器 + DNS提供商标识 */}
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -701,7 +701,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 6. 域名状态 */}
           {whoisData.status && whoisData.status.length > 0 && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
@@ -746,7 +746,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
             )}
 
           {/* 7. 域名价格 - 异步加载，不阻塞主信息 */}
-          <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+          <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
               

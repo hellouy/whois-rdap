@@ -135,12 +135,12 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
     <div className="min-h-screen bg-grid-light flex flex-col">
       {/* Hero Section */}
       <div className="relative overflow-hidden flex-shrink-0">
-        <div className="relative container mx-auto px-3 sm:px-4 py-8 md:py-20">
-          <div className="text-center mb-6 md:mb-12">
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-primary mb-4 sm:mb-6">
+        <div className="relative container mx-auto px-3 sm:px-4 py-4 sm:py-8 md:py-20">
+          <div className="text-center mb-4 sm:mb-6 md:mb-12">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-primary mb-2 sm:mb-6">
               域名查询
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto tracking-wide">
+            <p className="text-sm sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto tracking-wide">
               改版升级中，不保证信息准确性。
             </p>
           </div>
@@ -157,8 +157,8 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
       {/* Results Section */}
       {domain && (
         <div ref={resultsRef} className="container mx-auto px-2 sm:px-4 py-4 md:py-12 max-w-full overflow-hidden flex-1">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full animate-fade-in">
-            <TabsList className="grid w-full grid-cols-4 mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full animate-fade-in" style={{ WebkitTapHighlightColor: 'transparent' }}>
+            <TabsList className="grid w-full grid-cols-4 mb-3 sm:mb-4 md:mb-10 bg-card/30 backdrop-blur-md border border-border/50 p-1 sm:p-2 h-auto rounded-xl sm:rounded-2xl shadow-lg sticky top-0 z-10">
               <TabsTrigger 
                 value="whois" 
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg py-2.5 sm:py-4 font-semibold transition-all duration-300 ease-in-out rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-accent/40 hover:scale-[1.02] flex items-center justify-center"
