@@ -1278,4 +1278,158 @@ export const WORD_LIBRARY: Record<string, string[]> = {
     "starlight", "flashlight", "daylight", "highlight", "hindsight",
     "foresight", "oversight", "playwright", "upright", "outright",
   ],
+
+  // === TECH / BUSINESS / CREATIVE ENRICHMENT ===
+
+  app: [
+    "app", "webapp", "strap", "trap", "wrap", "snap", "clap", "flap",
+    "map", "cap", "gap", "tap", "nap", "lap", "zap", "scrap",
+    "overlap", "mishap", "recap", "kidnap", "bootstrap", "kneecap",
+    "handicap", "nightcap", "hubcap", "burlap", "madcap", "mousetrap",
+  ],
+
+  tech: [
+    "tech", "biotech", "fintech", "edtech", "medtech", "cleantech",
+    "deeptech", "proptech", "regtech", "insurtech", "agritech",
+    "legaltech", "govtech", "martech", "adtech", "healthtech",
+    "foodtech", "greentech", "nanotech", "hitech", "lowtech",
+  ],
+
+  cloud: [
+    "cloud", "icloud", "soundcloud", "thundercloud", "raincloud",
+    "overcloud", "intercloud", "multicloud",
+  ],
+
+  design: ["design", "redesign", "codesign"],
+  studio: ["studio"],
+  digital: ["digital"],
+  online: ["online"],
+
+  store: [
+    "store", "restore", "bookstore", "drugstore", "superstore",
+    "megastore", "datastore", "filestore",
+  ],
+
+  art: [
+    "art", "start", "smart", "heart", "part", "cart", "chart",
+    "dart", "mart", "tart", "apart", "depart", "impart", "restart",
+    "counterpart", "flowchart", "sweetheart", "upstart", "outsmart",
+    "kickstart", "jumpstart", "headstart", "rampart",
+  ],
+
+  site: [
+    "site", "website", "campsite", "jobsite", "worksite", "offsite",
+    "onsite", "parasite", "opposite", "composite", "requisite",
+    "exquisite", "prerequisite", "favorite", "definite", "infinite",
+  ],
+
+  shop: [
+    "shop", "workshop", "bookshop", "toyshop", "barbershop",
+    "petshop", "dropshop", "webshop",
+  ],
+
+  blog: ["blog", "vlog", "weblog", "microblog", "photoblog"],
+
+  space: [
+    "space", "workspace", "namespace", "cyberspace", "aerospace",
+    "airspace", "headspace", "backspace", "myspace", "makerspace",
+  ],
+
+  page: ["page", "webpage", "homepage", "frontpage", "rampage"],
+
+  link: [
+    "link", "chainlink", "hyperlink", "backlink", "uplink", "downlink",
+    "interlink", "crosslink", "datalink", "hotlink", "deeplink",
+    "think", "drink", "shrink", "blink", "brink", "clink",
+    "ink", "pink", "sink", "wink", "rink", "kink", "mink",
+  ],
+
+  live: ["live", "alive", "olive", "outlive", "relive"],
+
+  run: [
+    "run", "rerun", "overrun", "outrun", "fun", "gun", "sun",
+    "bun", "nun", "pun", "spun", "stun", "begun",
+  ],
+
+  one: [
+    "one", "phone", "zone", "tone", "bone", "stone", "clone", "drone",
+    "throne", "alone", "ozone", "milestone", "backbone", "cornerstone",
+    "everyone", "someone", "anyone", "none", "done", "gone",
+  ],
+
+  pro: [
+    "pro", "intro", "retro", "metro", "electro", "nitro", "gastro",
+    "macro", "micro", "hydro", "pyro", "gyro", "astro", "neuro",
+  ],
+
+  top: [
+    "top", "laptop", "desktop", "rooftop", "tabletop", "mountaintop",
+    "treetop", "hilltop", "nonstop", "stop", "drop", "crop",
+    "pop", "hop", "cop", "mop", "flop", "chop", "prop",
+  ],
+
+  win: [
+    "win", "twin", "darwin", "penguin", "genuine", "feminine",
+    "masculine", "bovine", "divine", "canine", "alpine",
+  ],
+
+  fun: ["fun", "refund", "fund", "stun", "bun", "gun", "begun"],
+  best: ["best"],
+  world: ["world"],
+
+  zone: [
+    "zone", "ozone", "timezone", "warzone", "endzone", "dropzone",
+    "friendzone",
+  ],
+
+  plus: ["plus", "surplus"],
+
+  cool: [
+    "cool", "school", "pool", "tool", "fool", "spool", "stool",
+    "drool", "whirlpool", "carpool",
+  ],
+
+  click: [
+    "click", "brick", "trick", "quick", "stick", "thick", "pick",
+    "kick", "sick", "tick", "wick", "flick", "slick", "nick",
+  ],
+
+  data: ["data", "metadata"],
+
+  code: [
+    "code", "barcode", "zipcode", "passcode", "encode", "decode",
+    "unicode", "bytecode", "sourcecode", "hashcode", "opcode",
+  ],
+
+  network: ["network"],
+  email: ["email"],
+  chat: ["chat", "snapchat"],
+  social: ["social", "antisocial"],
+  money: ["money", "honey"],
+  media: ["media", "multimedia", "encyclopedia"],
+  video: ["video"],
+
+  news: [
+    "news", "renews", "reviews", "previews", "interviews",
+    "crews", "screws", "brews", "views",
+  ],
+
+  guide: ["guide", "misguide"],
+  help: ["help", "yelp", "kelp"],
+
+  tips: [
+    "tips", "chips", "clips", "drips", "flips", "grips", "ships",
+    "slips", "strips", "trips", "whips", "equips",
+  ],
+
+  work: [
+    "work", "network", "framework", "homework", "teamwork", "artwork",
+    "clockwork", "firework", "footwork", "groundwork", "handiwork",
+    "masterwork", "metalwork", "patchwork", "woodwork", "fieldwork",
+  ],
+
+  team: [
+    "team", "dream", "stream", "steam", "cream", "beam", "seam",
+    "gleam", "scream",
+  ],
 };
