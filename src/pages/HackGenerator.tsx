@@ -2,8 +2,6 @@ import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   generateDomainHacks,
   sortHacks,
@@ -14,74 +12,103 @@ import {
   type SortMode,
 } from "@/lib/domain-hack";
 import {
-  Sparkles,
-  Copy,
-  Download,
   ArrowLeft,
+  Copy,
   Check,
   Search,
   Zap,
-  SortAsc,
-  Hash,
-  Star,
-  Ruler,
   ChevronDown,
   ChevronUp,
+  Minus,
   Plus,
-  X,
+  ArrowUpDown,
+  Download,
 } from "lucide-react";
 
-const SORT_OPTIONS: { value: SortMode; label: string; icon: typeof Star }[] = [
-  { value: "score", label: "综合分", icon: Star },
-  { value: "creativity", label: "创意度", icon: Sparkles },
-  { value: "length", label: "长度", icon: Ruler },
-  { value: "alpha", label: "字母", icon: SortAsc },
-];
+const PAGE_SIZES = [20, 50, 100];
 
 const HackGenerator = () => {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState("");
-  const [selectedTlds, setSelectedTlds] = useState<string[]>(POPULAR_TLDS.slice(0, 12));
-  const [customTld, setCustomTld] = useState("");
+  const [selectedTld, setSelectedTld] = useState<string>("");
+  const [tldDropdownOpen, setTldDropdownOpen] = useState(false);
+  const [tldSearch, setTldSearch] = useState("");
+  const [prefixLengthEnabled, setPrefixLengthEnabled] = useState(false);
+  const [prefixMaxLength, setPrefixMaxLength] = useState(5);
+  const [modeStartsWith, setModeStartsWith] = useState(false);
+  const [modeEndsWith, setModeEndsWith] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("score");
-  const [includeVariants, setIncludeVariants] = useState(true);
-  const [showAllTlds, setShowAllTlds] = useState(false);
-  const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
+  const [sortAsc, setSortAsc] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [copiedAll, setCopiedAll] = useState(false);
 
-  const results = useMemo(() => {
+  // Determine which TLDs to search
+  const activeTlds = useMemo(() => {
+    if (selectedTld) return [selectedTld];
+    return PRESET_TLDS;
+  }, [selectedTld]);
+
+  // Generate and filter results
+  const allResults = useMemo(() => {
     if (!keyword.trim()) return [];
-    return sortHacks(generateDomainHacks(keyword, selectedTlds, includeVariants), sortMode);
-  }, [keyword, selectedTlds, includeVariants, sortMode]);
-
-  const toggleTld = useCallback((tld: string) => {
-    setSelectedTlds((prev) =>
-      prev.includes(tld) ? prev.filter((t) => t !== tld) : [...prev, tld]
-    );
-  }, []);
-
-  const addCustomTld = useCallback(() => {
-    let tld = customTld.trim().toLowerCase();
-    if (!tld) return;
-    if (!tld.startsWith(".")) tld = "." + tld;
-    if (tld.length < 2) return;
-    if (!selectedTlds.includes(tld)) {
-      setSelectedTlds((prev) => [...prev, tld]);
+    let results = sortHacks(generateDomainHacks(keyword, activeTlds, true), sortMode);
+    if (!sortAsc && sortMode !== "alpha" && sortMode !== "length") {
+      // default descending for score/creativity
+    } else if (sortAsc) {
+      results = [...results].reverse();
     }
-    setCustomTld("");
-  }, [customTld, selectedTlds]);
 
-  const copyDomain = useCallback(async (domain: string) => {
+    // Apply prefix length filter
+    if (prefixLengthEnabled) {
+      results = results.filter((r) => r.prefix.length <= prefixMaxLength);
+    }
+
+    // Apply mode filters
+    if (modeStartsWith) {
+      const kw = keyword.trim().toLowerCase();
+      results = results.filter((r) => r.prefix.toLowerCase().startsWith(kw));
+    }
+    if (modeEndsWith) {
+      const kw = keyword.trim().toLowerCase();
+      results = results.filter((r) => {
+        const full = (r.prefix + r.tld.replace(/^\./, "")).toLowerCase();
+        return full.endsWith(kw);
+      });
+    }
+
+    return results;
+  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(allResults.length / pageSize));
+  const safePageNum = Math.min(page, totalPages);
+  const paginatedResults = useMemo(() => {
+    const start = (safePageNum - 1) * pageSize;
+    return allResults.slice(start, start + pageSize);
+  }, [allResults, safePageNum, pageSize]);
+
+  // Reset page on filter change
+  const resetPage = useCallback(() => setPage(1), []);
+
+  const copyAll = useCallback(async () => {
+    const text = allResults.map((r) => r.domain).join("\n");
     try {
-      await navigator.clipboard.writeText(domain);
-      setCopiedDomain(domain);
-      setTimeout(() => setCopiedDomain(null), 1500);
-    } catch {
-      // fallback
-    }
-  }, []);
+      await navigator.clipboard.writeText(text);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 1500);
+    } catch {}
+  }, [allResults]);
+
+  // Filtered TLD list for dropdown
+  const filteredTlds = useMemo(() => {
+    if (!tldSearch.trim()) return PRESET_TLDS;
+    const q = tldSearch.trim().toLowerCase();
+    return PRESET_TLDS.filter((t) => t.toLowerCase().includes(q));
+  }, [tldSearch]);
 
   const handleExport = useCallback(() => {
-    const text = exportHacks(results);
+    const text = exportHacks(allResults);
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -89,230 +116,271 @@ const HackGenerator = () => {
     a.download = `domain-hacks-${keyword}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [results, keyword]);
-
-  const displayTlds = showAllTlds ? PRESET_TLDS : POPULAR_TLDS;
+  }, [allResults, keyword]);
 
   return (
-    <div className="min-h-screen bg-grid-light">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-4xl">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6 sm:mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="shrink-0"
-          >
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-primary flex items-center gap-2">
-              <Zap className="h-6 w-6 sm:h-8 sm:w-8" />
-              Domain Hack
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+              <Zap className="h-6 w-6" />
+              域名短语
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              输入关键词，自动生成创意域名组合
-            </p>
           </div>
         </div>
 
-        {/* Input */}
-        <Card className="p-3 sm:p-6 mb-4 sm:mb-6 bg-card/60 backdrop-blur-md border border-border shadow-md">
-          <div className="flex gap-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="输入关键词，如：code、hack、smart..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="pl-10 h-12 sm:h-14 text-sm sm:text-lg border-2 border-foreground bg-transparent focus:ring-0"
-              />
-            </div>
+        {/* Search bar: keyword + TLD dropdown */}
+        <div className="flex gap-2 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="请输入关键词"
+              value={keyword}
+              onChange={(e) => { setKeyword(e.target.value); resetPage(); }}
+              className="pl-10 h-11 text-sm border border-border bg-background"
+            />
           </div>
-
-          {/* Variants toggle */}
-          <div className="flex items-center gap-4 mb-4">
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
-              <input
-                type="checkbox"
-                checked={includeVariants}
-                onChange={(e) => setIncludeVariants(e.target.checked)}
-                className="rounded border-border"
-              />
-              <span className="text-muted-foreground">词形变体</span>
-            </label>
-            {keyword && (
-              <span className="text-xs text-muted-foreground">
-                找到 <strong className="text-foreground">{results.length}</strong> 个创意域名
+          {/* TLD dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setTldDropdownOpen(!tldDropdownOpen)}
+              className="h-11 px-3 border border-border rounded-md flex items-center gap-2 text-sm min-w-[120px] bg-background hover:bg-accent transition-colors"
+            >
+              <span className={selectedTld ? "text-foreground" : "text-muted-foreground"}>
+                {selectedTld || "选择后缀"}
               </span>
+              {tldDropdownOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+            </button>
+            {tldDropdownOpen && (
+              <div className="absolute right-0 top-12 z-50 w-48 bg-popover border border-border rounded-md shadow-lg max-h-64 overflow-hidden flex flex-col">
+                <div className="p-2 border-b border-border">
+                  <Input
+                    placeholder="搜索后缀..."
+                    value={tldSearch}
+                    onChange={(e) => setTldSearch(e.target.value)}
+                    className="h-8 text-xs"
+                    autoFocus
+                  />
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  <button
+                    onClick={() => { setSelectedTld(""); setTldDropdownOpen(false); setTldSearch(""); resetPage(); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${!selectedTld ? "text-primary font-medium" : "text-foreground"}`}
+                  >
+                    全部后缀
+                  </button>
+                  {filteredTlds.map((tld) => (
+                    <button
+                      key={tld}
+                      onClick={() => { setSelectedTld(tld); setTldDropdownOpen(false); setTldSearch(""); resetPage(); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${selectedTld === tld ? "text-primary font-medium" : "text-foreground"}`}
+                    >
+                      {tld}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
+        </div>
 
-          {/* TLD Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">选择后缀 ({selectedTlds.length})</span>
+        {/* Filters row */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-4 text-sm">
+          {/* Prefix length */}
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">前缀长度</span>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={prefixLengthEnabled}
+                onChange={(e) => { setPrefixLengthEnabled(e.target.checked); resetPage(); }}
+                className="rounded border-border"
+              />
+              <span className="text-muted-foreground">≤</span>
+            </label>
+            <div className="flex items-center border border-border rounded-md">
               <button
-                onClick={() => setShowAllTlds(!showAllTlds)}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                onClick={() => { setPrefixMaxLength(Math.max(0, prefixMaxLength - 1)); resetPage(); }}
+                className="px-2 py-1 text-muted-foreground hover:text-foreground transition-colors"
+                disabled={!prefixLengthEnabled}
               >
-                {showAllTlds ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                {showAllTlds ? `收起 (${PRESET_TLDS.length})` : `更多 (${PRESET_TLDS.length})`}
+                <Minus className="h-3 w-3" />
+              </button>
+              <span className="w-8 text-center text-foreground font-mono">{prefixMaxLength}</span>
+              <button
+                onClick={() => { setPrefixMaxLength(prefixMaxLength + 1); resetPage(); }}
+                className="px-2 py-1 text-muted-foreground hover:text-foreground transition-colors"
+                disabled={!prefixLengthEnabled}
+              >
+                <Plus className="h-3 w-3" />
               </button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {displayTlds.map((tld) => (
+          </div>
+
+          {/* Mode */}
+          <div className="flex items-center gap-3">
+            <span className="text-muted-foreground">模式</span>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={modeStartsWith}
+                onChange={(e) => { setModeStartsWith(e.target.checked); resetPage(); }}
+                className="rounded border-border"
+              />
+              <span className="text-muted-foreground">前缀开头</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={modeEndsWith}
+                onChange={(e) => { setModeEndsWith(e.target.checked); resetPage(); }}
+                className="rounded border-border"
+              />
+              <span className="text-muted-foreground">前缀结尾</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Results header */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-muted-foreground">
+            总计 <strong className="text-foreground">{allResults.length}</strong> 条
+          </span>
+          <div className="flex items-center gap-2">
+            {allResults.length > 0 && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleExport} className="h-7 text-xs gap-1">
+                  <Download className="h-3 w-3" />
+                  导出
+                </Button>
                 <button
-                  key={tld}
-                  onClick={() => toggleTld(tld)}
-                  className={`px-2 py-1 text-xs rounded-md border transition-all ${
-                    selectedTlds.includes(tld)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+                  onClick={copyAll}
+                  className="p-1.5 rounded-md border border-border hover:bg-accent transition-colors"
+                  title="复制全部"
+                >
+                  {copiedAll ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="border border-border rounded-md overflow-hidden bg-card">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_1fr] border-b border-border bg-muted/50">
+            <button
+              onClick={() => {
+                if (sortMode === "alpha") setSortAsc(!sortAsc);
+                else { setSortMode("alpha"); setSortAsc(false); }
+                resetPage();
+              }}
+              className="flex items-center gap-1 px-4 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              单词
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+            <div className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
+              释义
+            </div>
+          </div>
+
+          {/* Table body */}
+          {paginatedResults.length > 0 ? (
+            paginatedResults.map((hack) => (
+              <HackRow key={hack.domain} hack={hack} />
+            ))
+          ) : (
+            <div className="px-4 py-12 text-center text-muted-foreground text-sm">
+              {keyword.trim() ? "没有找到匹配结果，试试更换关键词或后缀" : "请输入关键词开始搜索"}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {allResults.length > 0 && (
+          <div className="flex items-center justify-between mt-4 text-sm">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(Math.max(1, safePageNum - 1))}
+                disabled={safePageNum <= 1}
+                className="px-2 py-1 border border-border rounded text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+              >
+                ‹
+              </button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let p: number;
+                if (totalPages <= 5) p = i + 1;
+                else if (safePageNum <= 3) p = i + 1;
+                else if (safePageNum >= totalPages - 2) p = totalPages - 4 + i;
+                else p = safePageNum - 2 + i;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-7 h-7 rounded text-xs transition-colors ${
+                      p === safePageNum
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setPage(Math.min(totalPages, safePageNum + 1))}
+                disabled={safePageNum >= totalPages}
+                className="px-2 py-1 border border-border rounded text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+              >
+                ›
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              {PAGE_SIZES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setPageSize(s); setPage(1); }}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    pageSize === s
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tld}
+                  {s}条/页
                 </button>
               ))}
             </div>
-            {/* Custom TLD */}
-            <div className="flex gap-2 mt-2">
-              <Input
-                placeholder="自定义后缀如 .xyz"
-                value={customTld}
-                onChange={(e) => setCustomTld(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addCustomTld()}
-                className="h-8 text-xs flex-1 max-w-[200px]"
-              />
-              <Button size="sm" variant="outline" onClick={addCustomTld} className="h-8 px-2">
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Results */}
-        {results.length > 0 && (
-          <div className="space-y-3 sm:space-y-4">
-            {/* Sort & Export toolbar */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex gap-1.5">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSortMode(opt.value)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
-                      sortMode === opt.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-                    }`}
-                  >
-                    <opt.icon className="h-3 w-3" />
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="h-8 text-xs gap-1"
-              >
-                <Download className="h-3 w-3" />
-                导出 ({results.length})
-              </Button>
-            </div>
-
-            {/* Result list */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              {results.map((hack, i) => (
-                <HackResultCard
-                  key={hack.domain}
-                  hack={hack}
-                  index={i}
-                  copied={copiedDomain === hack.domain}
-                  onCopy={copyDomain}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {keyword && results.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">没有找到匹配的域名组合</p>
-            <p className="text-sm mt-1">试试更换关键词或添加更多后缀</p>
           </div>
         )}
       </div>
+
+      {/* Click-away for dropdown */}
+      {tldDropdownOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => { setTldDropdownOpen(false); setTldSearch(""); }} />
+      )}
     </div>
   );
 };
 
-function HackResultCard({
-  hack,
-  index,
-  copied,
-  onCopy,
-}: {
-  hack: HackResult;
-  index: number;
-  copied: boolean;
-  onCopy: (domain: string) => void;
-}) {
-  // Split domain to highlight TLD part
+function HackRow({ hack }: { hack: HackResult }) {
   const dotIndex = hack.domain.indexOf(".");
   const prefix = hack.domain.substring(0, dotIndex);
   const tldPart = hack.domain.substring(dotIndex);
 
   return (
-    <div
-      className="flex items-center gap-3 p-3 sm:p-4 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-all group animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
-      style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: "both" }}
-    >
-      {/* Rank */}
-      <span className="text-xs text-muted-foreground font-mono w-5 text-right shrink-0">
-        {index + 1}
-      </span>
-
-      {/* Domain */}
-      <div className="flex-1 min-w-0">
-        <div className="font-bold text-sm sm:text-base font-mono">
-          <span className="text-foreground">{prefix}</span>
-          <span className="text-primary">{tldPart}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {hack.isExact && (
-            <span className="text-[10px] text-muted-foreground">完美匹配</span>
-          )}
-          {hack.isFromLibrary && !hack.isExact && (
-            <span className="text-[10px] text-muted-foreground">词库: {hack.keyword}</span>
-          )}
-        </div>
+    <div className="grid grid-cols-[1fr_1fr] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors">
+      <div className="px-4 py-3 font-mono text-sm font-bold">
+        <span className="text-foreground">{prefix}</span>
+        <span className="text-primary">{tldPart}</span>
       </div>
-
-      {/* Scores */}
-      <div className="flex items-center gap-2 shrink-0">
-        <Badge
-          variant={hack.score >= 70 ? "default" : hack.score >= 50 ? "secondary" : "outline"}
-          className="text-[10px] px-1.5 py-0 h-5"
-        >
-          {hack.score}分
-        </Badge>
-        <button
-          onClick={() => onCopy(hack.domain)}
-          className="p-1.5 rounded-md hover:bg-accent transition-colors opacity-50 group-hover:opacity-100"
-          title="复制域名"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5 text-green-500" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-        </button>
+      <div className="px-4 py-3 text-sm text-muted-foreground truncate">
+        {hack.meaning || hack.keyword}
       </div>
     </div>
   );

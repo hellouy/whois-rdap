@@ -1,6 +1,7 @@
 // Domain Hack Generator Logic — imports from modular files
 
 import { WORD_LIBRARY } from "./word-library";
+import { WORD_MEANINGS } from "./word-meanings";
 import { PRESET_TLDS, POPULAR_TLDS } from "./tld-list";
 
 export { PRESET_TLDS, POPULAR_TLDS };
@@ -15,6 +16,7 @@ export interface HackResult {
   lengthScore: number;
   isExact: boolean;
   isFromLibrary: boolean;
+  meaning?: string;
 }
 
 function getWordsForTld(tld: string): string[] {
@@ -123,9 +125,10 @@ export function generateDomainHacks(
         const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
         const isExact = (prefix + tldClean).toLowerCase() === cleanKeyword;
 
+        const meaning = WORD_MEANINGS[domain] || "";
         results.push({
           domain, keyword: word, tld, prefix, score, creativity, lengthScore,
-          isExact, isFromLibrary: false,
+          isExact, isFromLibrary: false, meaning,
         });
       }
     }
@@ -151,9 +154,10 @@ export function generateDomainHacks(
       const lengthScore = Math.max(0, 100 - (prefix.length + tldClean.length) * 5);
       const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
 
+      const meaning = WORD_MEANINGS[domain] || "";
       results.push({
         domain, keyword: wordLower, tld, prefix, score, creativity, lengthScore,
-        isExact: false, isFromLibrary: true,
+        isExact: false, isFromLibrary: true, meaning,
       });
     }
   }
