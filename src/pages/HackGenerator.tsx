@@ -90,8 +90,15 @@ const HackGenerator = () => {
     return allResults.slice(start, start + pageSize);
   }, [allResults, safePageNum, pageSize]);
 
+  // Auto-check availability for visible results
+  useEffect(() => {
+    if (paginatedResults.length > 0) {
+      checkDomains(paginatedResults.map(r => r.domain));
+    }
+  }, [paginatedResults, checkDomains]);
+
   // Reset page on filter change
-  const resetPage = useCallback(() => setPage(1), []);
+  const resetPage = useCallback(() => { setPage(1); resetAvailability(); }, [resetAvailability]);
 
   const copyAll = useCallback(async () => {
     const text = allResults.map((r) => r.domain).join("\n");
