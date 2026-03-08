@@ -155,6 +155,16 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
             placeholder="输入域名，如：NIC.RW"
             value={displayDomain}
           />
+          
+          {/* 查询历史 */}
+          {!domain && (
+            <QueryHistory
+              history={history}
+              onSelect={(d, dd) => handleQuery(d, dd)}
+              onRemove={removeItem}
+              onClear={clearHistory}
+            />
+          )}
         </div>
       </div>
 
