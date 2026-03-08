@@ -635,7 +635,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 4. 注册人信息 */}
           {(whoisData.registrantOrg || whoisData.registrantCountry) && (
-              <div className="p-3 sm:p-5 bg-card/60 backdrop-blur-sm rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-3">
                   {whoisData.registrantOrg && (
                     <div className="flex items-center gap-2 sm:gap-3">
