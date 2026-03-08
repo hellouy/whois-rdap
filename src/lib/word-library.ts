@@ -938,7 +938,11 @@ export const WORD_LIBRARY: Record<string, string[]> = {
   md: [],
 
   // .mk words
-  mk: [],
+  mk: [
+    "bookmark", "hallmark", "landmark", "trademark", "benchmark",
+    "birthmark", "checkmark", "earmark", "footmark", "postmark",
+    "remark", "watermark",
+  ],
 
   // .mn words
   mn: [
