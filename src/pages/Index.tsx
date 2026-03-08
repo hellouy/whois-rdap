@@ -135,7 +135,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
     <div className="min-h-screen bg-grid-light flex flex-col">
       {/* Hero Section */}
       <div className="relative overflow-hidden flex-shrink-0">
-        <div className="relative container mx-auto px-3 sm:px-4 py-8 md:py-20">
+        <div className="relative container mx-auto px-3 sm:px-4 py-4 sm:py-8 md:py-20">
           <div className="text-center mb-6 md:mb-12">
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-primary mb-4 sm:mb-6">
               域名查询
