@@ -719,9 +719,9 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
                 <div className="space-y-2">
                   {/* 标题行：名称服务器 + DNS提供商标识 */}
-                  <div className="flex items-center gap-2 sm:gap-3">
+                   <div className="flex items-center gap-2 sm:gap-3">
                     <Server className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">名称服务器:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">名称服务器:</span>
                     <div className="flex-1" />
                     {/* DNS 提供商识别 */}
                     {getDnsProvider(whoisData.nameServers) && (
