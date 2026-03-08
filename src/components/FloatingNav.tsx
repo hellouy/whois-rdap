@@ -331,7 +331,7 @@ const navigationData: NavSection[] = [
     ]
   },
   {
-    title: "域名短语",
+    title: "HACK",
     icon: MessageSquare,
     items: [], // 动态填充
     isPhrase: true,
