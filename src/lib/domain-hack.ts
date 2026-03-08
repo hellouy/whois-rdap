@@ -154,9 +154,10 @@ export function generateDomainHacks(
       const lengthScore = Math.max(0, 100 - (prefix.length + tldClean.length) * 5);
       const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
 
+      const meaning = WORD_MEANINGS[domain] || "";
       results.push({
         domain, keyword: wordLower, tld, prefix, score, creativity, lengthScore,
-        isExact: false, isFromLibrary: true,
+        isExact: false, isFromLibrary: true, meaning,
       });
     }
   }
