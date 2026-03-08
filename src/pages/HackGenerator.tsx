@@ -1,6 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useDomainAvailability } from "@/hooks/use-domain-availability";
 import { Button } from "@/components/ui/button";
 import {
   generateDomainHacks,
