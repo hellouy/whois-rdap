@@ -18,7 +18,9 @@ function getTldWordCount(tld: string): number {
   const base = (WORD_LIBRARY[clean] || []).length;
   const extra = (WORD_LIBRARY_EXTRA[clean] || []).length;
   const extra2 = (WORD_LIBRARY_EXTRA2[clean] || []).length;
-  return base + extra + extra2;
+  const extra3 = (WORD_LIBRARY_EXTRA3[clean] || []).length;
+  const extra4 = (WORD_LIBRARY_EXTRA4[clean] || []).length;
+  return base + extra + extra2 + extra3 + extra4;
 }
 
 type SortBy = "popular" | "count" | "alpha";
