@@ -284,9 +284,14 @@ function HackResultCard({
           <span className="text-foreground">{prefix}</span>
           <span className="text-primary">{tldPart}</span>
         </div>
-        {hack.isExact && (
-          <span className="text-[10px] text-muted-foreground">完美匹配</span>
-        )}
+        <div className="flex items-center gap-1">
+          {hack.isExact && (
+            <span className="text-[10px] text-muted-foreground">完美匹配</span>
+          )}
+          {hack.isFromLibrary && !hack.isExact && (
+            <span className="text-[10px] text-muted-foreground">词库: {hack.keyword}</span>
+          )}
+        </div>
       </div>
 
       {/* Scores */}
