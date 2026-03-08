@@ -604,17 +604,4 @@ export const PINYIN_MEANINGS: Record<string, string> = {
   // ========== .to (Creative) ==========
   ".to": "到/土(tǔ缩)",
 
-  // ========== Creative cross-TLD pinyin ==========
-  "xi.ao": "小/笑/校/消/效/晓",
-  "ji.ao": "教/交/叫/脚/角",
-  "bi.ao": "表/标/彪",
-  "mi.ao": "妙/苗/秒/庙",
-  "pi.ao": "票/漂/飘",
-  "qi.ao": "巧/桥/敲",
-  "ti.ao": "跳/条/挑",
-  "di.ao": "掉/调/钓/雕",
-  "li.ao": "了/料/聊/辽",
-  "ni.ao": "鸟/尿",
-  "zhi.ao": "照(缩)",
-  "chi.ao": "吵(缩)",
 };
