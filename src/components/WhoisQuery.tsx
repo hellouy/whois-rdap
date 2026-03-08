@@ -54,6 +54,7 @@ interface WhoisQueryProps {
   domain: string;
   displayDomain?: string;
   onLoadComplete?: () => void;
+  onStatusDetected?: (status: string) => void;
 }
 
 
