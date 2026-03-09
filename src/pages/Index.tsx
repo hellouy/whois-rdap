@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { QueryInput } from "@/components/QueryInput";
-import { QueryHistory } from "@/components/QueryHistory";
+
 import { DnsQuery } from "@/components/DnsQuery";
 import { WhoisQuery } from "@/components/WhoisQuery";
 import { SslCertQuery } from "@/components/SslCertQuery";
@@ -156,15 +156,6 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
             value={displayDomain}
           />
           
-          {/* 查询历史 */}
-          {!domain && (
-            <QueryHistory
-              history={history}
-              onSelect={(d, dd) => handleQuery(d, dd)}
-              onRemove={removeItem}
-              onClear={clearHistory}
-            />
-          )}
         </div>
       </div>
 

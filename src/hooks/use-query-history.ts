@@ -40,6 +40,10 @@ export function useQueryHistory() {
     return () => window.removeEventListener("storage", handler);
   }, []);
 
+  const refresh = useCallback(() => {
+    setHistory(loadHistory());
+  }, []);
+
   const addToHistory = useCallback((domain: string, displayDomain: string, status?: string) => {
     setHistory(prev => {
       const filtered = prev.filter(h => h.domain !== domain);
@@ -70,5 +74,5 @@ export function useQueryHistory() {
     });
   }, []);
 
-  return { history, addToHistory, updateStatus, clearHistory, removeItem };
+  return { history, addToHistory, updateStatus, clearHistory, removeItem, refresh };
 }

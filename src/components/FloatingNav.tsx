@@ -155,13 +155,39 @@ function timeAgo(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString("zh-CN");
 }
 
+function getDateGroup(timestamp: number): string {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  if (timestamp >= todayStart) return "今天";
+  if (timestamp >= yesterdayStart) return "昨天";
+  return "更早";
+}
+
+interface HistoryGroup {
+  label: string;
+  items: QueryHistoryItem[];
+}
+
+function groupHistory(items: QueryHistoryItem[]): HistoryGroup[] {
+  const groups: Record<string, QueryHistoryItem[]> = {};
+  const order = ["今天", "昨天", "更早"];
+  for (const item of items) {
+    const label = getDateGroup(item.timestamp);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(item);
+  }
+  return order.filter(l => groups[l]).map(l => ({ label: l, items: groups[l] }));
+}
+
 // ─── Component ───────────────────────────────────────────
 export const FloatingNav = () => {
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const { history, clearHistory, removeItem } = useQueryHistory();
+  const { history, clearHistory, removeItem, refresh: refreshHistory } = useQueryHistory();
 
   const currentSection = activeSection && activeSection !== "history" ? toolSections[activeSection] : null;
 
@@ -187,6 +213,8 @@ export const FloatingNav = () => {
     );
   }, [activeSection, history, search]);
 
+  const groupedHistory = useMemo(() => groupHistory(filteredHistory), [filteredHistory]);
+
   const handleQuickNav = (entry: QuickNavEntry) => {
     if (entry.action === "navigate") {
       setOpen(false);
@@ -204,7 +232,9 @@ export const FloatingNav = () => {
 
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
-    if (!v) {
+    if (v) {
+      refreshHistory();
+    } else {
       setActiveSection(null);
       setSearch("");
     }
@@ -299,46 +329,53 @@ export const FloatingNav = () => {
                   <p className="text-sm">暂无查询记录</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredHistory.map((item) => (
-                    <div
-                      key={item.domain}
-                      className="group flex items-center gap-3 p-3 rounded-xl border bg-card hover:bg-accent/50 transition-all duration-200 cursor-pointer"
-                      onClick={() => handleHistorySelect(item)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
-                            {item.displayDomain}
-                          </span>
-                          {item.status && (
-                            <Badge
-                              variant={
-                                item.status === "未注册"
-                                  ? "outline"
-                                  : item.status === "已注册"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className="text-[10px] px-1.5 py-0 h-4 leading-none flex-shrink-0"
+                <div className="space-y-4">
+                  {groupedHistory.map((group) => (
+                    <div key={group.label}>
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-0.5">{group.label}</p>
+                      <div className="space-y-1.5">
+                        {group.items.map((item) => (
+                          <div
+                            key={item.domain}
+                            className="group flex items-center gap-3 p-3 rounded-xl border bg-card hover:bg-accent/50 transition-all duration-200 cursor-pointer"
+                            onClick={() => handleHistorySelect(item)}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                                  {item.displayDomain}
+                                </span>
+                                {item.status && (
+                                  <Badge
+                                    variant={
+                                      item.status === "未注册"
+                                        ? "outline"
+                                        : item.status === "已注册"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                    className="text-[10px] px-1.5 py-0 h-4 leading-none flex-shrink-0"
+                                  >
+                                    {item.status}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                {timeAgo(item.timestamp)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeItem(item.domain);
+                              }}
+                              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
                             >
-                              {item.status}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {timeAgo(item.timestamp)}
-                        </p>
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeItem(item.domain);
-                        }}
-                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
                     </div>
                   ))}
                 </div>
