@@ -232,7 +232,9 @@ export const FloatingNav = () => {
 
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
-    if (!v) {
+    if (v) {
+      refreshHistory();
+    } else {
       setActiveSection(null);
       setSearch("");
     }
