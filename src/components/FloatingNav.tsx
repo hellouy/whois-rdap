@@ -187,7 +187,7 @@ export const FloatingNav = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const { history, clearHistory, removeItem } = useQueryHistory();
+  const { history, clearHistory, removeItem, refresh: refreshHistory } = useQueryHistory();
 
   const currentSection = activeSection && activeSection !== "history" ? toolSections[activeSection] : null;
 
