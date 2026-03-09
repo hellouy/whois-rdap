@@ -263,7 +263,7 @@ export const FloatingNav = () => {
         {!activeSection ? (
           /* ───── Main grid ───── */
           <div className="px-5 pb-6 pt-2">
-            <p className="text-base font-bold tracking-wide mb-4">TIAN.HU</p>
+            <p className="text-base font-bold tracking-wide mb-4">不讲•李</p>
             <div className="grid grid-cols-4 gap-3">
               {quickNav.map((entry) => (
                 <button
