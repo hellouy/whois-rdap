@@ -74,5 +74,5 @@ export function useQueryHistory() {
     });
   }, []);
 
-  return { history, addToHistory, updateStatus, clearHistory, removeItem };
+  return { history, addToHistory, updateStatus, clearHistory, removeItem, refresh };
 }
