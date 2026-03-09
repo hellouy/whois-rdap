@@ -156,15 +156,6 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
             value={displayDomain}
           />
           
-          {/* 查询历史 */}
-          {!domain && (
-            <QueryHistory
-              history={history}
-              onSelect={(d, dd) => handleQuery(d, dd)}
-              onRemove={removeItem}
-              onClear={clearHistory}
-            />
-          )}
         </div>
       </div>
 
