@@ -213,6 +213,8 @@ export const FloatingNav = () => {
     );
   }, [activeSection, history, search]);
 
+  const groupedHistory = useMemo(() => groupHistory(filteredHistory), [filteredHistory]);
+
   const handleQuickNav = (entry: QuickNavEntry) => {
     if (entry.action === "navigate") {
       setOpen(false);
