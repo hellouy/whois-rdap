@@ -155,6 +155,32 @@ function timeAgo(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString("zh-CN");
 }
 
+function getDateGroup(timestamp: number): string {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  if (timestamp >= todayStart) return "今天";
+  if (timestamp >= yesterdayStart) return "昨天";
+  return "更早";
+}
+
+interface HistoryGroup {
+  label: string;
+  items: QueryHistoryItem[];
+}
+
+function groupHistory(items: QueryHistoryItem[]): HistoryGroup[] {
+  const groups: Record<string, QueryHistoryItem[]> = {};
+  const order = ["今天", "昨天", "更早"];
+  for (const item of items) {
+    const label = getDateGroup(item.timestamp);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(item);
+  }
+  return order.filter(l => groups[l]).map(l => ({ label: l, items: groups[l] }));
+}
+
 // ─── Component ───────────────────────────────────────────
 export const FloatingNav = () => {
   const [open, setOpen] = useState(false);
