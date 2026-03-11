@@ -153,7 +153,7 @@ export const QueryInput = ({ onQuery, isLoading, placeholder = "输入域名查�
             value={displayDomain}
             onChange={handleInputChange}
             placeholder={placeholder}
-            className={`h-12 sm:h-14 md:h-16 text-sm sm:text-base md:text-lg pl-3 sm:pl-6 pr-3 sm:pr-6 bg-transparent border-2 ${validationError ? 'border-destructive focus:border-destructive' : 'border-foreground focus:border-foreground'} focus:ring-0 transition-all`}
+            className={`h-12 sm:h-14 md:h-16 text-base md:text-lg pl-3 sm:pl-6 pr-3 sm:pr-6 bg-transparent border-2 ${validationError ? 'border-destructive focus:border-destructive' : 'border-foreground focus:border-foreground'} focus:ring-0 transition-all`}
             disabled={isLoading}
           />
         </div>
