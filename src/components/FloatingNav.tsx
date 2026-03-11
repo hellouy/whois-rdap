@@ -316,7 +316,7 @@ export const FloatingNav = () => {
                   placeholder="搜索历史记录..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 h-8 text-xs"
+                  className="pl-8 h-8 text-sm"
                 />
               </div>
             </div>
@@ -407,7 +407,7 @@ export const FloatingNav = () => {
                   placeholder="搜索..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 h-8 text-xs"
+                  className="pl-8 h-8 text-sm"
                 />
               </div>
             </div>
