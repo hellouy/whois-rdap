@@ -52,6 +52,7 @@ async function loadLibraries(): Promise<{
     { WORD_LIBRARY_EXTRA3 },
     { WORD_LIBRARY_EXTRA4 },
     { WORD_LIBRARY_EXTRA5, WORD_MEANINGS_EXTRA5 },
+    { WORD_LIBRARY_EXTRA6 },
     { PINYIN_WORD_LIBRARY, PINYIN_MEANINGS },
     { WORD_MEANINGS: BASE_MEANINGS },
     { WORD_MEANINGS_EXTRA },
@@ -66,6 +67,7 @@ async function loadLibraries(): Promise<{
     import("./word-library-extra3"),
     import("./word-library-extra4"),
     import("./word-library-extra5"),
+    import("./word-library-extra6"),
     import("./pinyin-library"),
     import("./word-meanings"),
     import("./word-meanings-extra"),
@@ -81,6 +83,7 @@ async function loadLibraries(): Promise<{
   mergeLibrary(library, WORD_LIBRARY_EXTRA3);
   mergeLibrary(library, WORD_LIBRARY_EXTRA4);
   mergeLibrary(library, WORD_LIBRARY_EXTRA5);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA6);
   mergeLibrary(library, PINYIN_WORD_LIBRARY);
 
   const meanings: Record<string, string> = {
@@ -253,6 +256,40 @@ export function generateDomainHacks(
   }
 
   return results;
+}
+
+// Browse mode: return ALL words in the library for a given TLD (no keyword filter)
+export function getAllHacksForTld(tld: string): HackResult[] {
+  const library = getLibrary();
+  const meanings = getMeanings();
+  const tldClean = tld.replace(/^\./, "").toLowerCase();
+  const words = library[tldClean] || [];
+  const results: HackResult[] = [];
+  const tldDot = tld.startsWith(".") ? tld : "." + tld;
+
+  for (const word of words) {
+    const wordLower = word.toLowerCase();
+    const pos = findHackPosition(wordLower, tldClean);
+    if (pos === null) continue;
+    const prefix = wordLower.substring(0, pos);
+    const domain = `${prefix}.${tldClean}`;
+    const meaning = meanings[domain] || meanings[wordLower] || "";
+    const creativity = calculateCreativity(prefix, wordLower, tldDot, true);
+    const lengthScore = Math.max(0, 100 - (prefix.length + tldClean.length) * 5);
+    const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
+    results.push({
+      domain, keyword: wordLower, tld: tldDot, prefix, score, creativity,
+      lengthScore, isExact: prefix === "", isFromLibrary: true, meaning,
+    });
+  }
+  return results.sort((a, b) => b.score - a.score);
+}
+
+// Get total word count for a TLD (for display stats)
+export function getTldWordCount(tld: string): number {
+  const library = getLibrary();
+  const tldClean = tld.replace(/^\./, "").toLowerCase();
+  return (library[tldClean] || []).length;
 }
 
 export function sortHacks(results: HackResult[], mode: SortMode): HackResult[] {

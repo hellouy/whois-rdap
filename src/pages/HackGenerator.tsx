@@ -1,11 +1,12 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import TldTagCloud from "@/components/TldTagCloud";
 import { Button } from "@/components/ui/button";
 import { useDomainAvailability } from "@/hooks/use-domain-availability";
 import {
   generateDomainHacks,
+  getAllHacksForTld,
   sortHacks,
   exportHacks,
   POPULAR_TLDS,
@@ -33,6 +34,8 @@ const PAGE_SIZES = [20, 50, 100];
 
 const HackGenerator = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const keywordRef = useRef<HTMLInputElement>(null);
   const [keyword, setKeyword] = useState("");
   const [selectedTld, setSelectedTld] = useState<string>("");
   const [tldDropdownOpen, setTldDropdownOpen] = useState(false);
@@ -57,14 +60,44 @@ const HackGenerator = () => {
     }
   }, [libraryLoaded]);
 
+  // Read URL params: ?q=keyword&tld=.ng
+  useEffect(() => {
+    const q = searchParams.get("q");
+    const tld = searchParams.get("tld");
+    if (q) { setKeyword(q); resetPage(); }
+    if (tld && PRESET_TLDS.includes(tld)) { setSelectedTld(tld); }
+    // Focus keyword input when TLD provided but no keyword
+    if (tld && !q) {
+      setTimeout(() => keywordRef.current?.focus(), 300);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Determine which TLDs to search
   const activeTlds = useMemo(() => {
     if (selectedTld) return [selectedTld];
     return PRESET_TLDS;
   }, [selectedTld]);
 
+  // Browse mode: all words for selected TLD (no keyword)
+  const browseModeResults = useMemo(() => {
+    if (keyword.trim() || !selectedTld || !libraryLoaded) return [];
+    return getAllHacksForTld(selectedTld);
+  }, [keyword, selectedTld, libraryLoaded]);
+
   // Generate and filter results
   const allResults = useMemo(() => {
+    // Browse mode: show all words for selected TLD
+    if (!keyword.trim() && selectedTld && browseModeResults.length > 0) {
+      let results = browseModeResults;
+      if (prefixLengthEnabled) {
+        results = results.filter((r) => r.prefix.length <= prefixMaxLength);
+      }
+      if (pinyinMode) {
+        results = results.filter((r) => r.meaning && /[\u4e00-\u9fff]/.test(r.meaning));
+      }
+      return results;
+    }
     if (!keyword.trim()) return [];
     let results = sortHacks(generateDomainHacks(keyword, activeTlds, true), sortMode);
     if (!sortAsc && sortMode !== "alpha" && sortMode !== "length") {
