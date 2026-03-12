@@ -58,6 +58,7 @@ async function loadLibraries(): Promise<{
     { WORD_MEANINGS_EXTRA2 },
     { WORD_MEANINGS_EXTRA3 },
     { WORD_MEANINGS_EXTRA4 },
+    { WORD_MEANINGS_WORDS },
   ] = await Promise.all([
     import("./word-library"),
     import("./word-library-extra"),
@@ -71,6 +72,7 @@ async function loadLibraries(): Promise<{
     import("./word-meanings-extra2"),
     import("./word-meanings-extra3"),
     import("./word-meanings-extra4"),
+    import("./word-meanings-words"),
   ]);
 
   const library: Record<string, string[]> = { ...BASE_LIBRARY };
@@ -82,6 +84,7 @@ async function loadLibraries(): Promise<{
   mergeLibrary(library, PINYIN_WORD_LIBRARY);
 
   const meanings: Record<string, string> = {
+    ...WORD_MEANINGS_WORDS,
     ...BASE_MEANINGS, ...WORD_MEANINGS_EXTRA, ...WORD_MEANINGS_EXTRA2,
     ...WORD_MEANINGS_EXTRA3, ...WORD_MEANINGS_EXTRA4, ...WORD_MEANINGS_EXTRA5,
     ...PINYIN_MEANINGS,
@@ -212,7 +215,7 @@ export function generateDomainHacks(
         const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
         const isExact = (prefix + tldClean).toLowerCase() === cleanKeyword;
 
-        const meaning = meanings[domain] || "";
+        const meaning = meanings[domain] || meanings[word] || meanings[cleanKeyword] || "";
         results.push({
           domain, keyword: word, tld, prefix, score, creativity, lengthScore,
           isExact, isFromLibrary: false, meaning,
@@ -241,7 +244,7 @@ export function generateDomainHacks(
       const lengthScore = Math.max(0, 100 - (prefix.length + tldClean.length) * 5);
       const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
 
-      const meaning = meanings[domain] || "";
+      const meaning = meanings[domain] || meanings[wordLower] || meanings[cleanKeyword] || "";
       results.push({
         domain, keyword: wordLower, tld, prefix, score, creativity, lengthScore,
         isExact: false, isFromLibrary: true, meaning,

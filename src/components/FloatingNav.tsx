@@ -20,7 +20,6 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQueryHistory, QueryHistoryItem } from "@/hooks/use-query-history";
@@ -283,9 +282,9 @@ export const FloatingNav = () => {
           </div>
         ) : activeSection === "history" ? (
           /* ───── History section ───── */
-          <div className="flex flex-col max-h-[75vh]">
+          <div className="flex flex-col overflow-hidden" style={{ height: "72vh" }}>
             {/* Header */}
-            <div className="flex items-center gap-2 px-5 pt-1 pb-3">
+            <div className="flex items-center gap-2 px-5 pt-1 pb-3 flex-shrink-0">
               <button
                 onClick={handleBack}
                 className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors"
@@ -309,7 +308,7 @@ export const FloatingNav = () => {
             </div>
 
             {/* Search */}
-            <div className="px-5 pb-3">
+            <div className="px-5 pb-3 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -322,7 +321,7 @@ export const FloatingNav = () => {
             </div>
 
             {/* History list */}
-            <ScrollArea className="flex-1 px-5 pb-6">
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-6">
               {filteredHistory.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <History className="h-10 w-10 mx-auto mb-2 opacity-30" />
@@ -380,13 +379,13 @@ export const FloatingNav = () => {
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </div>
         ) : (
           /* ───── Section detail ───── */
-          <div className="flex flex-col max-h-[75vh]">
+          <div className="flex flex-col overflow-hidden" style={{ height: "72vh" }}>
             {/* Header */}
-            <div className="flex items-center gap-2 px-5 pt-1 pb-3">
+            <div className="flex items-center gap-2 px-5 pt-1 pb-3 flex-shrink-0">
               <button
                 onClick={handleBack}
                 className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors"
@@ -400,7 +399,7 @@ export const FloatingNav = () => {
             </div>
 
             {/* Search */}
-            <div className="px-5 pb-3">
+            <div className="px-5 pb-3 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -413,7 +412,7 @@ export const FloatingNav = () => {
             </div>
 
             {/* Items grid */}
-            <ScrollArea className="flex-1 px-5 pb-6">
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-6">
               <div className="grid grid-cols-2 gap-2.5">
                 {filteredItems.map((item, i) => (
                   <a
@@ -437,7 +436,7 @@ export const FloatingNav = () => {
                   </a>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
       </DrawerContent>
