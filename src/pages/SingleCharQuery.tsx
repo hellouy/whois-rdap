@@ -4,6 +4,7 @@ import { ArrowLeft, Search, RotateCcw, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ALL_CCTLDS, NEW_GTLDS } from "@/lib/tld-list";
+import { getBulkCached, putBulkCached } from "@/lib/dns-cache";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,53 +24,67 @@ const CHARS_09 = ["0","1","2","3","4","5","6","7","8","9"];
 const CHARS_AZ = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"];
 const ALL_CHARS = [...CHARS_09, ...CHARS_AZ];
 
-const GTLD_SET = new Set(NEW_GTLDS);
 const CCTLD_SET = new Set(ALL_CCTLDS);
-
-// ccTLDs that commonly support single-char + are worth checking
-const COMMON_CCTLDS = ALL_CCTLDS.filter(t => t.length === 3); // 2-char like .ng, .io
-const COMMON_GTLDS = NEW_GTLDS.filter(t => t.length <= 5); // .io, .com, .dev etc
+const GTLDS_ONLY = NEW_GTLDS.filter((t) => !CCTLD_SET.has(t));
 
 const BATCH_SIZE = 20;
 const BATCH_DELAY = 200;
 
-// ── Batch availability check ─────────────────────────────────────────────────
+// ── DNS batch fetch (cache-aware) ─────────────────────────────────────────────
 
-async function batchCheck(domains: string[], signal: AbortSignal): Promise<Record<string, boolean | null>> {
-  const results: Record<string, boolean | null> = {};
-  for (let i = 0; i < domains.length; i += BATCH_SIZE) {
+async function batchCheck(
+  domains: string[],
+  signal: AbortSignal,
+  onPartial: (results: Record<string, boolean | null>) => void
+): Promise<void> {
+  // 1. Serve cached results immediately
+  const cached = getBulkCached(domains);
+  const cachedCount = Object.keys(cached).length;
+  if (cachedCount > 0) onPartial(cached);
+
+  // 2. Only fetch domains not in cache
+  const toFetch = domains.filter((d) => !(d in cached));
+  if (toFetch.length === 0) return;
+
+  const freshResults: Record<string, boolean | null> = {};
+
+  for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
     if (signal.aborted) break;
-    const batch = domains.slice(i, i + BATCH_SIZE);
+    const batch = toFetch.slice(i, i + BATCH_SIZE);
     try {
-      const resp = await fetch(`/api/whois?mode=dns-batch&domains=${batch.join(",")}`, {
-        signal: AbortSignal.timeout(8000),
-        headers: { Accept: "application/json" },
-      });
+      const resp = await fetch(
+        `/api/whois?mode=dns-batch&domains=${batch.join(",")}`,
+        { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } }
+      );
       if (resp.ok) {
         const data = await resp.json();
         if (data.results) {
           for (const [d, v] of Object.entries(data.results)) {
-            results[d] = v as boolean | null;
+            freshResults[d] = v as boolean | null;
           }
+          onPartial({ ...data.results });
         }
       }
     } catch {
-      for (const d of batch) results[d] = null;
+      for (const d of batch) freshResults[d] = null;
+      onPartial(Object.fromEntries(batch.map((d) => [d, null])));
     }
-    if (i + BATCH_SIZE < domains.length && !signal.aborted) {
+    if (i + BATCH_SIZE < toFetch.length && !signal.aborted) {
       await new Promise((r) => setTimeout(r, BATCH_DELAY));
     }
   }
-  return results;
+
+  // 3. Persist fresh results to cache
+  if (Object.keys(freshResults).length > 0) {
+    putBulkCached(freshResults);
+  }
 }
 
 // ── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: Status }) {
-  if (status === "idle" || status === "checking") {
-    return (
-      <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />
-    );
+  if (status === "checking") {
+    return <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />;
   }
   if (status === "available") {
     return (
@@ -86,6 +101,156 @@ function StatusBadge({ status }: { status: Status }) {
     );
   }
   return <span className="text-[10px] text-muted-foreground">—</span>;
+}
+
+// ── Skeleton card (mode 1 grid) ───────────────────────────────────────────────
+
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-border py-2.5 px-1">
+      <div className="h-3.5 w-12 rounded shimmer" />
+      <div className="h-4 w-8 rounded shimmer" />
+    </div>
+  );
+}
+
+// ── Result card (mode 1 grid) ────────────────────────────────────────────────
+
+function ResultCard({ result }: { result: DomainResult }) {
+  const isAvailable = result.status === "available";
+  const isChecking = result.status === "checking";
+
+  if (isChecking) return <SkeletonCard />;
+
+  return (
+    <a
+      href={isAvailable
+        ? `https://www.porkbun.com/checkout/search?q=${result.domain}`
+        : `/${result.domain}`}
+      target={isAvailable ? "_blank" : undefined}
+      rel="noopener noreferrer"
+      className={`flex flex-col items-center justify-center gap-1 rounded-lg border py-2.5 px-1 transition-all text-center cursor-pointer ${
+        isAvailable
+          ? "border-primary bg-primary/5 hover:bg-primary/10"
+          : "border-border hover:bg-accent/50"
+      }`}
+    >
+      <span className={`font-mono text-xs font-bold leading-tight ${isAvailable ? "text-primary" : "text-foreground"}`}>
+        {result.prefix}
+        <span className="opacity-60">{result.tld}</span>
+      </span>
+      <StatusBadge status={result.status} />
+    </a>
+  );
+}
+
+// ── Skeleton row list (mode 2) ────────────────────────────────────────────────
+
+function SkeletonList({ count }: { count: number }) {
+  return (
+    <div className="space-y-4">
+      <div className="h-4 w-24 rounded shimmer" />
+      <div className="grid grid-cols-3 gap-1.5">
+        {Array.from({ length: Math.min(count, 12) }).map((_, i) => (
+          <div key={i} className="h-9 rounded-md border border-border shimmer" />
+        ))}
+      </div>
+      <div className="h-3 w-32 rounded shimmer mt-2" />
+      <div className="flex flex-wrap gap-1 mt-1">
+        {Array.from({ length: Math.min(count, 20) }).map((_, i) => (
+          <div key={i} className="h-5 w-16 rounded border border-border shimmer" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── P2s result list (mode 2) ──────────────────────────────────────────────────
+
+function P2sResultList({ results, running }: { results: DomainResult[]; running: boolean }) {
+  const available = results.filter((r) => r.status === "available");
+  const checking = results.filter((r) => r.status === "checking");
+  const registered = results.filter((r) => r.status === "registered");
+  const unknown = results.filter((r) => r.status === "unknown");
+
+  // Still loading with nothing to show yet — show skeleton
+  if (running && available.length === 0 && registered.length === 0) {
+    return <SkeletonList count={results.length} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {available.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-primary uppercase tracking-wider mb-2">
+            可注册 ({available.length})
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {available.map((r) => (
+              <a
+                key={r.domain}
+                href={`https://www.porkbun.com/checkout/search?q=${r.domain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-1 rounded-md border border-primary bg-primary/5 hover:bg-primary/10 px-2.5 py-2 transition-colors"
+              >
+                <span className="font-mono text-xs font-bold text-primary truncate">
+                  {r.domain}
+                </span>
+                <ExternalLink className="h-2.5 w-2.5 text-primary/50 shrink-0" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {running && checking.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
+          <p className="text-xs text-muted-foreground">
+            正在查询剩余 {checking.length} 个域名…
+          </p>
+        </div>
+      )}
+
+      {registered.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            已注册 ({registered.length})
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {registered.map((r) => (
+              <a
+                key={r.domain}
+                href={`/${r.domain}`}
+                className="px-2 py-0.5 text-xs font-mono rounded border border-border text-muted-foreground hover:bg-accent transition-colors"
+              >
+                {r.domain}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {unknown.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-2">
+            未知 ({unknown.length})
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {unknown.map((r) => (
+              <span
+                key={r.domain}
+                className="px-2 py-0.5 text-xs font-mono rounded border border-border/50 text-muted-foreground/40"
+              >
+                {r.domain}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -114,6 +279,25 @@ const SingleCharQuery = () => {
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
+  // Apply partial results back into state
+  function applyPartial(
+    partial: Record<string, boolean | null>,
+    setter: React.Dispatch<React.SetStateAction<DomainResult[]>>
+  ) {
+    setter((prev) =>
+      prev.map((r) => {
+        if (r.domain in partial) {
+          const v = partial[r.domain];
+          return {
+            ...r,
+            status: v === true ? "registered" : v === false ? "available" : "unknown",
+          };
+        }
+        return r;
+      })
+    );
+  }
+
   // ── Mode 1: suffix → single-char prefixes ───────────────────────────────
 
   const runSuffixToPrefix = useCallback(async () => {
@@ -134,23 +318,13 @@ const SingleCharQuery = () => {
     setS2pResults(initial);
     setS2pRunning(true);
 
-    const domains = initial.map((r) => r.domain);
-    const raw = await batchCheck(domains, ctrl.signal);
+    await batchCheck(
+      initial.map((r) => r.domain),
+      ctrl.signal,
+      (partial) => applyPartial(partial, setS2pResults)
+    );
 
-    if (!ctrl.signal.aborted) {
-      setS2pResults(
-        initial.map((r) => ({
-          ...r,
-          status:
-            raw[r.domain] === true
-              ? "registered"
-              : raw[r.domain] === false
-              ? "available"
-              : "unknown",
-        }))
-      );
-      setS2pRunning(false);
-    }
+    if (!ctrl.signal.aborted) setS2pRunning(false);
   }, [suffixInput, abort]);
 
   // ── Mode 2: prefix → all matching TLDs ─────────────────────────────────
@@ -166,8 +340,7 @@ const SingleCharQuery = () => {
 
     let tlds: string[] = [];
     if (useCcTld) tlds = [...tlds, ...ALL_CCTLDS];
-    if (useGTld) tlds = [...tlds, ...NEW_GTLDS.filter(t => !CCTLD_SET.has(t))];
-    // deduplicate
+    if (useGTld) tlds = [...tlds, ...GTLDS_ONLY];
     tlds = [...new Set(tlds)];
 
     const initial: DomainResult[] = tlds.map((tld) => ({
@@ -179,40 +352,33 @@ const SingleCharQuery = () => {
     setP2sResults(initial);
     setP2sRunning(true);
 
-    const domains = initial.map((r) => r.domain);
-    const raw = await batchCheck(domains, ctrl.signal);
+    await batchCheck(
+      initial.map((r) => r.domain),
+      ctrl.signal,
+      (partial) => applyPartial(partial, setP2sResults)
+    );
 
-    if (!ctrl.signal.aborted) {
-      setP2sResults(
-        initial.map((r) => ({
-          ...r,
-          status:
-            raw[r.domain] === true
-              ? "registered"
-              : raw[r.domain] === false
-              ? "available"
-              : "unknown",
-        }))
-      );
-      setP2sRunning(false);
-    }
+    if (!ctrl.signal.aborted) setP2sRunning(false);
   }, [prefixInput, useCcTld, useGTld, abort]);
 
   const resetS2p = useCallback(() => {
     abort();
     setS2pResults([]);
     setS2pRunning(false);
+    setSuffixInput("");
   }, [abort]);
 
   const resetP2s = useCallback(() => {
     abort();
     setP2sResults([]);
     setP2sRunning(false);
+    setPrefixInput("");
   }, [abort]);
 
   // ── Derived stats ───────────────────────────────────────────────────────
 
   const s2pAvailable = s2pResults.filter((r) => r.status === "available").length;
+  const s2pChecking = s2pResults.filter((r) => r.status === "checking").length;
   const p2sAvailable = p2sResults.filter((r) => r.status === "available").length;
 
   return (
@@ -223,12 +389,10 @@ const SingleCharQuery = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-              <Search className="h-6 w-6" />
-              批量查询
-            </h1>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <Search className="h-6 w-6" />
+            批量查询
+          </h1>
         </div>
 
         {/* Mode tabs */}
@@ -262,23 +426,22 @@ const SingleCharQuery = () => {
               输入一个后缀，自动查询 0–9 和 a–z 共 36 个单字符前缀的注册状态
             </p>
 
-            {/* Input */}
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono">.</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono pointer-events-none">.</span>
                 <Input
                   placeholder="ng"
                   value={suffixInput.startsWith(".") ? suffixInput.slice(1) : suffixInput}
                   onChange={(e) => setSuffixInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && runSuffixToPrefix()}
-                  className="pl-6 h-11 font-mono text-sm"
+                  className="pl-6 h-11 font-mono"
                 />
               </div>
-              {s2pResults.length > 0 ? (
+              {s2pResults.length > 0 && (
                 <Button variant="outline" size="icon" onClick={resetS2p} className="h-11 w-11 shrink-0">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
-              ) : null}
+              )}
               <Button
                 onClick={runSuffixToPrefix}
                 disabled={s2pRunning || !suffixInput.trim()}
@@ -288,18 +451,18 @@ const SingleCharQuery = () => {
               </Button>
             </div>
 
-            {/* Stats */}
-            {s2pResults.length > 0 && !s2pRunning && (
+            {s2pResults.length > 0 && (
               <p className="text-xs text-muted-foreground mb-3">
-                共 {s2pResults.length} 个域名，
-                <span className="text-primary font-medium"> {s2pAvailable} 个可注册</span>
+                共 {s2pResults.length} 个域名
+                {s2pRunning
+                  ? <span className="animate-pulse">，正在查询 {s2pChecking} 个…</span>
+                  : <span>，<span className="text-primary font-medium">{s2pAvailable} 个可注册</span></span>
+                }
               </p>
             )}
 
-            {/* Results grid */}
             {s2pResults.length > 0 && (
               <>
-                {/* 0-9 */}
                 <div className="mb-4">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">0–9</p>
                   <div className="grid grid-cols-5 gap-1.5">
@@ -308,10 +471,8 @@ const SingleCharQuery = () => {
                     ))}
                   </div>
                 </div>
-
-                {/* a-z */}
                 <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">a–z</p>
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">A–Z</p>
                   <div className="grid grid-cols-5 gap-1.5">
                     {s2pResults.filter((r) => /^[a-z]/.test(r.prefix)).map((r) => (
                       <ResultCard key={r.domain} result={r} />
@@ -338,20 +499,19 @@ const SingleCharQuery = () => {
               输入一个前缀，选择后缀类型，查询所有对应域名的注册状态
             </p>
 
-            {/* Input */}
             <div className="flex gap-2 mb-3">
               <Input
                 placeholder="前缀，如 a"
                 value={prefixInput}
                 onChange={(e) => setPrefixInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && runPrefixToSuffix()}
-                className="flex-1 h-11 font-mono text-sm"
+                className="flex-1 h-11 font-mono"
               />
-              {p2sResults.length > 0 ? (
+              {p2sResults.length > 0 && (
                 <Button variant="outline" size="icon" onClick={resetP2s} className="h-11 w-11 shrink-0">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
-              ) : null}
+              )}
               <Button
                 onClick={runPrefixToSuffix}
                 disabled={p2sRunning || !prefixInput.trim() || (!useCcTld && !useGTld)}
@@ -361,7 +521,6 @@ const SingleCharQuery = () => {
               </Button>
             </div>
 
-            {/* Type selector */}
             <div className="flex gap-2 mb-4">
               <button
                 onClick={() => setUseCcTld(!useCcTld)}
@@ -383,19 +542,17 @@ const SingleCharQuery = () => {
                 }`}
               >
                 gTLD
-                <span className="ml-1 text-xs opacity-70">({NEW_GTLDS.filter(t => !CCTLD_SET.has(t)).length})</span>
+                <span className="ml-1 text-xs opacity-70">({GTLDS_ONLY.length})</span>
               </button>
             </div>
 
-            {/* Stats */}
             {p2sResults.length > 0 && !p2sRunning && (
               <p className="text-xs text-muted-foreground mb-3">
                 共查询 {p2sResults.length} 个后缀，
-                <span className="text-primary font-medium"> {p2sAvailable} 个可注册</span>
+                <span className="text-primary font-medium">{p2sAvailable} 个可注册</span>
               </p>
             )}
 
-            {/* Results list – available first */}
             {p2sResults.length > 0 && (
               <P2sResultList results={p2sResults} running={p2sRunning} />
             )}
@@ -413,110 +570,5 @@ const SingleCharQuery = () => {
     </div>
   );
 };
-
-// ── ResultCard (for mode 1 grid) ────────────────────────────────────────────
-
-function ResultCard({ result }: { result: DomainResult }) {
-  const isAvailable = result.status === "available";
-  const isChecking = result.status === "checking";
-
-  return (
-    <a
-      href={isAvailable ? `https://www.porkbun.com/checkout/search?q=${result.domain}` : `/${result.domain}`}
-      target={isAvailable ? "_blank" : undefined}
-      rel="noopener noreferrer"
-      className={`flex flex-col items-center justify-center gap-1 rounded-lg border py-2.5 px-1 transition-all text-center cursor-pointer ${
-        isAvailable
-          ? "border-primary bg-primary/5 hover:bg-primary/10"
-          : isChecking
-          ? "border-border opacity-60"
-          : "border-border hover:bg-accent/50"
-      }`}
-    >
-      <span className={`font-mono text-xs font-bold ${isAvailable ? "text-primary" : "text-foreground"}`}>
-        {result.prefix}
-        <span className="opacity-60">{result.tld}</span>
-      </span>
-      <StatusBadge status={result.status} />
-    </a>
-  );
-}
-
-// ── P2sResultList (for mode 2) ──────────────────────────────────────────────
-
-function P2sResultList({ results, running }: { results: DomainResult[]; running: boolean }) {
-  const available = results.filter((r) => r.status === "available");
-  const checking = results.filter((r) => r.status === "checking");
-  const registered = results.filter((r) => r.status === "registered");
-  const unknown = results.filter((r) => r.status === "unknown");
-
-  return (
-    <div className="space-y-4">
-      {available.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold text-primary uppercase tracking-wider mb-2">
-            可注册 ({available.length})
-          </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {available.map((r) => (
-              <a
-                key={r.domain}
-                href={`https://www.porkbun.com/checkout/search?q=${r.domain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between gap-1 rounded-md border border-primary bg-primary/5 hover:bg-primary/10 px-2.5 py-2 transition-colors"
-              >
-                <span className="font-mono text-xs font-bold text-primary truncate">
-                  {r.domain}
-                </span>
-                <ExternalLink className="h-2.5 w-2.5 text-primary/50 shrink-0" />
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {running && checking.length > 0 && (
-        <p className="text-xs text-muted-foreground animate-pulse">
-          正在查询 {checking.length} 个域名…
-        </p>
-      )}
-
-      {registered.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            已注册 ({registered.length})
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {registered.map((r) => (
-              <a
-                key={r.domain}
-                href={`/${r.domain}`}
-                className="px-2 py-0.5 text-xs font-mono rounded border border-border text-muted-foreground hover:bg-accent transition-colors"
-              >
-                {r.domain}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {unknown.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider mb-2">
-            未知 ({unknown.length})
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {unknown.map((r) => (
-              <span key={r.domain} className="px-2 py-0.5 text-xs font-mono rounded border border-border/50 text-muted-foreground/40">
-                {r.domain}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default SingleCharQuery;
