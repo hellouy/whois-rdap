@@ -187,7 +187,7 @@ const HackGenerator = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl pb-28">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0">
@@ -206,6 +206,7 @@ const HackGenerator = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={keywordRef}
               placeholder="请输入关键词"
               value={keyword}
               onChange={(e) => { setKeyword(e.target.value); resetPage(); }}
