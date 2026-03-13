@@ -186,7 +186,7 @@ const HackGenerator = () => {
   }, [allResults, keyword]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-y-auto bg-background">
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl pb-28">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">

@@ -48,7 +48,7 @@ interface QuickNavEntry {
 }
 
 const quickNav: QuickNavEntry[] = [
-  { key: "whois", label: "查询", icon: Search, action: "navigate", route: "/" },
+  { key: "whois", label: "查询", icon: Search, action: "navigate", route: "/query" },
   { key: "tools", label: "域名工具", icon: Grid3x3, action: "section", sectionKey: "tools" },
   { key: "hack", label: "Hack", icon: Zap, action: "navigate", route: "/hack" },
   { key: "parking", label: "停放", icon: Database, action: "section", sectionKey: "parking" },
