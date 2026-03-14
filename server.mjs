@@ -107,20 +107,36 @@ app.get('/api/whois', async (req, res) => {
     const domains = (req.query.domains || '').split(',').filter(Boolean).slice(0, 20);
     if (!domains.length) return sendJson(res, { error: 'No domains' }, 400);
 
+    // Helper: query a single record type via Google DNS-over-HTTPS
+    async function dnsQuery(name, type) {
+      const r = await fetch(
+        `https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`,
+        { headers: { Accept: 'application/dns-json' }, signal: AbortSignal.timeout(4000) }
+      );
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
     const results = {};
     await Promise.allSettled(
       domains.map(async (d) => {
         try {
-          const r = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(d)}&type=A`, {
-            headers: { Accept: 'application/dns-json' },
-            signal: AbortSignal.timeout(4000),
-          });
-          if (r.ok) {
-            const data = await r.json();
-            if (data.Status === 0 && data.Answer?.length > 0) results[d] = true;
-            else if (data.Status === 3) results[d] = false;
-            else results[d] = null;
-          } else results[d] = null;
+          // Step 1: Check A record
+          const aData = await dnsQuery(d, 'A');
+          if (aData.Status === 3) { results[d] = false; return; }          // NXDOMAIN → available
+          if (aData.Status === 0 && aData.Answer?.length > 0) { results[d] = true; return; } // has A → registered
+
+          // Step 2: Status 0 but no A record (NODATA) → check NS
+          const nsData = await dnsQuery(d, 'NS');
+          if (nsData.Status === 3) { results[d] = false; return; }          // NXDOMAIN → available
+          if (nsData.Status === 0 && nsData.Answer?.length > 0) { results[d] = true; return; } // has NS → registered
+
+          // Step 3: Also check SOA (some domains have SOA without NS in Answer)
+          const soaData = await dnsQuery(d, 'SOA');
+          if (soaData.Status === 3) { results[d] = false; return; }
+          if (soaData.Status === 0 && soaData.Answer?.length > 0) { results[d] = true; return; }
+
+          results[d] = null; // still ambiguous
         } catch { results[d] = null; }
       })
     );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, AlertCircle } from "lucide-react";
@@ -95,6 +95,7 @@ export const QueryInput = ({
 }: QueryInputProps) => {
   const [inputVal, setInputVal] = useState(value || "");
   const [validationError, setValidationError] = useState<{ error: string; hint?: string } | null>(null);
+  const isComposingRef = useRef(false);
 
   // Sync external value (e.g. from URL params)
   useEffect(() => {
@@ -106,6 +107,12 @@ export const QueryInput = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
+    // During IME composition (e.g. Chinese/Japanese input), don't clean — let the
+    // browser handle intermediate characters, then clean on compositionend.
+    if (isComposingRef.current) {
+      setInputVal(raw);
+      return;
+    }
     // Auto-clean as user types: strip protocol and spaces
     const cleaned = cleanRawInput(raw);
     setInputVal(cleaned);
@@ -141,6 +148,14 @@ export const QueryInput = ({
             type="text"
             value={inputVal}
             onChange={handleInputChange}
+            onCompositionStart={() => { isComposingRef.current = true; }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              // Clean after IME finishes composing
+              const cleaned = cleanRawInput((e.target as HTMLInputElement).value);
+              setInputVal(cleaned);
+              if (validationError) setValidationError(null);
+            }}
             placeholder={placeholder}
             className={`
               ${compact

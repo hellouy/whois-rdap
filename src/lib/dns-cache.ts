@@ -2,10 +2,18 @@
 // Key: domain name, Value: { result: boolean | null, ts: number }
 
 const CACHE_KEY = "dns_cache_v1";
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const HISTORY_KEY = "domain_query_history_v1";
+const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const HISTORY_MAX = 200;
 
 type CacheEntry = { result: boolean | null; ts: number };
 type CacheStore = Record<string, CacheEntry>;
+
+export interface HistoryEntry {
+  domain: string;
+  status: "available" | "registered" | "unknown";
+  ts: number;
+}
 
 function load(): CacheStore {
   try {
@@ -67,4 +75,32 @@ export function putBulkCached(results: Record<string, boolean | null>) {
 /** Clear the entire cache. */
 export function clearDnsCache() {
   localStorage.removeItem(CACHE_KEY);
+}
+
+// ── Query history ─────────────────────────────────────────────────────────────
+
+/** Load the domain query history list (most recent first). */
+export function loadHistory(): HistoryEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+/** Add an entry to the history (de-dupes by domain, most recent first). */
+export function addToHistory(entry: HistoryEntry) {
+  try {
+    let history = loadHistory();
+    // Remove old entry for same domain
+    history = history.filter((h) => h.domain !== entry.domain);
+    history.unshift(entry);
+    if (history.length > HISTORY_MAX) history = history.slice(0, HISTORY_MAX);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch {}
+}
+
+/** Clear the query history. */
+export function clearHistory() {
+  localStorage.removeItem(HISTORY_KEY);
 }

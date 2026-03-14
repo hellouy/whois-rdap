@@ -56,6 +56,7 @@ interface WhoisQueryProps {
   displayDomain?: string;
   onLoadComplete?: () => void;
   onStatusDetected?: (status: string) => void;
+  showPrice?: boolean;
 }
 
 
@@ -63,7 +64,7 @@ interface WhoisQueryProps {
 
 
 
-export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete, onStatusDetected }: WhoisQueryProps) => {
+export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete, onStatusDetected, showPrice = true }: WhoisQueryProps) => {
   const { whois: whoisData, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
@@ -98,9 +99,10 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     }
   }, [isLoading]);
   
-  // 当域名变化时自动查询价格
+  // 当域名变化时自动查询价格 (仅在 showPrice 启用时)
   const prevDomainRef = useRef('');
   useEffect(() => {
+    if (!showPrice) return;
     if (domain) {
       if (domain !== prevDomainRef.current) {
         prevDomainRef.current = domain;
@@ -109,7 +111,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
       fetchPrice(domain);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain]);
+  }, [domain, showPrice]);
 
   // 获取分类后的状态信息（用于增强状态徽标）
   const getCategorizedStatuses = () => {
@@ -542,6 +544,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           /* ===== 未注册域名增强卡片 ===== */
           <div className="space-y-4">
             {/* Price section at top even for unregistered */}
+            {showPrice && (
             <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
@@ -573,6 +576,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 )}
               </div>
             </div>
+            )}
             
             {/* Unregistered status card */}
             <div className="p-4 sm:p-6 rounded-lg sm:rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 text-center">
@@ -590,36 +594,58 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 该域名目前可以注册，快去抢注吧！
               </p>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
-                <a
-                  href={`https://www.namesilo.com/domain/search-domains?query=${encodeURIComponent(domain)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />NameSilo
-                </a>
-                <a
-                  href={`https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(domain)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors inline-flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />GoDaddy
-                </a>
-                <a
-                  href={`https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors inline-flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />Namecheap
-                </a>
+                {[
+                  { label: "Porkbun", url: `https://porkbun.com/checkout/search?q=${encodeURIComponent(domain)}`, primary: true },
+                  { label: "Cloudflare", url: `https://www.cloudflare.com/products/registrar/` },
+                  { label: "NameSilo", url: `https://www.namesilo.com/domain/search-domains?query=${encodeURIComponent(domain)}` },
+                  { label: "Namecheap", url: `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}` },
+                  { label: "Dynadot", url: `https://www.dynadot.com/domain/search?domain=${encodeURIComponent(domain)}` },
+                  { label: "GoDaddy", url: `https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(domain)}` },
+                  { label: "Name.com", url: `https://www.name.com/domain/search/${encodeURIComponent(domain)}` },
+                  { label: "Spaceship", url: `https://www.spaceship.com/domain/?domain=${encodeURIComponent(domain)}` },
+                ].map(({ label, url, primary }) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`px-3 py-1.5 text-xs rounded-md transition-colors inline-flex items-center gap-1 ${
+                      primary
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    <ExternalLink className="h-3 w-3" />{label}
+                  </a>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <p className="text-[11px] text-muted-foreground/70 mb-2 font-medium uppercase tracking-wider">抢注 / 退款保护</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {[
+                    { label: "SnapNames", url: `https://www.snapnames.com/domain_search.html?domain=${encodeURIComponent(domain)}` },
+                    { label: "DropCatch", url: `https://www.dropcatch.com/domain/${encodeURIComponent(domain)}` },
+                    { label: "GoDaddy Auctions", url: `https://auctions.godaddy.com/trpItemListing.aspx?miid=${encodeURIComponent(domain)}` },
+                    { label: "Sedo", url: `https://sedo.com/search/searchresult.php4?keyword=${encodeURIComponent(domain)}&language=e` },
+                  ].map(({ label, url }) => (
+                    <a
+                      key={label}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 text-[11px] rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5" />{label}
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         ) : (
         <div className="space-y-2.5 sm:space-y-4 md:space-y-6">
           {/* 0. 域名价格 - 放在最上方 */}
+          {showPrice && (
           <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
@@ -671,6 +697,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               )}
             </div>
           </div>
+          )}
 
           {/* 1. 域名信息 */}
           <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">

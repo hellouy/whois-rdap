@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, RotateCcw, ExternalLink } from "lucide-react";
+import { ArrowLeft, Search, RotateCcw, X, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ALL_CCTLDS, NEW_GTLDS } from "@/lib/tld-list";
 import { getBulkCached, putBulkCached } from "@/lib/dns-cache";
+import { WhoisQuery } from "@/components/WhoisQuery";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,13 @@ const ALL_CHARS = [...CHARS_09, ...CHARS_AZ];
 const CCTLD_SET = new Set(ALL_CCTLDS);
 const GTLDS_ONLY = NEW_GTLDS.filter((t) => !CCTLD_SET.has(t));
 
+// Full TLD set for validation (strip leading dots)
+const KNOWN_TLDS = new Set([
+  ...ALL_CCTLDS.map((t) => t.replace(/^\./, "")),
+  ...NEW_GTLDS.map((t) => t.replace(/^\./, "")),
+  "com","net","org","edu","gov","mil","int","arpa",
+]);
+
 const BATCH_SIZE = 20;
 const BATCH_DELAY = 200;
 
@@ -37,12 +46,9 @@ async function batchCheck(
   signal: AbortSignal,
   onPartial: (results: Record<string, boolean | null>) => void
 ): Promise<void> {
-  // 1. Serve cached results immediately
   const cached = getBulkCached(domains);
-  const cachedCount = Object.keys(cached).length;
-  if (cachedCount > 0) onPartial(cached);
+  if (Object.keys(cached).length > 0) onPartial(cached);
 
-  // 2. Only fetch domains not in cache
   const toFetch = domains.filter((d) => !(d in cached));
   if (toFetch.length === 0) return;
 
@@ -54,7 +60,7 @@ async function batchCheck(
     try {
       const resp = await fetch(
         `/api/whois?mode=dns-batch&domains=${batch.join(",")}`,
-        { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } }
+        { signal: AbortSignal.timeout(10000), headers: { Accept: "application/json" } }
       );
       if (resp.ok) {
         const data = await resp.json();
@@ -74,7 +80,6 @@ async function batchCheck(
     }
   }
 
-  // 3. Persist fresh results to cache
   if (Object.keys(freshResults).length > 0) {
     putBulkCached(freshResults);
   }
@@ -116,31 +121,46 @@ function SkeletonCard() {
 
 // ── Result card (mode 1 grid) ────────────────────────────────────────────────
 
-function ResultCard({ result }: { result: DomainResult }) {
+function ResultCard({
+  result,
+  onOpenDetail,
+}: {
+  result: DomainResult;
+  onOpenDetail: (domain: string) => void;
+}) {
   const isAvailable = result.status === "available";
   const isChecking = result.status === "checking";
 
   if (isChecking) return <SkeletonCard />;
 
+  if (isAvailable) {
+    return (
+      <a
+        href={`https://porkbun.com/checkout/search?q=${result.domain}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-col items-center justify-center gap-1 rounded-lg border border-primary bg-primary/5 hover:bg-primary/10 py-2.5 px-1 transition-all text-center cursor-pointer"
+      >
+        <span className="font-mono text-xs font-bold leading-tight text-primary">
+          {result.prefix}
+          <span className="opacity-60">{result.tld}</span>
+        </span>
+        <StatusBadge status={result.status} />
+      </a>
+    );
+  }
+
   return (
-    <a
-      href={isAvailable
-        ? `https://www.porkbun.com/checkout/search?q=${result.domain}`
-        : `/${result.domain}`}
-      target={isAvailable ? "_blank" : undefined}
-      rel="noopener noreferrer"
-      className={`flex flex-col items-center justify-center gap-1 rounded-lg border py-2.5 px-1 transition-all text-center cursor-pointer ${
-        isAvailable
-          ? "border-primary bg-primary/5 hover:bg-primary/10"
-          : "border-border hover:bg-accent/50"
-      }`}
+    <button
+      onClick={() => onOpenDetail(result.domain)}
+      className="flex flex-col items-center justify-center gap-1 rounded-lg border border-border hover:bg-accent/50 py-2.5 px-1 transition-all text-center cursor-pointer w-full"
     >
-      <span className={`font-mono text-xs font-bold leading-tight ${isAvailable ? "text-primary" : "text-foreground"}`}>
+      <span className="font-mono text-xs font-bold leading-tight text-foreground">
         {result.prefix}
         <span className="opacity-60">{result.tld}</span>
       </span>
       <StatusBadge status={result.status} />
-    </a>
+    </button>
   );
 }
 
@@ -167,13 +187,20 @@ function SkeletonList({ count }: { count: number }) {
 
 // ── P2s result list (mode 2) ──────────────────────────────────────────────────
 
-function P2sResultList({ results, running }: { results: DomainResult[]; running: boolean }) {
+function P2sResultList({
+  results,
+  running,
+  onOpenDetail,
+}: {
+  results: DomainResult[];
+  running: boolean;
+  onOpenDetail: (domain: string) => void;
+}) {
   const available = results.filter((r) => r.status === "available");
   const checking = results.filter((r) => r.status === "checking");
   const registered = results.filter((r) => r.status === "registered");
   const unknown = results.filter((r) => r.status === "unknown");
 
-  // Still loading with nothing to show yet — show skeleton
   if (running && available.length === 0 && registered.length === 0) {
     return <SkeletonList count={results.length} />;
   }
@@ -189,7 +216,7 @@ function P2sResultList({ results, running }: { results: DomainResult[]; running:
             {available.map((r) => (
               <a
                 key={r.domain}
-                href={`https://www.porkbun.com/checkout/search?q=${r.domain}`}
+                href={`https://porkbun.com/checkout/search?q=${r.domain}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between gap-1 rounded-md border border-primary bg-primary/5 hover:bg-primary/10 px-2.5 py-2 transition-colors"
@@ -197,7 +224,6 @@ function P2sResultList({ results, running }: { results: DomainResult[]; running:
                 <span className="font-mono text-xs font-bold text-primary truncate">
                   {r.domain}
                 </span>
-                <ExternalLink className="h-2.5 w-2.5 text-primary/50 shrink-0" />
               </a>
             ))}
           </div>
@@ -220,13 +246,13 @@ function P2sResultList({ results, running }: { results: DomainResult[]; running:
           </p>
           <div className="flex flex-wrap gap-1">
             {registered.map((r) => (
-              <a
+              <button
                 key={r.domain}
-                href={`/${r.domain}`}
-                className="px-2 py-0.5 text-xs font-mono rounded border border-border text-muted-foreground hover:bg-accent transition-colors"
+                onClick={() => onOpenDetail(r.domain)}
+                className="px-2 py-0.5 text-xs font-mono rounded border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 {r.domain}
-              </a>
+              </button>
             ))}
           </div>
         </div>
@@ -239,17 +265,44 @@ function P2sResultList({ results, running }: { results: DomainResult[]; running:
           </p>
           <div className="flex flex-wrap gap-1">
             {unknown.map((r) => (
-              <span
+              <button
                 key={r.domain}
-                className="px-2 py-0.5 text-xs font-mono rounded border border-border/50 text-muted-foreground/40"
+                onClick={() => onOpenDetail(r.domain)}
+                className="px-2 py-0.5 text-xs font-mono rounded border border-border/50 text-muted-foreground/40 hover:border-border hover:text-muted-foreground transition-colors"
               >
                 {r.domain}
-              </span>
+              </button>
             ))}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// ── Domain detail modal ───────────────────────────────────────────────────────
+
+function DomainDetailModal({
+  domain,
+  onClose,
+}: {
+  domain: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open={!!domain} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0 gap-0">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-border sticky top-0 bg-background z-10">
+          <span className="font-mono font-bold text-sm text-foreground">{domain}</span>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 shrink-0">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="p-3 sm:p-4">
+          {domain && <WhoisQuery domain={domain} showPrice={false} />}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -259,8 +312,12 @@ const SingleCharQuery = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("suffix-to-prefix");
 
+  // Domain detail modal
+  const [detailDomain, setDetailDomain] = useState<string | null>(null);
+
   // Mode 1 state
   const [suffixInput, setSuffixInput] = useState("");
+  const [suffixError, setSuffixError] = useState<string | null>(null);
   const [s2pResults, setS2pResults] = useState<DomainResult[]>([]);
   const [s2pRunning, setS2pRunning] = useState(false);
 
@@ -279,7 +336,6 @@ const SingleCharQuery = () => {
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  // Apply partial results back into state
   function applyPartial(
     partial: Record<string, boolean | null>,
     setter: React.Dispatch<React.SetStateAction<DomainResult[]>>
@@ -298,13 +354,29 @@ const SingleCharQuery = () => {
     );
   }
 
+  // Validate and normalize suffix input
+  function normalizeSuffix(raw: string): { tld: string; error: string | null } {
+    const cleaned = raw.trim().toLowerCase().replace(/^\.+/, "").replace(/[^a-z0-9-]/g, "");
+    if (!cleaned) return { tld: "", error: "请输入后缀" };
+    if (cleaned.length < 2) return { tld: cleaned, error: "后缀至少需要 2 个字符" };
+    if (!KNOWN_TLDS.has(cleaned)) {
+      return {
+        tld: cleaned,
+        error: `"${cleaned}" 不在已知 TLD 列表中，结果可能不准确`,
+      };
+    }
+    return { tld: cleaned, error: null };
+  }
+
   // ── Mode 1: suffix → single-char prefixes ───────────────────────────────
 
   const runSuffixToPrefix = useCallback(async () => {
-    const tld = suffixInput.trim().toLowerCase();
-    if (!tld) return;
-    const normalizedTld = tld.startsWith(".") ? tld : `.${tld}`;
+    const { tld, error } = normalizeSuffix(suffixInput);
+    if (!tld) { setSuffixError("请输入后缀"); return; }
+    // Show warning but don't block for unknown TLDs
+    setSuffixError(error);
 
+    const normalizedTld = `.${tld}`;
     abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -366,6 +438,7 @@ const SingleCharQuery = () => {
     setS2pResults([]);
     setS2pRunning(false);
     setSuffixInput("");
+    setSuffixError(null);
   }, [abort]);
 
   const resetP2s = useCallback(() => {
@@ -374,8 +447,6 @@ const SingleCharQuery = () => {
     setP2sRunning(false);
     setPrefixInput("");
   }, [abort]);
-
-  // ── Derived stats ───────────────────────────────────────────────────────
 
   const s2pAvailable = s2pResults.filter((r) => r.status === "available").length;
   const s2pChecking = s2pResults.filter((r) => r.status === "checking").length;
@@ -426,15 +497,24 @@ const SingleCharQuery = () => {
               输入一个后缀，自动查询 0–9 和 a–z 共 36 个单字符前缀的注册状态
             </p>
 
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-1">
               <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono pointer-events-none">.</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-mono pointer-events-none select-none">.</span>
                 <Input
                   placeholder="ng"
-                  value={suffixInput.startsWith(".") ? suffixInput.slice(1) : suffixInput}
-                  onChange={(e) => setSuffixInput(e.target.value)}
+                  value={suffixInput}
+                  onChange={(e) => {
+                    // Only allow alphanumeric and hyphen chars
+                    const val = e.target.value.replace(/^\.+/, "").replace(/[^a-zA-Z0-9-]/g, "");
+                    setSuffixInput(val);
+                    if (suffixError) setSuffixError(null);
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && runSuffixToPrefix()}
                   className="pl-6 h-11 font-mono"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
               </div>
               {s2pResults.length > 0 && (
@@ -451,8 +531,22 @@ const SingleCharQuery = () => {
               </Button>
             </div>
 
+            {/* TLD validation warning */}
+            {suffixError && s2pResults.length === 0 && (
+              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs mt-1.5 mb-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>{suffixError}</span>
+              </div>
+            )}
+            {suffixError && s2pResults.length > 0 && (
+              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs mt-1.5 mb-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>{suffixError}</span>
+              </div>
+            )}
+
             {s2pResults.length > 0 && (
-              <p className="text-xs text-muted-foreground mb-3">
+              <p className="text-xs text-muted-foreground mb-3 mt-2">
                 共 {s2pResults.length} 个域名
                 {s2pRunning
                   ? <span className="animate-pulse">，正在查询 {s2pChecking} 个…</span>
@@ -467,7 +561,7 @@ const SingleCharQuery = () => {
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">0–9</p>
                   <div className="grid grid-cols-5 gap-1.5">
                     {s2pResults.filter((r) => /^[0-9]/.test(r.prefix)).map((r) => (
-                      <ResultCard key={r.domain} result={r} />
+                      <ResultCard key={r.domain} result={r} onOpenDetail={setDetailDomain} />
                     ))}
                   </div>
                 </div>
@@ -475,7 +569,7 @@ const SingleCharQuery = () => {
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">A–Z</p>
                   <div className="grid grid-cols-5 gap-1.5">
                     {s2pResults.filter((r) => /^[a-z]/.test(r.prefix)).map((r) => (
-                      <ResultCard key={r.domain} result={r} />
+                      <ResultCard key={r.domain} result={r} onOpenDetail={setDetailDomain} />
                     ))}
                   </div>
                 </div>
@@ -506,6 +600,10 @@ const SingleCharQuery = () => {
                 onChange={(e) => setPrefixInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && runPrefixToSuffix()}
                 className="flex-1 h-11 font-mono"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
               />
               {p2sResults.length > 0 && (
                 <Button variant="outline" size="icon" onClick={resetP2s} className="h-11 w-11 shrink-0">
@@ -554,7 +652,11 @@ const SingleCharQuery = () => {
             )}
 
             {p2sResults.length > 0 && (
-              <P2sResultList results={p2sResults} running={p2sRunning} />
+              <P2sResultList
+                results={p2sResults}
+                running={p2sRunning}
+                onOpenDetail={setDetailDomain}
+              />
             )}
 
             {p2sResults.length === 0 && (
@@ -567,6 +669,12 @@ const SingleCharQuery = () => {
           </div>
         )}
       </div>
+
+      {/* Domain detail modal */}
+      <DomainDetailModal
+        domain={detailDomain}
+        onClose={() => setDetailDomain(null)}
+      />
     </div>
   );
 };
