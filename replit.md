@@ -37,3 +37,13 @@ node server.mjs & npm run dev
 - Replaced Vercel Edge Functions (`api/`) with Express server (`server.mjs`)
 - Updated `vite.config.ts`: host `0.0.0.0`, port `5000`, added `/api` proxy to `localhost:3001`
 - Added `express` as a runtime dependency
+
+## Recent Improvements
+
+- **Input box**: Added URL decode in cleanRawInput (handles copy-pasted encoded URLs); unknown TLD shows warning (not error)
+- **Batch DNS accuracy**: Improved server.mjs `dns-batch` endpoint — checks A+NS+MX in parallel; uses SOA as final arbiter for ambiguous results; no more false positives for registered domains with no A records
+- **Popup dialogs**: HackGenerator rows now open a dialog with WhoisQuery instead of navigating to a new page; SingleCharQuery available domains now also open popup instead of linking to Porkbun
+- **Raw data section**: WhoisQuery now has a collapsible "原始数据" section showing WHOIS text and/or RDAP JSON with copy button; rdapRaw stored in WhoisData from parseRdap()
+- **WHOIS heuristics**: Enhanced whois-heuristics.ts with more "not found" patterns (Polish, Dutch, Finnish, Arabic, various registry formats) + reserved domain detection
+- **History limit**: Increased from 20 to 100 items in use-query-history.ts
+- **FloatingNav enrichment**: More tools in all sections (tools: 34 items, parking: 14 items, register: 16 items, grab: 14 items) with detailed descriptions

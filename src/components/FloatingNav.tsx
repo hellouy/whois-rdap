@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQueryHistory, QueryHistoryItem } from "@/hooks/use-query-history";
 
-// ─── Types ───────────────────────────────────────────────
 interface NavItem {
   title: string;
   description: string;
@@ -37,7 +36,6 @@ interface ToolSection {
   items: NavItem[];
 }
 
-// ─── Quick nav entries (top-level grid) ──────────────────
 interface QuickNavEntry {
   key: string;
   label: string;
@@ -57,91 +55,111 @@ const quickNav: QuickNavEntry[] = [
   { key: "history", label: "历史", icon: History, action: "section", sectionKey: "history" },
 ];
 
-// ─── Tool sections ───────────────────────────────────────
 const toolSections: Record<string, ToolSection> = {
   tools: {
     title: "域名工具",
     icon: Grid3x3,
     items: [
-      { title: "Namebio", description: "国际域名交易行情", url: "https://namebio.com" },
-      { title: "Dotdb", description: "域名关键字排名", url: "https://dotdb.com" },
-      { title: "Dnpedia", description: "每日域名", url: "https://dnpedia.com" },
-      { title: "domainnamestat", description: "后缀注册总量", url: "https://domainnamestat.com" },
-      { title: "Ntldstats", description: "新顶级注册统计", url: "https://ntldstats.com" },
-      { title: "Tld-list", description: "后缀注册比价", url: "https://tld-list.com" },
-      { title: "ExpiredDomains", description: "过期域名查询", url: "https://expireddomains.net" },
-      { title: "Alter", description: "销售额Top500", url: "https://alter.com" },
-      { title: "Dnpric", description: "交易价格查询", url: "https://dnpric.com" },
-      { title: "可备案后缀", description: "国内可备案后缀", url: "https://beian.miit.gov.cn" },
-      { title: "Deepl", description: "翻译工具", url: "https://deepl.com" },
-      { title: "玩米网", description: "域名综合工具", url: "https://wanmi.cc" },
-      { title: "笨米网", description: "域名综合查询", url: "https://benmi.com" },
-      { title: "Completedns", description: "注册历史查询", url: "https://completedns.com" },
-      { title: "哪煮米", description: "比价工具", url: "https://www.nazhumi.com" },
-      { title: "Securitytrails", description: "主机历史查询", url: "https://securitytrails.com" },
-      { title: "Crunchbase", description: "终端信息查询", url: "https://crunchbase.com" },
-      { title: "Domainhacks", description: "Hacks查询", url: "https://domainhacks.info" },
-      { title: "Archive", description: "建站历史", url: "https://archive.org" },
-      { title: "DomainR", description: "域名信息查询", url: "https://domainr.com" },
+      { title: "Namebio", description: "国际域名成交行情数据库", url: "https://namebio.com" },
+      { title: "Dotdb", description: "域名关键字排名与历史查询", url: "https://dotdb.com" },
+      { title: "Dnpedia", description: "每日新注册域名", url: "https://dnpedia.com" },
+      { title: "domainnamestat", description: "各后缀注册总量统计", url: "https://domainnamestat.com" },
+      { title: "Ntldstats", description: "新顶级域名注册统计", url: "https://ntldstats.com" },
+      { title: "Tld-list", description: "后缀注册/续费比价", url: "https://tld-list.com" },
+      { title: "ExpiredDomains", description: "过期域名查询与筛选", url: "https://expireddomains.net" },
+      { title: "Alter", description: "域名成交额Top500", url: "https://alter.com" },
+      { title: "Dnpric", description: "历史交易价格查询", url: "https://dnpric.com" },
+      { title: "哪煮米", description: "注册商价格比较工具", url: "https://www.nazhumi.com" },
+      { title: "玩米网", description: "域名综合查询工具", url: "https://wanmi.cc" },
+      { title: "笨米网", description: "域名综合查询/白名单", url: "https://benmi.com" },
+      { title: "Completedns", description: "域名注册历史查询", url: "https://completedns.com" },
+      { title: "Securitytrails", description: "主机IP历史/DNS历史", url: "https://securitytrails.com" },
+      { title: "Crunchbase", description: "公司/融资/终端信息", url: "https://crunchbase.com" },
+      { title: "Domainhacks", description: "Domain Hack 查询", url: "https://domainhacks.info" },
+      { title: "Archive", description: "Wayback Machine 建站历史", url: "https://archive.org" },
+      { title: "DomainR", description: "域名快速查询/搜索", url: "https://domainr.com" },
+      { title: "Whoxy", description: "Whois历史/反查注册人", url: "https://www.whoxy.com" },
+      { title: "ViewDNS", description: "多维度域名信息查询", url: "https://viewdns.info" },
+      { title: "Dnslytics", description: "域名/IP 情报分析", url: "https://dnslytics.com" },
+      { title: "MXToolbox", description: "DNS/邮件记录诊断工具", url: "https://mxtoolbox.com" },
+      { title: "Dnsjson", description: "在线DNS记录查询", url: "https://www.dnsjson.com" },
+      { title: "可备案后缀", description: "国内工信部可备案后缀列表", url: "https://beian.miit.gov.cn" },
+      { title: "Deepl", description: "AI高质量翻译工具", url: "https://deepl.com" },
       { title: "Dnjournal", description: "域名行业资讯", url: "https://dnjournal.com" },
-      { title: "Domaingang", description: "交易新闻", url: "https://domaingang.com" },
-      { title: "Techcrunch", description: "科技融资新闻", url: "https://techcrunch.com" },
-      { title: "dnspod", description: "免费智能DNS", url: "https://dnspod.cn" },
-      { title: "Cloudflare", description: "CDN和DNS", url: "https://cloudflare.com" },
+      { title: "Domaingang", description: "域名行业新闻/交易", url: "https://domaingang.com" },
+      { title: "Techcrunch", description: "科技/融资/创业新闻", url: "https://techcrunch.com" },
+      { title: "Cloudflare DNS", description: "免费CDN和智能DNS", url: "https://cloudflare.com" },
+      { title: "Dnspod", description: "腾讯云免费智能DNS", url: "https://dnspod.cn" },
+      { title: "BuiltWith", description: "网站技术栈分析", url: "https://builtwith.com" },
+      { title: "SimilarWeb", description: "网站流量与竞品分析", url: "https://similarweb.com" },
+      { title: "Ahrefs", description: "域名权重/外链/SEO分析", url: "https://ahrefs.com" },
+      { title: "Moz", description: "域名DA权重评估", url: "https://moz.com/domain-analysis" },
     ],
   },
   parking: {
     title: "域名停放",
     icon: Database,
     items: [
-      { title: "Dan", description: "国际停放销售平台", url: "https://dan.com" },
-      { title: "Sedo", description: "国际停放销售平台", url: "https://sedo.com" },
-      { title: "4.cn", description: "国内停放销售平台", url: "https://4.cn" },
-      { title: "Flippa", description: "国际停放平台", url: "https://flippa.com" },
-      { title: "Bodis", description: "国际停放平台", url: "https://bodis.com" },
-      { title: "Afternic", description: "国际停放平台", url: "https://afternic.com" },
-      { title: "Efty", description: "国际停放平台", url: "https://efty.com" },
-      { title: "Parkingcrew", description: "停放平台", url: "https://parkingcrew.com" },
+      { title: "Dan.com", description: "Godaddy旗下停放与销售平台，支持分期", url: "https://dan.com" },
+      { title: "Sedo", description: "全球最大国际域名停放销售平台", url: "https://sedo.com" },
+      { title: "Afternic", description: "Godaddy旗下，全球最大分销网络", url: "https://afternic.com" },
+      { title: "4.cn", description: "国内头部停放销售平台，有国内流量", url: "https://4.cn" },
+      { title: "Bodis", description: "停放变现+域名展示落地页", url: "https://bodis.com" },
+      { title: "Flippa", description: "网站/域名/App综合交易平台", url: "https://flippa.com" },
+      { title: "Efty", description: "专业域名展示销售平台", url: "https://efty.com" },
+      { title: "Parkingcrew", description: "停放广告变现平台", url: "https://parkingcrew.com" },
+      { title: "Undeveloped", description: "欧洲知名停放销售平台", url: "https://undeveloped.com" },
+      { title: "BrandBucket", description: "品牌域名精选交易市场", url: "https://brandbucket.com" },
+      { title: "Squadhelp", description: "企业命名+域名一站购买", url: "https://squadhelp.com" },
+      { title: "Atom.com", description: "AI驱动品牌域名交易平台", url: "https://atom.com" },
+      { title: "易名网", description: "国内中高端域名交易平台", url: "https://ename.com" },
+      { title: "西部数码", description: "国内主流域名交易市场", url: "https://west.cn" },
     ],
   },
   register: {
     title: "域名注册",
     icon: Globe,
     items: [
-      { title: "阿里云", description: "国内终端注册+交易", url: "https://wanwang.aliyun.com" },
-      { title: "Porkbun", description: "全球公认便宜注册商", url: "https://porkbun.com" },
-      { title: "Dynadot", description: "国外热门注册商", url: "https://dynadot.com" },
-      { title: "Hexonet", description: "德国著名注册商", url: "https://hexonet.net" },
-      { title: "Namesilo", description: "支持支付宝的国外注册商", url: "https://namesilo.com" },
-      { title: "Namecheap", description: "国际知名注册商", url: "https://namecheap.com" },
-      { title: "Godaddy", description: "全球知名注册商", url: "https://godaddy.com" },
-      { title: "101domain", description: "后缀最多的注册商", url: "https://101domain.com" },
-      { title: "趣域网", description: "国内最全国别注册商", url: "https://quyu.net" },
-      { title: "腾讯云", description: "优惠券多的注册商", url: "https://dnspod.cloud.tencent.com" },
-      { title: "西部数码", description: "国内交易抢注平台", url: "https://west.cn" },
-      { title: "易名网", description: "国内知名注册商", url: "https://ename.com" },
+      { title: "Porkbun", description: "全球公认最便宜注册商之一", url: "https://porkbun.com" },
+      { title: "Cloudflare", description: "以成本价注册域名，无溢价", url: "https://cloudflare.com/products/registrar" },
+      { title: "Namesilo", description: "支持支付宝，价格透明无涨价", url: "https://namesilo.com" },
+      { title: "Dynadot", description: "国外热门注册商，支持中文", url: "https://dynadot.com" },
+      { title: "Namecheap", description: "国际知名注册商，隐私保护免费", url: "https://namecheap.com" },
+      { title: "Godaddy", description: "全球最大注册商，覆盖后缀最广", url: "https://godaddy.com" },
+      { title: "Hexonet", description: "德国著名注册商，新后缀全", url: "https://hexonet.net" },
+      { title: "101domain", description: "后缀数量最多的注册商", url: "https://101domain.com" },
+      { title: "阿里云", description: "国内终端注册+域名交易市场", url: "https://wanwang.aliyun.com" },
+      { title: "腾讯云", description: "优惠券多，有活动价", url: "https://dnspod.cloud.tencent.com" },
+      { title: "西部数码", description: "国内主流，支持国别域名", url: "https://west.cn" },
+      { title: "趣域网", description: "国内国别域名最全注册商", url: "https://quyu.net" },
+      { title: "易名网", description: "国内知名注册商，有老用户价", url: "https://ename.com" },
+      { title: "Sav.com", description: "新兴注册商，新后缀价格便宜", url: "https://sav.com" },
+      { title: "Gandi", description: "法国注册商，注重隐私保护", url: "https://gandi.net" },
+      { title: "Name.com", description: "Donuts旗下注册商", url: "https://name.com" },
     ],
   },
   grab: {
     title: "域名抢注",
     icon: Webhook,
     items: [
-      { title: "Hexonet", description: "德国新后缀抢注商", url: "https://hexonet.net" },
-      { title: "西部数码", description: "国内抢注交易平台", url: "https://west.cn" },
-      { title: "中资源", description: "新后缀成功率高", url: "https://zzy.cn" },
-      { title: "Catched", description: "无需充值抢注", url: "https://catched.net" },
-      { title: "Dynadot", description: "知名抢注服务商", url: "https://dynadot.com" },
-      { title: "Sav", description: "新后缀注册便宜", url: "https://sav.com" },
-      { title: "park.io", description: "国别域名抢注", url: "https://park.io" },
-      { title: "聚名网", description: "国内主流后缀抢注", url: "https://juming.com" },
-      { title: "Snapnames", description: "国际主流后缀抢注", url: "https://snapnames.com" },
-      { title: "Namejet", description: "国际主流后缀抢注", url: "https://namejet.com" },
-      { title: "Dropcatch", description: "国际主流后缀抢注", url: "https://dropcatch.com" },
+      { title: "Hexonet", description: "新后缀Pre-Order抢注首选", url: "https://hexonet.net" },
+      { title: "西部数码", description: "国内过期抢注+Drop服务", url: "https://west.cn" },
+      { title: "中资源", description: "新后缀抢注成功率较高", url: "https://zzy.cn" },
+      { title: "Catched", description: "无需预充值，按成功付费", url: "https://catched.net" },
+      { title: "Dynadot", description: "支持Backorder，成功再收费", url: "https://dynadot.com" },
+      { title: "Snapnames", description: "国际主流后缀抢注平台", url: "https://snapnames.com" },
+      { title: "Namejet", description: "国际主流后缀，支持竞拍", url: "https://namejet.com" },
+      { title: "Dropcatch", description: "国际主流后缀，免费竞价", url: "https://dropcatch.com" },
+      { title: "park.io", description: "国别域名ccTLD专业抢注", url: "https://park.io" },
+      { title: "聚名网", description: "国内主流后缀过期竞价", url: "https://juming.com" },
+      { title: "Sav.com", description: "Backorder价格便宜", url: "https://sav.com" },
+      { title: "GoDaddy Auctions", description: "Godaddy过期域名竞价", url: "https://auctions.godaddy.com" },
+      { title: "NamePros", description: "域名论坛，可找抢注合作", url: "https://namepros.com" },
+      { title: "ExpiredDomains", description: "过期域名监控与筛选", url: "https://expireddomains.net" },
     ],
   },
 };
 
-// ─── Time ago helper ─────────────────────────────────────
 function timeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60000);
@@ -156,7 +174,6 @@ function timeAgo(timestamp: number): string {
 
 function getDateGroup(timestamp: number): string {
   const now = new Date();
-  const date = new Date(timestamp);
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = todayStart - 86400000;
   if (timestamp >= todayStart) return "今天";
@@ -180,7 +197,6 @@ function groupHistory(items: QueryHistoryItem[]): HistoryGroup[] {
   return order.filter(l => groups[l]).map(l => ({ label: l, items: groups[l] }));
 }
 
-// ─── Component ───────────────────────────────────────────
 export const FloatingNav = () => {
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -256,11 +272,9 @@ export const FloatingNav = () => {
       </DrawerTrigger>
 
       <DrawerContent className="max-h-[85vh] focus:outline-none">
-        {/* Handle bar */}
         <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted-foreground/20" />
 
         {!activeSection ? (
-          /* ───── Main grid ───── */
           <div className="px-5 pb-6 pt-2">
             <p className="text-base font-bold tracking-wide mb-4">不讲•李</p>
             <div className="grid grid-cols-4 gap-3">
@@ -281,9 +295,7 @@ export const FloatingNav = () => {
             </div>
           </div>
         ) : activeSection === "history" ? (
-          /* ───── History section ───── */
           <div className="flex flex-col overflow-hidden" style={{ height: "72vh" }}>
-            {/* Header */}
             <div className="flex items-center gap-2 px-5 pt-1 pb-3 flex-shrink-0">
               <button
                 onClick={handleBack}
@@ -307,7 +319,6 @@ export const FloatingNav = () => {
               )}
             </div>
 
-            {/* Search */}
             <div className="px-5 pb-3 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -320,7 +331,6 @@ export const FloatingNav = () => {
               </div>
             </div>
 
-            {/* History list */}
             <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-6">
               {filteredHistory.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -382,9 +392,7 @@ export const FloatingNav = () => {
             </div>
           </div>
         ) : (
-          /* ───── Section detail ───── */
           <div className="flex flex-col overflow-hidden" style={{ height: "72vh" }}>
-            {/* Header */}
             <div className="flex items-center gap-2 px-5 pt-1 pb-3 flex-shrink-0">
               <button
                 onClick={handleBack}
@@ -398,7 +406,6 @@ export const FloatingNav = () => {
               </span>
             </div>
 
-            {/* Search */}
             <div className="px-5 pb-3 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -411,7 +418,6 @@ export const FloatingNav = () => {
               </div>
             </div>
 
-            {/* Items grid */}
             <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-6">
               <div className="grid grid-cols-2 gap-2.5">
                 {filteredItems.map((item, i) => (
@@ -429,7 +435,7 @@ export const FloatingNav = () => {
                         </span>
                         <ExternalLink className="h-2.5 w-2.5 text-muted-foreground/50 flex-shrink-0" />
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight line-clamp-2">
                         {item.description}
                       </p>
                     </div>

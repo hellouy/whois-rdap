@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink } from "lucide-react";
+import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink, Code2 } from "lucide-react";
 import { useWhois } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { WhoisSkeleton } from "@/components/WhoisSkeleton";
@@ -13,6 +13,70 @@ import { getRegistrarWebsite, getFaviconUrl } from "@/utils/registrar-data";
 import { getDnsProvider } from "@/utils/dns-provider-data";
 import { getCountryName } from "@/utils/country-data";
 import { useDomainMeaning } from "@/hooks/use-domain-meaning";
+
+// ── Raw Data Section ──────────────────────────────────────────────────────────
+
+function RawDataSection({ rawText, rdapData }: { rawText?: string; rdapData?: any }) {
+  const [open, setOpen] = useState(false);
+  const hasText = !!rawText;
+  const hasJson = !!rdapData;
+  const [viewMode, setViewMode] = useState<"text" | "json">(hasText ? "text" : "json");
+
+  if (!hasText && !hasJson) return null;
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+      >
+        <Code2 className="h-4 w-4 flex-shrink-0" />
+        <span className="font-medium">原始数据</span>
+        {open ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+      </button>
+      {open && (
+        <div className="border-t border-border">
+          {hasText && hasJson && (
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setViewMode("text")}
+                className={`flex-1 py-1.5 text-xs font-medium transition-colors ${viewMode === "text" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                WHOIS 文本
+              </button>
+              <button
+                onClick={() => setViewMode("json")}
+                className={`flex-1 py-1.5 text-xs font-medium transition-colors ${viewMode === "json" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                RDAP JSON
+              </button>
+            </div>
+          )}
+          <div className="relative">
+            <pre className="text-[11px] font-mono leading-relaxed text-muted-foreground bg-muted/30 p-3 overflow-x-auto max-h-96 whitespace-pre-wrap break-all">
+              {viewMode === "json" && hasJson
+                ? JSON.stringify(rdapData, null, 2)
+                : rawText || ""}
+            </pre>
+            <button
+              onClick={async () => {
+                try {
+                  const text = viewMode === "json" && hasJson
+                    ? JSON.stringify(rdapData, null, 2)
+                    : rawText || "";
+                  await navigator.clipboard.writeText(text);
+                } catch {}
+              }}
+              className="absolute top-2 right-2 px-2 py-1 text-[10px] rounded bg-background border border-border text-muted-foreground hover:text-foreground transition-colors"
+            >
+              复制
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // 检查是否为隐私保护或空信息
 const isPrivacyRedacted = (value: string | undefined): boolean => {
@@ -962,7 +1026,10 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               </div>
             )}
 
-          {/* 价格已移至顶部 */}
+          {/* 7. 原始数据 */}
+          {whoisData && (whoisData.raw || whoisData.rdapRaw) && (
+            <RawDataSection rawText={whoisData.raw} rdapData={whoisData.rdapRaw} />
+          )}
         </div>
         )
       ) : error ? (

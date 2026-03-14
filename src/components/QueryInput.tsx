@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, AlertTriangle } from "lucide-react";
 import { normalizeDomain } from "@/utils/tld-servers";
+import { ALL_CCTLDS, NEW_GTLDS } from "@/lib/tld-list";
+
+const KNOWN_TLDS = new Set([
+  ...ALL_CCTLDS.map((t) => t.replace(/^\./, "")),
+  ...NEW_GTLDS.map((t) => t.replace(/^\./, "")),
+  "com","net","org","edu","gov","mil","int","arpa","co","uk","us","info","biz","name","pro","aero","coop","museum","tel","travel","xxx","jobs","mobi","post",
+]);
 
 interface QueryInputProps {
   onQuery: (domain: string, displayDomain: string) => void;
@@ -12,9 +19,14 @@ interface QueryInputProps {
   compact?: boolean;
 }
 
-// Strip URL cruft from a raw input string
 function cleanRawInput(raw: string): string {
-  return raw
+  let cleaned = raw;
+  // Try URL decode for percent-encoded inputs (e.g. copy from browser address bar)
+  try {
+    const decoded = decodeURIComponent(cleaned);
+    if (decoded !== cleaned) cleaned = decoded;
+  } catch {}
+  return cleaned
     .replace(/^https?:\/\//i, "")
     .replace(/^\/\//, "")
     .replace(/^ftp:\/\//i, "")
@@ -22,24 +34,18 @@ function cleanRawInput(raw: string): string {
     .split("/")[0]
     .split("?")[0]
     .split("#")[0]
-    .replace(/\s+/g, ""); // remove ALL whitespace (including mid-string spaces)
+    .replace(/\s+/g, "");
 }
 
-// Validate a cleaned domain string
-function validateDomain(cleaned: string): { valid: boolean; error?: string; hint?: string } {
+function validateDomain(cleaned: string): { valid: boolean; error?: string; hint?: string; warning?: string } {
   if (!cleaned) return { valid: false };
 
-  // IP address
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(cleaned)) {
     return { valid: false, error: "请输入域名，不支持 IP 地址查询", hint: "示例：example.com" };
   }
-
-  // IPv6
   if (/^[\da-fA-F:]+$/.test(cleaned) && cleaned.includes(":")) {
     return { valid: false, error: "请输入域名，不支持 IPv6 地址查询", hint: "示例：example.com" };
   }
-
-  // Email
   if (cleaned.includes("@")) {
     return {
       valid: false,
@@ -47,13 +53,10 @@ function validateDomain(cleaned: string): { valid: boolean; error?: string; hint
       hint: `试试：${cleaned.split("@")[1] || "example.com"}`,
     };
   }
-
-  // Illegal characters
   if (/[!@#$%^&*()+=\[\]{};':"\\|,<>/?`~]/.test(cleaned)) {
     return { valid: false, error: "域名包含非法字符", hint: "域名只能包含字母、数字、连字符和点" };
   }
 
-  // Must have at least one dot (i.e. includes a TLD)
   const parts = cleaned.split(".");
   if (parts.length < 2) {
     if (/[\u4e00-\u9fff]/.test(cleaned))
@@ -63,27 +66,30 @@ function validateDomain(cleaned: string): { valid: boolean; error?: string; hint
     return { valid: false, error: "域名格式不完整，需要包含后缀", hint: "示例：example.com" };
   }
 
-  // TLD checks
-  const tld = parts[parts.length - 1];
+  const tld = parts[parts.length - 1].toLowerCase();
   if (!tld || tld.length < 2) {
     return { valid: false, error: "域名后缀不完整，至少需要 2 个字符", hint: "示例：example.com" };
   }
-  // TLD must be alphabetic (or IDN punycode)
   if (!/^[a-zA-Z\u4e00-\u9fff\u00c0-\u024f]+$/.test(tld) && !tld.startsWith("xn--")) {
     return { valid: false, error: "域名后缀格式无效", hint: "示例：.com .cn .io .ai" };
   }
 
-  // Label checks
   for (const part of parts) {
     if (!part) return { valid: false, error: "域名格式有误，包含连续的点" };
     if (part.length > 63) return { valid: false, error: "域名标签过长（最多 63 个字符）" };
     if (/^-|-$/.test(part) && !part.startsWith("xn--"))
       return { valid: false, error: "域名标签不能以连字符开头或结尾" };
   }
-
   if (cleaned.length > 253) return { valid: false, error: "域名总长度超出限制（最多 253 个字符）" };
 
-  return { valid: true };
+  // Check if TLD is known — warn but don't block
+  const tldClean = tld.replace(/^xn--/, "");
+  let warning: string | undefined;
+  if (!KNOWN_TLDS.has(tld) && !tld.startsWith("xn--") && !/[\u4e00-\u9fff\u00c0-\u024f]/.test(tld)) {
+    warning = `后缀 ".${tld}" 不在已知列表中，查询结果可能不准确`;
+  }
+
+  return { valid: true, warning };
 }
 
 export const QueryInput = ({
@@ -95,28 +101,25 @@ export const QueryInput = ({
 }: QueryInputProps) => {
   const [inputVal, setInputVal] = useState(value || "");
   const [validationError, setValidationError] = useState<{ error: string; hint?: string } | null>(null);
+  const [validationWarning, setValidationWarning] = useState<string | null>(null);
   const isComposingRef = useRef(false);
 
-  // Sync external value (e.g. from URL params)
   useEffect(() => {
     if (value !== undefined && value !== inputVal) {
       setInputVal(value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    // During IME composition (e.g. Chinese/Japanese input), don't clean — let the
-    // browser handle intermediate characters, then clean on compositionend.
     if (isComposingRef.current) {
       setInputVal(raw);
       return;
     }
-    // Auto-clean as user types: strip protocol and spaces
     const cleaned = cleanRawInput(raw);
     setInputVal(cleaned);
     if (validationError) setValidationError(null);
+    if (validationWarning) setValidationWarning(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -124,7 +127,6 @@ export const QueryInput = ({
     const cleaned = cleanRawInput(inputVal.trim());
     if (!cleaned) return;
 
-    // Update display with cleaned value
     setInputVal(cleaned);
 
     const validation = validateDomain(cleaned);
@@ -136,6 +138,7 @@ export const QueryInput = ({
     }
 
     setValidationError(null);
+    setValidationWarning(validation.warning || null);
     const normalized = normalizeDomain(cleaned);
     onQuery(normalized, cleaned);
   };
@@ -151,10 +154,10 @@ export const QueryInput = ({
             onCompositionStart={() => { isComposingRef.current = true; }}
             onCompositionEnd={(e) => {
               isComposingRef.current = false;
-              // Clean after IME finishes composing
               const cleaned = cleanRawInput((e.target as HTMLInputElement).value);
               setInputVal(cleaned);
               if (validationError) setValidationError(null);
+              if (validationWarning) setValidationWarning(null);
             }}
             placeholder={placeholder}
             className={`
@@ -193,6 +196,12 @@ export const QueryInput = ({
               <p className="text-xs text-muted-foreground mt-0.5">{validationError.hint}</p>
             )}
           </div>
+        </div>
+      )}
+      {!validationError && validationWarning && (
+        <div className="mt-2 flex items-start gap-2 text-amber-600 dark:text-amber-400 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p className="text-xs">{validationWarning}</p>
         </div>
       )}
     </div>

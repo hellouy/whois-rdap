@@ -135,18 +135,16 @@ function ResultCard({
 
   if (isAvailable) {
     return (
-      <a
-        href={`https://porkbun.com/checkout/search?q=${result.domain}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex flex-col items-center justify-center gap-1 rounded-lg border border-primary bg-primary/5 hover:bg-primary/10 py-2.5 px-1 transition-all text-center cursor-pointer"
+      <button
+        onClick={() => onOpenDetail(result.domain)}
+        className="flex flex-col items-center justify-center gap-1 rounded-lg border border-primary bg-primary/5 hover:bg-primary/10 py-2.5 px-1 transition-all text-center cursor-pointer w-full"
       >
         <span className="font-mono text-xs font-bold leading-tight text-primary">
           {result.prefix}
           <span className="opacity-60">{result.tld}</span>
         </span>
         <StatusBadge status={result.status} />
-      </a>
+      </button>
     );
   }
 
@@ -214,17 +212,15 @@ function P2sResultList({
           </p>
           <div className="grid grid-cols-3 gap-1.5">
             {available.map((r) => (
-              <a
+              <button
                 key={r.domain}
-                href={`https://porkbun.com/checkout/search?q=${r.domain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between gap-1 rounded-md border border-primary bg-primary/5 hover:bg-primary/10 px-2.5 py-2 transition-colors"
+                onClick={() => onOpenDetail(r.domain)}
+                className="flex items-center justify-between gap-1 rounded-md border border-primary bg-primary/5 hover:bg-primary/10 px-2.5 py-2 transition-colors w-full text-left"
               >
                 <span className="font-mono text-xs font-bold text-primary truncate">
                   {r.domain}
                 </span>
-              </a>
+              </button>
             ))}
           </div>
         </div>

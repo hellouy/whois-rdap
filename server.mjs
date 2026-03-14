@@ -77,6 +77,14 @@ const RDAP_SERVERS = {
   life: 'https://rdap.identitydigital.services/rdap',
   live: 'https://rdap.identitydigital.services/rdap',
   work: 'https://rdap.centralnic.com/work',
+  shop: 'https://rdap.centralnic.com/shop',
+  link: 'https://rdap.centralnic.com/link',
+  media: 'https://rdap.identitydigital.services/rdap',
+  network: 'https://rdap.identitydigital.services/rdap',
+  systems: 'https://rdap.identitydigital.services/rdap',
+  academy: 'https://rdap.identitydigital.services/rdap',
+  agency: 'https://rdap.identitydigital.services/rdap',
+  global: 'https://rdap.centralnic.com/global',
 };
 
 async function raceSuccessful(promises) {
@@ -117,29 +125,52 @@ app.get('/api/whois', async (req, res) => {
       return r.json();
     }
 
+    // Check a single domain using multiple DNS record types in parallel
+    async function checkDomainAvailability(d) {
+      try {
+        // Query A, AAAA, NS, MX in parallel for speed
+        const [aData, nsData, mxData] = await Promise.all([
+          dnsQuery(d, 'A').catch(() => null),
+          dnsQuery(d, 'NS').catch(() => null),
+          dnsQuery(d, 'MX').catch(() => null),
+        ]);
+
+        // NXDOMAIN from ANY authoritative query → likely available
+        // But only if ALL say NXDOMAIN
+        const statuses = [aData, nsData, mxData].filter(Boolean).map(data => data.Status);
+        const hasNxDomain = statuses.some(s => s === 3);
+        const hasRecords = [aData, nsData, mxData].some(data =>
+          data && data.Status === 0 && data.Answer && data.Answer.length > 0
+        );
+
+        if (hasRecords) return true; // registered
+
+        // All returned NXDOMAIN
+        if (statuses.every(s => s === 3)) return false; // available
+
+        // Mixed results - check SOA as final arbiter
+        try {
+          const soaData = await dnsQuery(d, 'SOA');
+          if (soaData.Status === 3) return false; // NXDOMAIN on SOA → available
+          if (soaData.Status === 0 && soaData.Answer && soaData.Answer.length > 0) return true;
+          // NODATA (status 0 but no answer) on SOA means zone exists but no SOA record
+          // This is unusual - domain might be reserved/delegated but no SOA
+          if (soaData.Status === 0) return true; // treat as registered (zone exists)
+        } catch {}
+
+        return null; // ambiguous
+      } catch {
+        return null;
+      }
+    }
+
     const results = {};
     await Promise.allSettled(
       domains.map(async (d) => {
-        try {
-          // Step 1: Check A record
-          const aData = await dnsQuery(d, 'A');
-          if (aData.Status === 3) { results[d] = false; return; }          // NXDOMAIN → available
-          if (aData.Status === 0 && aData.Answer?.length > 0) { results[d] = true; return; } // has A → registered
-
-          // Step 2: Status 0 but no A record (NODATA) → check NS
-          const nsData = await dnsQuery(d, 'NS');
-          if (nsData.Status === 3) { results[d] = false; return; }          // NXDOMAIN → available
-          if (nsData.Status === 0 && nsData.Answer?.length > 0) { results[d] = true; return; } // has NS → registered
-
-          // Step 3: Also check SOA (some domains have SOA without NS in Answer)
-          const soaData = await dnsQuery(d, 'SOA');
-          if (soaData.Status === 3) { results[d] = false; return; }
-          if (soaData.Status === 0 && soaData.Answer?.length > 0) { results[d] = true; return; }
-
-          results[d] = null; // still ambiguous
-        } catch { results[d] = null; }
+        results[d] = await checkDomainAvailability(d);
       })
     );
+
     return sendJson(res, { results }, 200, { 'Cache-Control': 'public, max-age=60' });
   }
 
@@ -206,18 +237,28 @@ app.get('/api/whois', async (req, res) => {
     }
   } catch {}
 
-  // Phase 3: DNS fallback
+  // Phase 3: DNS fallback (check multiple record types)
   try {
-    const r = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`, {
-      headers: { Accept: 'application/dns-json' },
-      signal: AbortSignal.timeout(4000),
-    });
-    if (r.ok) {
-      const data = await r.json();
-      if (data.Status === 0 && data.Answer?.length > 0)
-        return sendJson(res, { source: 'dns-fallback', data: { exists: true, answers: data.Answer } }, 200, cache);
-      if (data.Status === 3)
-        return sendJson(res, { source: 'dns-fallback', data: { exists: false } }, 200, cache);
+    const dnsChecks = await Promise.allSettled([
+      fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`, {
+        headers: { Accept: 'application/dns-json' },
+        signal: AbortSignal.timeout(4000),
+      }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=NS`, {
+        headers: { Accept: 'application/dns-json' },
+        signal: AbortSignal.timeout(4000),
+      }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+    
+    const results = dnsChecks.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean);
+    const hasRecords = results.some(d => d.Status === 0 && d.Answer && d.Answer.length > 0);
+    const allNxDomain = results.length > 0 && results.every(d => d.Status === 3);
+    
+    if (hasRecords) {
+      return sendJson(res, { source: 'dns-fallback', data: { exists: true, answers: results[0]?.Answer || [] } }, 200, cache);
+    }
+    if (allNxDomain) {
+      return sendJson(res, { source: 'dns-fallback', data: { exists: false } }, 200, cache);
     }
   } catch {}
 

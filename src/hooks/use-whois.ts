@@ -20,6 +20,7 @@ export interface WhoisData {
   dnssec?: string;
   registered?: boolean;
   raw?: string;
+  rdapRaw?: any;
 }
 
 type AnyObj = Record<string, any>;
@@ -204,6 +205,7 @@ function parseRdap(obj: AnyObj): WhoisData {
     nameServers: ns,
     status,
     dnssec,
+    rdapRaw: obj,
   };
 }
 

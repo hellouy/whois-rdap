@@ -8,7 +8,7 @@ export interface QueryHistoryItem {
 }
 
 const STORAGE_KEY = "domain-query-history";
-const MAX_HISTORY = 20;
+const MAX_HISTORY = 100;
 
 function loadHistory(): QueryHistoryItem[] {
   try {
@@ -24,7 +24,11 @@ function saveHistory(items: QueryHistoryItem[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, MAX_HISTORY)));
   } catch {
-    // storage full or unavailable
+    // storage full — try pruning old entries and retry
+    try {
+      const pruned = items.slice(0, Math.floor(MAX_HISTORY / 2));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+    } catch {}
   }
 }
 

@@ -1,9 +1,11 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import TldTagCloud from "@/components/TldTagCloud";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useDomainAvailability } from "@/hooks/use-domain-availability";
+import { WhoisQuery } from "@/components/WhoisQuery";
 import {
   generateDomainHacks,
   getAllHacksForTld,
@@ -28,6 +30,7 @@ import {
   Plus,
   ArrowUpDown,
   Download,
+  ExternalLink,
 } from "lucide-react";
 
 const PAGE_SIZES = [20, 50, 100];
@@ -50,6 +53,7 @@ const HackGenerator = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [detailDomain, setDetailDomain] = useState<string | null>(null);
   const { availability, isChecking, checkDomains, reset: resetAvailability } = useDomainAvailability();
   const [libraryLoaded, setLibraryLoaded] = useState(isLibraryReady());
 
@@ -66,7 +70,6 @@ const HackGenerator = () => {
     const tld = searchParams.get("tld");
     if (q) { setKeyword(q); resetPage(); }
     if (tld && PRESET_TLDS.includes(tld)) { setSelectedTld(tld); }
-    // Focus keyword input when TLD provided but no keyword
     if (tld && !q) {
       setTimeout(() => keywordRef.current?.focus(), 300);
     }
@@ -87,7 +90,6 @@ const HackGenerator = () => {
 
   // Generate and filter results
   const allResults = useMemo(() => {
-    // Browse mode: show all words for selected TLD
     if (!keyword.trim() && selectedTld && browseModeResults.length > 0) {
       let results = browseModeResults;
       if (prefixLengthEnabled) {
@@ -106,12 +108,9 @@ const HackGenerator = () => {
       results = [...results].reverse();
     }
 
-    // Apply prefix length filter
     if (prefixLengthEnabled) {
       results = results.filter((r) => r.prefix.length <= prefixMaxLength);
     }
-
-    // Apply mode filters
     if (modeStartsWith) {
       const kw = keyword.trim().toLowerCase();
       results = results.filter((r) => r.prefix.toLowerCase().startsWith(kw));
@@ -123,12 +122,8 @@ const HackGenerator = () => {
         return full.endsWith(kw);
       });
     }
-
-    // Pinyin mode: prioritize results with Chinese meanings
     if (pinyinMode) {
-      // Filter to only results with Chinese meanings
       results = results.filter((r) => r.meaning && /[\u4e00-\u9fff]/.test(r.meaning));
-      // Sort by: shorter domain first (more creative), then score
       results.sort((a, b) => {
         const aLen = a.domain.length;
         const bLen = b.domain.length;
@@ -155,7 +150,6 @@ const HackGenerator = () => {
     }
   }, [paginatedResults, checkDomains]);
 
-  // Reset page on filter change
   const resetPage = useCallback(() => { setPage(1); resetAvailability(); }, [resetAvailability]);
 
   const copyAll = useCallback(async () => {
@@ -379,7 +373,12 @@ const HackGenerator = () => {
           {/* Table body */}
           {paginatedResults.length > 0 ? (
             paginatedResults.map((hack) => (
-              <HackRow key={hack.domain} hack={hack} status={availability[hack.domain]} />
+              <HackRow
+                key={hack.domain}
+                hack={hack}
+                status={availability[hack.domain]}
+                onOpenDetail={setDetailDomain}
+              />
             ))
           ) : (
             <div className="px-4 py-12 text-center text-muted-foreground text-sm">
@@ -457,39 +456,82 @@ const HackGenerator = () => {
       {tldDropdownOpen && (
         <div className="fixed inset-0 z-40" onClick={() => { setTldDropdownOpen(false); setTldSearch(""); }} />
       )}
+
+      {/* Domain detail popup dialog */}
+      <Dialog open={!!detailDomain} onOpenChange={(open) => { if (!open) setDetailDomain(null); }}>
+        <DialogContent className="max-w-3xl w-full max-h-[90vh] overflow-y-auto p-0 gap-0">
+          {detailDomain && (
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold font-mono">{detailDomain}</h2>
+                <a
+                  href={`https://porkbun.com/checkout/search?q=${detailDomain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  注册/购买
+                </a>
+              </div>
+              <WhoisQuery domain={detailDomain} displayDomain={detailDomain} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-function HackRow({ hack, status }: { hack: HackResult; status?: boolean | null }) {
+function HackRow({
+  hack,
+  status,
+  onOpenDetail,
+}: {
+  hack: HackResult;
+  status?: boolean | null;
+  onOpenDetail: (domain: string) => void;
+}) {
   const dotIndex = hack.domain.indexOf(".");
   const prefix = hack.domain.substring(0, dotIndex);
   const tldPart = hack.domain.substring(dotIndex);
 
+  const domainLabel = (
+    <div className="px-4 py-3 font-mono text-sm font-bold">
+      <span className="text-foreground">{prefix}</span>
+      <span className="text-primary">{tldPart}</span>
+    </div>
+  );
+
+  const meaningLabel = (
+    <div className="px-4 py-3 text-sm text-muted-foreground truncate">
+      {hack.meaning || hack.keyword}
+    </div>
+  );
+
+  const statusBadge = (
+    <div className="px-2 py-3 text-center">
+      {status === undefined ? (
+        <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />
+      ) : status === true ? (
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">已注册</span>
+      ) : status === false ? (
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground">可注册</span>
+      ) : (
+        <span className="text-[10px] text-muted-foreground">查询中</span>
+      )}
+    </div>
+  );
+
   return (
-    <Link
-      to={`/${hack.domain}`}
-      className="grid grid-cols-[1fr_1fr_4.5rem] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
+    <button
+      onClick={() => onOpenDetail(hack.domain)}
+      className="grid grid-cols-[1fr_1fr_4.5rem] border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer w-full text-left"
     >
-      <div className="px-4 py-3 font-mono text-sm font-bold">
-        <span className="text-foreground">{prefix}</span>
-        <span className="text-primary">{tldPart}</span>
-      </div>
-      <div className="px-4 py-3 text-sm text-muted-foreground truncate">
-        {hack.meaning || hack.keyword}
-      </div>
-      <div className="px-2 py-3 text-center">
-        {status === undefined ? (
-          <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />
-        ) : status === true ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">已注册</span>
-        ) : status === false ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground">可注册</span>
-        ) : (
-          <span className="text-[10px] text-muted-foreground">—</span>
-        )}
-      </div>
-    </Link>
+      {domainLabel}
+      {meaningLabel}
+      {statusBadge}
+    </button>
   );
 }
 
