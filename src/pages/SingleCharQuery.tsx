@@ -472,7 +472,7 @@ const SingleCharQuery = () => {
                 : "text-muted-foreground hover:text-foreground hover:bg-accent"
             }`}
           >
-            后缀 → 前缀
+            单字符查询
           </button>
           <button
             onClick={() => { setMode("prefix-to-suffix"); abort(); }}
@@ -482,7 +482,7 @@ const SingleCharQuery = () => {
                 : "text-muted-foreground hover:text-foreground hover:bg-accent"
             }`}
           >
-            前缀 → 后缀
+            可用后缀查询
           </button>
         </div>
 
