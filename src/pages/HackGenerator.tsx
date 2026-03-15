@@ -190,7 +190,7 @@ const HackGenerator = () => {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
               <Zap className="h-6 w-6" />
-              域名短语
+              HACK域
             </h1>
           </div>
         </div>
@@ -201,7 +201,7 @@ const HackGenerator = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               ref={keywordRef}
-              placeholder="请输入关键词"
+              placeholder="输入关键词查看可用域名"
               value={keyword}
               onChange={(e) => { setKeyword(e.target.value); resetPage(); }}
               className="pl-10 h-11 text-sm border border-border bg-background"
