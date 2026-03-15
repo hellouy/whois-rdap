@@ -483,6 +483,124 @@ export const WORD_CORPUS_EXTRA: string[] = [
   "reputation","foundation","donation","pollution","evolution","revolution",
   "resolution","constitution","institution","substitution","contribution",
   "distribution","solution","execution","prosecution",
+    // ── Words ending in .ai ───────────────────────────────────────────────────
+  "ai","mai","rai","kai","tai","bai","pai","lai","sai","vai",
+  "chainai","webai","cloudai","metaai","deepai","openai","smartai",
+
+  // ── Words ending in .dev ──────────────────────────────────────────────────
+  "dev","nodev","harddev","softdev","webdev","appdev","coddev",
+  "frontenddev","backenddev","fulldev","techdev","startdev",
+
+  // ── Words ending in .app ──────────────────────────────────────────────────
+  "app","tap","cap","map","gap","lap","nap","rap","sap","tap",
+  "webapp","mobileapp","desktopapp","smartapp","aiapp","cloudapp",
+
+  // ── Words ending in .io ───────────────────────────────────────────────────
+  "audio","studio","ratio","patio","folio","scenario","pistachio",
+  "portfolio","video","igloo","cambio","radio","tokio","mario",
+
+  // ── Words ending in .web ──────────────────────────────────────────────────
+  "web","interweb","darkweb","deepweb","clearweb","lightweb",
+  "cloudweb","homeweb","netweb","techweb","socialweb",
+
+  // ── Words ending in .net ──────────────────────────────────────────────────
+  "internet","intranet","extranet","ethernet","broadnet",
+  "darknet","metanet","webnet","socialnet","technet",
+
+  // ── Words ending in .chat ─────────────────────────────────────────────────
+  "chat","webchat","appchat","aichat","livechat","videochat",
+  "voicechat","textchat","groupchat","privchat","smartchat",
+
+  // ── Words ending in .data ─────────────────────────────────────────────────
+  "data","bigdata","smalldata","opendata","fastdata","clouddata",
+  "userdata","socialdata","webdata","mobiledata","ai-data",
+
+  // ── Words ending in .fun ──────────────────────────────────────────────────
+  "fun","funny","gofun","webfun","gamefun","techfun",
+  "playfun","lifefun","coolfun","brightfun",
+
+  // ── Words ending in .city ─────────────────────────────────────────────────
+  "city","metrocity","megacity","smartcity","ecocity",
+  "webcity","techcity","futurecity","homecity",
+
+  // ── Words ending in .store ─────────────────────────────────────────────────
+  "store","appstore","playstore","webstore","mystore",
+  "megastore","superstore","ecostore","techstore",
+
+  // ── Words ending in .cloud ─────────────────────────────────────────────────
+  "cloud","webcloud","aic loud","datacloud","softcloud",
+  "hardcloud","metacloud","bluecloud","skycloud",
+
+  // ── Words ending in .vip ───────────────────────────────────────────────────
+  "vip","supervip","megavip","starvip","webvip",
+  "clubvip","privvip","luxvip","topvip",
+
+  // ── Words ending in .pro ───────────────────────────────────────────────────
+  "pro","expertpro","techpro","webpro","apppro",
+  "businesspro","creativepro","deskpro","mobilepro",
+
+  // ── Words ending in .max ───────────────────────────────────────────────────
+  "max","supermax","megamax","techmax","webmax",
+  "funmax","lifemax","speedmax","powermax",
+
+  // ── Words ending in .top ───────────────────────────────────────────────────
+  "top","supertop","megatop","hightop","webtop",
+  "startop","businesstop","techtop","citytop",
+
+  // ── Words ending in .ceo ───────────────────────────────────────────────────
+  "ceo","myceo","realceo","webceo","techceo",
+  "startupceo","businessceo","brandceo",
+
+  // ── Words ending in .money ────────────────────────────────────────────────
+  "money","bigmoney","cashmoney","easymoney","webmoney",
+  "funmoney","smartmoney","fastmoney","newmoney",
+
+  // ── Words ending in .loan ──────────────────────────────────────────────────
+  "loan","fastloan","smallloan","bigloan","personalloan",
+  "businessloan","webloan","quickloan",
+
+  // ── Words ending in .job ───────────────────────────────────────────────────
+  "job","myjob","newjob","topjob","webjob",
+  "techjob","remotejob","smartjob","goodjob",
+
+  // ── Words ending in .live ──────────────────────────────────────────────────
+  "live","weblive","a live","streamlive","gamelive",
+  "citylive","homelive","reallive","truelive",
+
+  // ── Words ending in .art ───────────────────────────────────────────────────
+  "art","webart","digitalart","aiart","nftart",
+  "streetart","modernart","creativeart","pixelart",
+
+  // ── Words ending in .blog ──────────────────────────────────────────────────
+  "blog","webblog","techblog","lifeblog","travelblog",
+  "foodblog","fitblog","artblog","newblog",
+
+  // ── Words ending in .news ──────────────────────────────────────────────────
+  "news","worldnews","localnews","technews","webnews",
+  "citynews","globalnews","dailynews","hotnews",
+
+  // ── Words ending in .game ───────────────────────────────────────────────────
+  "game","videogame","webgame","aigame","smartgame",
+  "minigame","megagame","onlinegame","mobilegame",
+
+  // ── Words ending in .plus ──────────────────────────────────────────────────
+  "plus","extraplus","superplus","webplus","techplus",
+  "lifeplus","gameplus","funplus","smartplus",
+
+  // ── Words ending in .space ─────────────────────────────────────────────────
+  "space","webspace","cloudspace","workspace",
+  "datastorage","dreamspace","livespace",
+
+  // ── Words ending in .world ─────────────────────────────────────────────────
+  "world","webworld","techworld","gameworld",
+  "smartworld","futureworld","realworld",
+
+  // ── Common short words — domain hack friendly ──────────────────────────────
+  "go","get","try","buy","sell","use","make","do","see","find",
+  "fix","run","win","hit","jet","zip","fly","sky","sun","moon",
+  "star","fire","ice","hot","cool","fast","quick","safe","easy",
+  "best","top","new","real","true","free","open","smart","clean",
+  "rich","calm","easy","epic","epic","vibe","flow","zen","hub",
 ];
 
 export const CORPUS_EXTRA_MEANINGS: Record<string, string> = {
@@ -635,4 +753,213 @@ export const CORPUS_EXTRA_MEANINGS: Record<string, string> = {
   // .love
   "glove": "手套",
   "clove": "丁香/蒜瓣",
+    // .ai
+  "ai": "人工智能",
+  "chainai": "区块链AI",
+  "webai": "网页AI",
+  "cloudai": "云端AI",
+  "deepai": "深度AI",
+  "openai": "开放AI",
+
+  // .dev
+  "dev": "开发者",
+  "webdev": "网页开发",
+  "appdev": "应用开发",
+  "frontenddev": "前端开发",
+  "backenddev": "后端开发",
+  "fulldev": "全栈开发",
+
+  // .app
+  "app": "应用程序",
+  "webapp": "网页应用",
+  "mobileapp": "移动应用",
+  "desktopapp": "桌面应用",
+  "aiapp": "AI应用",
+
+  // .io
+  "audio": "音频",
+  "studio": "工作室",
+  "ratio": "比例",
+  "portfolio": "作品集",
+  "video": "视频",
+
+  // .web
+  "web": "网络",
+  "internet": "互联网",
+  "darkweb": "暗网",
+  "deepweb": "深网",
+  "webnet": "网络",
+
+  // .chat
+  "chat": "聊天",
+  "aichat": "AI聊天",
+  "livechat": "实时聊天",
+  "videochat": "视频聊天",
+  "groupchat": "群聊",
+
+  // .data
+  "data": "数据",
+  "bigdata": "大数据",
+  "opendata": "开放数据",
+  "webdata": "网页数据",
+
+  // .fun
+  "fun": "乐趣",
+  "gofun": "去玩乐",
+  "gamefun": "游戏乐趣",
+  "playfun": "玩耍乐趣",
+
+  // .city
+  "city": "城市",
+  "smartcity": "智慧城市",
+  "megacity": "大都市",
+  "ecocity": "生态城市",
+
+  // .store
+  "store": "商店",
+  "webstore": "网上商店",
+  "superstore": "超级商店",
+  "techstore": "科技商店",
+
+  // .cloud
+  "cloud": "云",
+  "webcloud": "网页云",
+  "datacloud": "数据云",
+  "skycloud": "天空云",
+
+  // .vip
+  "vip": "贵宾",
+  "supervip": "超级贵宾",
+  "clubvip": "俱乐部贵宾",
+
+  // .pro
+  "pro": "专业版",
+  "techpro": "科技专业",
+  "businesspro": "商业专业",
+
+  // .max
+  "max": "最大化",
+  "supermax": "超级最大化",
+  "speedmax": "速度最大化",
+  "powermax": "能量最大化",
+
+  // .top
+  "top": "顶级",
+  "supertop": "超顶级",
+  "businesstop": "商业顶级",
+
+  // .ceo
+  "ceo": "首席执行官",
+  "myceo": "我的CEO",
+  "startupceo": "创业公司CEO",
+
+  // .money
+  "money": "金钱",
+  "bigmoney": "大钱",
+  "cashmoney": "现金",
+  "easymoney": "轻松赚钱",
+
+  // .loan
+  "loan": "贷款",
+  "fastloan": "快速贷款",
+  "personalloan": "个人贷款",
+  "businessloan": "商业贷款",
+
+  // .job
+  "job": "工作",
+  "newjob": "新工作",
+  "remotejob": "远程工作",
+  "techjob": "科技工作",
+
+  // .live
+  "live": "直播/现场",
+  "weblive": "网页直播",
+  "streamlive": "流媒体直播",
+  "gamelive": "游戏直播",
+
+  // .art
+  "art": "艺术",
+  "digitalart": "数字艺术",
+  "aiart": "AI艺术",
+  "nftart": "NFT艺术",
+  "streetart": "街头艺术",
+
+  // .blog
+  "blog": "博客",
+  "techblog": "科技博客",
+  "lifeblog": "生活博客",
+  "travelblog": "旅行博客",
+
+  // .news
+  "news": "新闻",
+  "worldnews": "世界新闻",
+  "technews": "科技新闻",
+  "dailynews": "每日新闻",
+
+  // .game
+  "onlinegame": "在线游戏",
+  "mobilegame": "手机游戏",
+  "videogame": "电子游戏",
+  "minigame": "小游戏",
+
+  // .plus
+  "plus": "增强版",
+  "extraplus": "额外增强",
+  "smartplus": "智能增强",
+
+  // .space
+  "space": "空间",
+  "webspace": "网页空间",
+  "workspace": "工作空间",
+  "dreamspace": "梦想空间",
+
+  // .world
+  "world": "世界",
+  "webworld": "网络世界",
+  "techworld": "科技世界",
+  "futureworld": "未来世界",
+
+  // short words
+  "go": "去",
+  "get": "获取",
+  "try": "尝试",
+  "buy": "购买",
+  "sell": "出售",
+  "use": "使用",
+  "make": "制造",
+  "do": "做",
+  "see": "看见",
+  "find": "寻找",
+  "fix": "修复",
+  "win": "胜利",
+  "hit": "击中",
+  "jet": "喷气",
+  "zip": "快速",
+  "fly": "飞行",
+  "sky": "天空",
+  "sun": "太阳",
+  "moon": "月亮",
+  "fire": "火焰",
+  "ice": "冰",
+  "hot": "热",
+  "cool": "酷",
+  "fast": "快速",
+  "quick": "迅速",
+  "safe": "安全",
+  "easy": "简单",
+  "best": "最好",
+  "new": "新",
+  "real": "真实",
+  "true": "正确",
+  "free": "免费",
+  "open": "开放",
+  "smart": "智能",
+  "clean": "干净",
+  "rich": "富有",
+  "calm": "冷静",
+  "epic": "史诗",
+  "vibe": "氛围",
+  "flow": "流动",
+  "zen": "禅",
+  "hub": "枢纽",
 };
