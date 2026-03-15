@@ -131,6 +131,126 @@ export const NEW_GTLDS = [
   ".discover", ".dish", ".diy", ".dnp", ".docs", ".doctor", ".dodge",
   ".dog", ".domains", ".dot", ".download", ".drive", ".dtv",
   ".dubai", ".duck", ".dunlop", ".dupont", ".durban", ".dvag", ".dvr",
+
+  // ── E ─────────────────────────────────────────────────────────────────────
+  ".earth",".eat",".eco",".education",".email",".emerck",".energy",
+  ".engineering",".enterprises",".epson",".equity",".ericsson",".erni",
+  ".esq",".estate",".eurovision",".eus",".events",".exchange",".expert",
+  ".exposed",".express",
+
+  // ── F ─────────────────────────────────────────────────────────────────────
+  ".fail",".fairwinds",".faith",".family",".fan",".fans",".farm",".fashion",
+  ".fast",".fedex",".feedback",".ferrari",".ferrero",".fiat",".fidelity",
+  ".film",".final",".finance",".financial",".fire",".firestone",".firmdale",
+  ".fish",".fishing",".fit",".fitness",".flights",".flir",".florist",
+  ".flowers",".fly",".foo",".football",".ford",".forsale",".forum",
+  ".foundation",".fox",".free",".fresenius",".frl",".frogans",".frontdoor",
+  ".frontier",".ftr",".fujitsu",".fun",".fund",".furniture",".futbol",".fyi",
+
+  // ── G ─────────────────────────────────────────────────────────────────────
+  ".gal",".gallery",".game",".games",".gap",".garden",".gay",".gbiz",
+  ".gift",".gifts",".gives",".giving",".glass",".global",".globo",".gmbh",
+  ".golf",".goo",".goodyear",".goog",".google",".gop",".graphics",".gratis",
+  ".green",".gripe",".grocery",".group",".gucci",".guide",".guitars",".guru",
+
+  // ── H ─────────────────────────────────────────────────────────────────────
+  ".hair",".hamburg",".haus",".hbo",".hdfc",".health",".healthcare",".help",
+  ".helsinki",".here",".hermes",".hgtv",".hisamitsu",".hitachi",".hiv",
+  ".hkt",".hockey",".holdings",".holiday",".home",".homes",".honda",".horse",
+  ".hospital",".host",".hosting",".hotels",".hotmail",".house",".how",
+  ".hsbc",".hughes",".hyatt",".hyundai",
+
+  // ── I ─────────────────────────────────────────────────────────────────────
+  ".ibm",".icbc",".icu",".ieee",".ifm",".ikano",".imamat",".imdb",".inc",
+  ".industries",".infiniti",".info",".ink",".institute",".insurance",".insure",
+  ".intel",".international",".investments",".irish",
+
+  // ── J ─────────────────────────────────────────────────────────────────────
+  ".jaguar",".java",".jcb",".jcp",".jeep",".jetzt",".jewelry",".jio",".jlc",
+  ".jll",".jobs",".joburg",".jot",".joy",".jpmorgan",".jpmorganchase",
+  ".juegos",".juniper",
+
+  // ── K ─────────────────────────────────────────────────────────────────────
+  ".katholisch",".kfh",".kia",".kim",".kinder",".kindle",".kitchen",".kiwi",
+  ".koeln",".komatsu",".kosher",".kpmg",".kpn",".krd",".kred",".kyoto",
+
+  // ── L ─────────────────────────────────────────────────────────────────────
+  ".lacaixa",".lamborghini",".land",".landrover",".lanxess",".law",".lawyer",
+  ".lds",".lease",".legal",".lego",".lexus",".lidl",".life",".lifeinsurance",
+  ".lifestyle",".lighting",".like",".limited",".limo",".link",".llc",".llp",
+  ".loan",".loans",".lol",".lotte",".lotto",".love",".ltd",".lundbeck",
+  ".luxe",".luxury",
+
+  // ── M ─────────────────────────────────────────────────────────────────────
+  ".madrid",".maif",".man",".mango",".map",".market",".markets",".marriott",
+  ".mattel",".mba",".media",".meet",".melbourne",".meme",".memorial",".men",
+  ".menu",".merckmsd",".microsoft",".mini",".mint",".mit",".mitsubishi",
+  ".mlb",".mls",".mobile",".moda",".moe",".mom",".monash",".money",
+  ".monster",".mopar",".mormon",".mortgage",".mutual",
+
+  // ── N ─────────────────────────────────────────────────────────────────────
+  ".nab",".nato",".navy",".nba",".nec",".net",".netbank",".netflix",
+  ".network",".neustar",".new",".news",".next",".nextdirect",".nexus",
+  ".nfl",".ngo",".nhk",".nico",".nike",".nikon",".ninja",".nokia",".norton",
+  ".now",".nra",".nrw",".ntt",
+
+  // ── O ─────────────────────────────────────────────────────────────────────
+  ".observer",".office",".ollo",".omega",".open",".oracle",".orange",".org",
+  ".osaka",
+
+  // ── P ─────────────────────────────────────────────────────────────────────
+  ".page",".panasonic",".paris",".partners",".parts",".pay",".pet",".pfizer",
+  ".pharmacy",".phone",".photos",".pic",".pictet",".pictures",".ping",".pink",
+  ".pioneer",".pizza",".place",".poker",".politie",".porn",".post",".prod",
+  ".productions",".prof",".progressive",".promo",".properties",".property",
+  ".protection",".pru",".prudential",".pub",
+
+  // ── Q ─────────────────────────────────────────────────────────────────────
+  ".qpon",".quest",
+
+  // ── R ─────────────────────────────────────────────────────────────────────
+  ".racing",".radio",".read",".realestate",".realty",".recipes",".red",
+  ".redstone",".redumbrella",".rehab",".rei",".republican",".rest",
+  ".restaurant",".review",".reviews",".rich",".ricoh",".rightathome",".rio",
+  ".rip",".rocks",".rodeo",".rogers",".roma",".rsvp",".rugby",".ruhr",
+  ".run",".rwe",
+
+  // ── S ─────────────────────────────────────────────────────────────────────
+  ".saarland",".safe",".safety",".samsung",".sandvik",".sanofi",".sarl",
+  ".sbi",".sbs",".scb",".schaeffler",".schmidt",".scholarships",".school",
+  ".schule",".seat",".secure",".security",".seek",".sharp",".shell",".show",
+  ".showtime",".silk",".sina",".singles",".site",".skin",".sky",".skype",
+  ".smile",".sncf",".soccer",".social",".software",".sohu",".solar",".song",
+  ".sony",".sport",".sports",".srl",".star",".starhub",".statebank",
+  ".statefarm",".stc",".stcgroup",".stockholm",".study",".style",".sucks",
+  ".swiss",".systems",
+
+  // ── T ─────────────────────────────────────────────────────────────────────
+  ".target",".tatamotors",".tatar",".tattoo",".tax",".technology",".tel",
+  ".temasek",".tennis",".theater",".tickets",".tienda",".tips",".tires",
+  ".today",".tokyo",".tools",".trade",".trading",".training",".trust",".tui",
+  ".tube",".tunes",".tupperware",
+
+  // ── U ─────────────────────────────────────────────────────────────────────
+  ".ubank",".unicom",".university",".uno",".uol",
+
+  // ── V ─────────────────────────────────────────────────────────────────────
+  ".vacations",".vana",".vanguard",".ventures",".versicherung",".vet",
+  ".viajes",".video",".vig",".viking",".villas",".vin",".vip",".virgin",
+  ".visa",".vision",".volvo",".vote",".voting",".voto",".voyage",
+
+  // ── W ─────────────────────────────────────────────────────────────────────
+  ".watches",".weather",".webcam",".weber",".website",".wellbeing",".wells",
+  ".win",".wine",".winners",".wme",".wolterskluwer",".works",".wow",
+
+  // ── X ─────────────────────────────────────────────────────────────────────
+  ".xbox",".xerox",".xfinity",
+
+  // ── Y ─────────────────────────────────────────────────────────────────────
+  ".yachts",".yahoo",".yamaxun",".yoga",".youtube",
+
+  // ── Z ─────────────────────────────────────────────────────────────────────
+  ".zappos",".zero",".zip",".zippo",".zone",".zuerich",
 ];
 
 // Combined: all ccTLDs + popular new gTLDs = 1400+ total

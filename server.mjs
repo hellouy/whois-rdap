@@ -125,49 +125,68 @@ app.get('/api/whois', async (req, res) => {
       return r.json();
     }
 
-    // Check a single domain using multiple DNS record types in parallel
+    // Check a single domain: NS is the most reliable registration signal
     async function checkDomainAvailability(d) {
       try {
-        // Query A, AAAA, NS, MX in parallel for speed
-        const [aData, nsData, mxData] = await Promise.all([
-          dnsQuery(d, 'A').catch(() => null),
+        // Step 1: Query NS + A in parallel (NS = primary, A = secondary)
+        const [nsData, aData] = await Promise.all([
           dnsQuery(d, 'NS').catch(() => null),
-          dnsQuery(d, 'MX').catch(() => null),
+          dnsQuery(d, 'A').catch(() => null),
         ]);
 
-        // NXDOMAIN from ANY authoritative query → likely available
-        // But only if ALL say NXDOMAIN
-        const statuses = [aData, nsData, mxData].filter(Boolean).map(data => data.Status);
-        const hasNxDomain = statuses.some(s => s === 3);
-        const hasRecords = [aData, nsData, mxData].some(data =>
-          data && data.Status === 0 && data.Answer && data.Answer.length > 0
-        );
+        // NS records present → domain is definitely registered
+        if (nsData?.Status === 0 && nsData?.Answer?.length > 0) return true;
 
-        if (hasRecords) return true; // registered
+        // A records present → domain is registered (has web hosting)
+        if (aData?.Status === 0 && aData?.Answer?.length > 0) return true;
 
-        // All returned NXDOMAIN
-        if (statuses.every(s => s === 3)) return false; // available
+        // Both NS and A return NXDOMAIN → very high confidence it's available
+        if (nsData?.Status === 3 && aData?.Status === 3) return false;
 
-        // Mixed results - check SOA as final arbiter
-        try {
-          const soaData = await dnsQuery(d, 'SOA');
-          if (soaData.Status === 3) return false; // NXDOMAIN on SOA → available
-          if (soaData.Status === 0 && soaData.Answer && soaData.Answer.length > 0) return true;
-          // NODATA (status 0 but no answer) on SOA means zone exists but no SOA record
-          // This is unusual - domain might be reserved/delegated but no SOA
-          if (soaData.Status === 0) return true; // treat as registered (zone exists)
-        } catch {}
+        // NS is NXDOMAIN but A is ambiguous → check MX to confirm
+        if (nsData?.Status === 3) {
+          const mxData = await dnsQuery(d, 'MX').catch(() => null);
+          if (mxData?.Status === 3) return false; // all NXDOMAIN → available
+          if (mxData?.Status === 0 && mxData?.Answer?.length > 0) return true; // has MX
+        }
 
-        return null; // ambiguous
+        // Step 2: SOA check for remaining ambiguity
+        // SOA NXDOMAIN → available; SOA with records → registered/reserved
+        const soaData = await dnsQuery(d, 'SOA').catch(() => null);
+        if (soaData?.Status === 3) return false; // NXDOMAIN → available
+        if (soaData?.Status === 0 && soaData?.Answer?.length > 0) return true; // SOA exists
+        // NODATA on SOA (status 0, no Answer) + has Authority → zone exists, domain reserved
+        if (soaData?.Status === 0 && soaData?.Authority?.length > 0) return null; // reserved
+        if (soaData?.Status === 0) return null; // ambiguous zone state
+
+        return null; // truly ambiguous / all queries failed
       } catch {
         return null;
       }
     }
 
+    // Quick reserved-domain heuristic: single-char SLDs, exact registry names
+    function isLikelyReserved(domain) {
+      const sld = domain.split('.')[0];
+      if (!sld) return false;
+      // Single character SLDs are almost always reserved
+      if (sld.length === 1) return true;
+      // IANA / registry reserved names
+      const reservedNames = new Set(['nic','whois','rdap','registry','registrar',
+        'dns','ns','ns1','ns2','ns3','mail','smtp','ftp','www','ww','admin',
+        'hostmaster','postmaster','abuse','noreply','support','test','example']);
+      if (reservedNames.has(sld.toLowerCase())) return true;
+      return false;
+    }
+
     const results = {};
     await Promise.allSettled(
       domains.map(async (d) => {
-        results[d] = await checkDomainAvailability(d);
+        if (isLikelyReserved(d)) {
+          results[d] = null; // reserved — can't determine via DNS
+        } else {
+          results[d] = await checkDomainAvailability(d);
+        }
       })
     );
 

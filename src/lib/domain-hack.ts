@@ -82,6 +82,7 @@ async function loadLibraries(): Promise<{
     { WORD_LIBRARY_EXTRA4 },
     { WORD_LIBRARY_EXTRA5, WORD_MEANINGS_EXTRA5 },
     { WORD_LIBRARY_EXTRA6 },
+    { WORD_LIBRARY_EXTRA7, WORD_MEANINGS_EXTRA7 },
     { PINYIN_WORD_LIBRARY, PINYIN_MEANINGS },
     { WORD_MEANINGS: BASE_MEANINGS },
     { WORD_MEANINGS_EXTRA },
@@ -90,6 +91,7 @@ async function loadLibraries(): Promise<{
     { WORD_MEANINGS_EXTRA4 },
     { WORD_MEANINGS_WORDS },
     { WORD_CORPUS, CORPUS_MEANINGS },
+    { WORD_CORPUS_EXTRA, CORPUS_EXTRA_MEANINGS },
   ] = await Promise.all([
     import("./word-library"),
     import("./word-library-extra"),
@@ -98,6 +100,7 @@ async function loadLibraries(): Promise<{
     import("./word-library-extra4"),
     import("./word-library-extra5"),
     import("./word-library-extra6"),
+    import("./word-library-extra7"),
     import("./pinyin-library"),
     import("./word-meanings"),
     import("./word-meanings-extra"),
@@ -106,10 +109,12 @@ async function loadLibraries(): Promise<{
     import("./word-meanings-extra4"),
     import("./word-meanings-words"),
     import("./word-corpus"),
+    import("./word-corpus-extra"),
   ]);
 
   // 1. Build corpus auto-index (covers all PRESET_TLDS automatically)
-  const corpusIndex = buildCorpusIndex(WORD_CORPUS, PRESET_TLDS);
+  const allWords = [...WORD_CORPUS, ...WORD_CORPUS_EXTRA];
+  const corpusIndex = buildCorpusIndex(allWords, PRESET_TLDS);
 
   // 2. Merge curated libraries (higher quality, override corpus if present)
   const library: Record<string, string[]> = { ...corpusIndex };
@@ -120,11 +125,13 @@ async function loadLibraries(): Promise<{
   mergeLibrary(library, WORD_LIBRARY_EXTRA4);
   mergeLibrary(library, WORD_LIBRARY_EXTRA5);
   mergeLibrary(library, WORD_LIBRARY_EXTRA6);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA7);
   mergeLibrary(library, PINYIN_WORD_LIBRARY);
 
   // 3. Merge all meanings
   const meanings: Record<string, string> = {
     ...CORPUS_MEANINGS,
+    ...CORPUS_EXTRA_MEANINGS,
     ...WORD_MEANINGS_WORDS,
     ...BASE_MEANINGS,
     ...WORD_MEANINGS_EXTRA,
@@ -132,6 +139,7 @@ async function loadLibraries(): Promise<{
     ...WORD_MEANINGS_EXTRA3,
     ...WORD_MEANINGS_EXTRA4,
     ...WORD_MEANINGS_EXTRA5,
+    ...WORD_MEANINGS_EXTRA7,
     ...PINYIN_MEANINGS,
   };
 
