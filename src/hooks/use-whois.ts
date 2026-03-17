@@ -13,7 +13,7 @@ import { toASCII } from "@/utils/tld-servers";
 export type { WhoisData };
 
 export function useWhois(domain: string) {
-  const [data, setData] = useState<WhoisData | null>(null);
+  const [whois, setWhois] = useState<WhoisData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -27,7 +27,7 @@ export function useWhois(domain: string) {
   useEffect(() => {
     const rawDomain = domain.trim().toLowerCase();
     if (!rawDomain) {
-      setData(null);
+      setWhois(null);
       setIsLoading(false);
       setError(null);
       return;
@@ -36,18 +36,18 @@ export function useWhois(domain: string) {
     currentDomain.current = rawDomain;
     setIsLoading(true);
     setError(null);
-    setData(null);
+    setWhois(null);
 
     const norm = toASCII(rawDomain);
     console.log(`[useWhois] querying: ${rawDomain}, supporting ${getSupportedTldCount()}+ TLDs`);
 
     fetchWhois(norm).then(({ data: result, error: err }) => {
       if (!mounted.current || currentDomain.current !== rawDomain) return;
-      setData(result);
+      setWhois(result);
       setError(err);
       setIsLoading(false);
     });
   }, [domain]);
 
-  return { data, isLoading, error };
+  return { whois, isLoading, error };
 }
