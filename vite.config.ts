@@ -24,4 +24,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    environment: "node",
+    globals: true,
+    setupFiles: [],
+    include: ["src/__tests__/**/*.test.ts", "src/__tests__/**/*.test.tsx"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/lib/hack-logic.ts", "src/services/**/*.ts"],
+    },
+  },
 });

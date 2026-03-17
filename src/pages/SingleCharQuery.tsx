@@ -4,90 +4,24 @@ import { ArrowLeft, Search, RotateCcw, X, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ALL_CCTLDS, NEW_GTLDS } from "@/lib/tld-list";
-import { getBulkCached, putBulkCached } from "@/lib/dns-cache";
+import { ALL_CCTLDS } from "@/lib/tld-list";
 import { WhoisQuery } from "@/components/WhoisQuery";
+import {
+  normalizeSuffix,
+  buildS2pDomains,
+  buildP2sDomains,
+  applyPartialResults,
+  batchCheckAvailability,
+  GTLDS_ONLY,
+  CHARS_09,
+  CHARS_AZ,
+  type DomainResult,
+  type DomainStatus,
+} from "@/services/single-char-service";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Status badge ──────────────────────────────────────────────────────────────
 
-type Status = "idle" | "checking" | "available" | "registered" | "unknown";
-type Mode = "suffix-to-prefix" | "prefix-to-suffix";
-
-interface DomainResult {
-  domain: string;
-  prefix: string;
-  tld: string;
-  status: Status;
-}
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const CHARS_09 = ["0","1","2","3","4","5","6","7","8","9"];
-const CHARS_AZ = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"];
-const ALL_CHARS = [...CHARS_09, ...CHARS_AZ];
-
-const CCTLD_SET = new Set(ALL_CCTLDS);
-const GTLDS_ONLY = NEW_GTLDS.filter((t) => !CCTLD_SET.has(t));
-
-// Full TLD set for validation (strip leading dots)
-const KNOWN_TLDS = new Set([
-  ...ALL_CCTLDS.map((t) => t.replace(/^\./, "")),
-  ...NEW_GTLDS.map((t) => t.replace(/^\./, "")),
-  "com","net","org","edu","gov","mil","int","arpa",
-]);
-
-const BATCH_SIZE = 20;
-const BATCH_DELAY = 200;
-
-// ── DNS batch fetch (cache-aware) ─────────────────────────────────────────────
-
-async function batchCheck(
-  domains: string[],
-  signal: AbortSignal,
-  onPartial: (results: Record<string, boolean | null>) => void
-): Promise<void> {
-  const cached = getBulkCached(domains);
-  if (Object.keys(cached).length > 0) onPartial(cached);
-
-  const toFetch = domains.filter((d) => !(d in cached));
-  if (toFetch.length === 0) return;
-
-  const freshResults: Record<string, boolean | null> = {};
-
-  for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
-    if (signal.aborted) break;
-    const batch = toFetch.slice(i, i + BATCH_SIZE);
-    try {
-      const resp = await fetch(
-        `/api/whois?mode=dns-batch&domains=${batch.join(",")}`,
-        { signal: AbortSignal.timeout(10000), headers: { Accept: "application/json" } }
-      );
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.results) {
-          for (const [d, v] of Object.entries(data.results)) {
-            freshResults[d] = v as boolean | null;
-          }
-          onPartial({ ...data.results });
-        }
-      }
-    } catch {
-      for (const d of batch) freshResults[d] = null;
-      onPartial(Object.fromEntries(batch.map((d) => [d, null])));
-    }
-    if (i + BATCH_SIZE < toFetch.length && !signal.aborted) {
-      await new Promise((r) => setTimeout(r, BATCH_DELAY));
-    }
-  }
-
-  if (Object.keys(freshResults).length > 0) {
-    putBulkCached(freshResults);
-  }
-}
-
-// ── Status badge ─────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: Status }) {
+function StatusBadge({ status }: { status: DomainStatus }) {
   if (status === "checking") {
     return <span className="inline-block h-2 w-2 rounded-full bg-muted animate-pulse" />;
   }
@@ -119,7 +53,7 @@ function SkeletonCard() {
   );
 }
 
-// ── Result card (mode 1 grid) ────────────────────────────────────────────────
+// ── Result card (mode 1 grid) ─────────────────────────────────────────────────
 
 function ResultCard({
   result,
@@ -306,9 +240,8 @@ function DomainDetailModal({
 
 const SingleCharQuery = () => {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("suffix-to-prefix");
+  const [mode, setMode] = useState<"suffix-to-prefix" | "prefix-to-suffix">("suffix-to-prefix");
 
-  // Domain detail modal
   const [detailDomain, setDetailDomain] = useState<string | null>(null);
 
   // Mode 1 state
@@ -326,104 +259,51 @@ const SingleCharQuery = () => {
 
   const abortRef = useRef<AbortController | null>(null);
 
-  const abort = useCallback(() => {
-    abortRef.current?.abort();
-  }, []);
-
+  const abort = useCallback(() => { abortRef.current?.abort(); }, []);
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  function applyPartial(
-    partial: Record<string, boolean | null>,
-    setter: React.Dispatch<React.SetStateAction<DomainResult[]>>
-  ) {
-    setter((prev) =>
-      prev.map((r) => {
-        if (r.domain in partial) {
-          const v = partial[r.domain];
-          return {
-            ...r,
-            status: v === true ? "registered" : v === false ? "available" : "unknown",
-          };
-        }
-        return r;
-      })
-    );
-  }
-
-  // Validate and normalize suffix input
-  function normalizeSuffix(raw: string): { tld: string; error: string | null } {
-    const cleaned = raw.trim().toLowerCase().replace(/^\.+/, "").replace(/[^a-z0-9-]/g, "");
-    if (!cleaned) return { tld: "", error: "请输入后缀" };
-    if (cleaned.length < 2) return { tld: cleaned, error: "后缀至少需要 2 个字符" };
-    if (!KNOWN_TLDS.has(cleaned)) {
-      return {
-        tld: cleaned,
-        error: `"${cleaned}" 不在已知 TLD 列表中，结果可能不准确`,
-      };
-    }
-    return { tld: cleaned, error: null };
-  }
-
-  // ── Mode 1: suffix → single-char prefixes ───────────────────────────────
+  // ── Mode 1: suffix → single-char prefixes ──────────────────────────────────
 
   const runSuffixToPrefix = useCallback(async () => {
     const { tld, error } = normalizeSuffix(suffixInput);
     if (!tld) { setSuffixError("请输入后缀"); return; }
-    // Show warning but don't block for unknown TLDs
     setSuffixError(error);
 
-    const normalizedTld = `.${tld}`;
     abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
-    const initial: DomainResult[] = ALL_CHARS.map((c) => ({
-      domain: `${c}${normalizedTld}`,
-      prefix: c,
-      tld: normalizedTld,
-      status: "checking",
-    }));
+    const initial = buildS2pDomains(tld);
     setS2pResults(initial);
     setS2pRunning(true);
 
-    await batchCheck(
+    await batchCheckAvailability(
       initial.map((r) => r.domain),
       ctrl.signal,
-      (partial) => applyPartial(partial, setS2pResults)
+      (partial) => setS2pResults((prev) => applyPartialResults(prev, partial))
     );
 
     if (!ctrl.signal.aborted) setS2pRunning(false);
   }, [suffixInput, abort]);
 
-  // ── Mode 2: prefix → all matching TLDs ─────────────────────────────────
+  // ── Mode 2: prefix → all matching TLDs ────────────────────────────────────
 
   const runPrefixToSuffix = useCallback(async () => {
     const prefix = prefixInput.trim().toLowerCase();
-    if (!prefix) return;
-    if (!useCcTld && !useGTld) return;
+    if (!prefix || (!useCcTld && !useGTld)) return;
 
     abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
-    let tlds: string[] = [];
-    if (useCcTld) tlds = [...tlds, ...ALL_CCTLDS];
-    if (useGTld) tlds = [...tlds, ...GTLDS_ONLY];
-    tlds = [...new Set(tlds)];
-
-    const initial: DomainResult[] = tlds.map((tld) => ({
-      domain: `${prefix}${tld}`,
-      prefix,
-      tld,
-      status: "checking",
-    }));
+    const initial = buildP2sDomains(prefix, useCcTld, useGTld);
     setP2sResults(initial);
     setP2sRunning(true);
 
-    await batchCheck(
+    await batchCheckAvailability(
       initial.map((r) => r.domain),
       ctrl.signal,
-      (partial) => applyPartial(partial, setP2sResults)
+      (partial) => setP2sResults((prev) => applyPartialResults(prev, partial))
     );
 
     if (!ctrl.signal.aborted) setP2sRunning(false);
@@ -500,7 +380,6 @@ const SingleCharQuery = () => {
                   placeholder="ng"
                   value={suffixInput}
                   onChange={(e) => {
-                    // Only allow alphanumeric and hyphen chars
                     const val = e.target.value.replace(/^\.+/, "").replace(/[^a-zA-Z0-9-]/g, "");
                     setSuffixInput(val);
                     if (suffixError) setSuffixError(null);
@@ -527,14 +406,7 @@ const SingleCharQuery = () => {
               </Button>
             </div>
 
-            {/* TLD validation warning */}
-            {suffixError && s2pResults.length === 0 && (
-              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs mt-1.5 mb-2">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>{suffixError}</span>
-              </div>
-            )}
-            {suffixError && s2pResults.length > 0 && (
+            {suffixError && (
               <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs mt-1.5 mb-2">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 <span>{suffixError}</span>
@@ -556,7 +428,7 @@ const SingleCharQuery = () => {
                 <div className="mb-4">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">0–9</p>
                   <div className="grid grid-cols-5 gap-1.5">
-                    {s2pResults.filter((r) => /^[0-9]/.test(r.prefix)).map((r) => (
+                    {s2pResults.filter((r) => CHARS_09.includes(r.prefix as typeof CHARS_09[number])).map((r) => (
                       <ResultCard key={r.domain} result={r} onOpenDetail={setDetailDomain} />
                     ))}
                   </div>
@@ -564,7 +436,7 @@ const SingleCharQuery = () => {
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">A–Z</p>
                   <div className="grid grid-cols-5 gap-1.5">
-                    {s2pResults.filter((r) => /^[a-z]/.test(r.prefix)).map((r) => (
+                    {s2pResults.filter((r) => CHARS_AZ.includes(r.prefix as typeof CHARS_AZ[number])).map((r) => (
                       <ResultCard key={r.domain} result={r} onOpenDetail={setDetailDomain} />
                     ))}
                   </div>
@@ -595,7 +467,7 @@ const SingleCharQuery = () => {
                 value={prefixInput}
                 onChange={(e) => setPrefixInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && runPrefixToSuffix()}
-                className="flex-1 h-11 font-mono"
+                className="h-11"
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="none"
@@ -666,7 +538,6 @@ const SingleCharQuery = () => {
         )}
       </div>
 
-      {/* Domain detail modal */}
       <DomainDetailModal
         domain={detailDomain}
         onClose={() => setDetailDomain(null)}

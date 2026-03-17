@@ -10,6 +10,7 @@ import { FloatingNav } from "@/components/FloatingNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabLoading } from "@/hooks/use-tab-loading";
 import { useQueryHistory } from "@/hooks/use-query-history";
+import { useQueryStore } from "@/store/query-store";
 import { Loader2, Check, AlertCircle } from "lucide-react";
 
 const TabIndicator = ({ status }: { status: "none" | "loading" | "loaded" | "error" }) => {
@@ -26,6 +27,9 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
   const navigate = useNavigate();
   const [isQuerying, setIsQuerying] = useState(false);
   const { history, addToHistory, updateStatus } = useQueryHistory();
+
+  const setQuery = useQueryStore((s) => s.setQuery);
+  const setQuerying = useQueryStore((s) => s.setQuerying);
 
   const {
     activeTab,
@@ -54,6 +58,9 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
     setDisplayDomain(originalDomain);
     addToHistory(queryDomain, originalDomain, "查询中");
 
+    setQuery(queryDomain, originalDomain);
+    setQuerying(true);
+
     // Update URL to pseudo-static path
     navigate(`/${originalDomain}`, { replace: true });
 
@@ -62,6 +69,7 @@ const Index = ({ initialDomain }: { initialDomain?: string }) => {
 
     setTimeout(() => {
       setIsQuerying(false);
+      setQuerying(false);
       // Scroll just enough to show the results below the sticky search bar
       if (resultsRef.current) {
         const y = resultsRef.current.getBoundingClientRect().top + window.scrollY - 60;
