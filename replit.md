@@ -92,11 +92,13 @@ To update the corpus:
 ### Task 1 — i18n Smart Label System (`src/lib/domain-label-manager.ts`)
 Pure functions that compute time-based domain labels from WHOIS timestamps:
 - `isExpiringSoon()` — expires within 30 days → "即将过期 / Expiring Soon" (warning)
-- `isLongTermInactive()` — no update for > 1 year → "长期未更新 / Long-term Inactive" (warning)
-- `isFreshlyUpdated()` — updated within 7 days → "近期更新 / Freshly Updated" (info)
+- `isNewlyRegistered()` — created ≤ 30 days ago → "新注册 / Newly Registered" (emerald info)
+- `isLongTermInactive()` — no update for > 1 year → "长期未变动 / Long-term Inactive" (warning)
+- `isFreshlyUpdated()` — updated within 7 days → "近期更新 / Freshly Updated" (info; suppressed if newly registered)
 - `isLegacyDomain()` — registered > 10 years ago → "老牌域名 / Legacy Domain" (info)
 - `isExpired()`, `isExpiringThisQuarter()` — additional predicates
 - `getDomainLabels()` — returns all applicable bilingual labels with priority ordering
+- Labels displayed inline after DNSSEC value as colored pill badges (red/amber/emerald/blue)
 - Labels shown inline under the domain name in WhoisQuery with severity-coded colors
 
 ### Task 2 — Data Provenance & Reliability (`src/services/whois-client.ts`)

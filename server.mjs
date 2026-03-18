@@ -2,26 +2,84 @@ import express from 'express';
 import { createServer } from 'http';
 import net from 'net';
 
-// ── TCP WHOIS server map (port 43) for TLDs that lack reliable RDAP ──────────
+// ── TCP WHOIS server map (port 43) ────────────────────────────────────────────
+// Covers major gTLDs, all high-traffic ccTLDs, and regions without RDAP support
 const WHOIS_SERVERS = {
-  // Caribbean / Atlantic
-  bb: 'whois.co.bb', ag: 'whois.nic.ag', vc: 'whois.nic.vc', lc: 'whois2.afilias-grs.info',
-  dm: 'whois2.afilias-grs.info', gd: 'whois2.afilias-grs.info', kn: 'whois2.afilias-grs.info',
-  // Pacific
-  fj: 'whois.domains.fj', pg: 'whois.nic.pg', ws: 'whois.website.ws', to: 'whois.tonic.to',
-  sb: 'whois.nic.net.sb', vu: 'vunic.vu',
-  // Africa
-  mw: 'whois.nic.mw', tg: 'whois.nic.tg', td: 'whois.nic.td', rw: 'whois.ricta.org.rw',
-  ke: 'whois.kenic.or.ke', ug: 'whois.registry.co.ug', gh: 'whois.nic.gh',
-  ng: 'whois.nic.net.ng', sn: 'whois.nic.sn', ci: 'whois.nic.ci',
-  cm: 'whois.netcom.cm', ao: 'whois.nic.ao', zw: 'whois.co.zw',
-  bw: 'whois.nic.net.bw', mz: 'whois.nic.mz', tz: 'whois.tznic.or.tz',
-  // Asia / Middle East
-  af: 'whois.nic.af', bn: 'whois.bnnic.bn', kh: 'whois.nic.kh',
-  // South America
-  py: 'whois.nic.py', bo: 'whois.nic.bo', uy: 'whois.nic.org.uy',
-  // Europe (missing RDAP)
-  sm: 'whois.nic.sm', mc: 'whois.ripe.net',
+  // ── Major gTLDs ──
+  com: 'whois.verisign-grs.com', net: 'whois.verisign-grs.com',
+  org: 'whois.pir.org', info: 'whois.afilias.net', biz: 'whois.nic.biz',
+
+  // ── Asia-Pacific ──
+  cn: 'whois.cnnic.cn', jp: 'whois.jprs.jp', kr: 'whois.kr',
+  tw: 'whois.twnic.net.tw', hk: 'whois.hkirc.hk', sg: 'whois.sgnic.sg',
+  my: 'whois.mynic.my', th: 'whois.thnic.co.th', vn: 'whois.vnnic.vn',
+  id: 'whois.id', ph: 'whois.dot.ph', in: 'whois.registry.in',
+  pk: 'whois.pknic.net.pk', lk: 'whois.nic.lk', mn: 'whois.nic.mn',
+  kz: 'whois.nic.kz', uz: 'whois.cctld.uz', am: 'whois.amnic.net',
+  ge: 'whois.nic.ge', az: 'whois.nic.az', kh: 'whois.nic.kh',
+  bn: 'whois.bnnic.bn', mo: 'whois.monic.mo', af: 'whois.nic.af',
+  la: 'whois.nic.la', mm: 'whois.registry.gov.mm',
+
+  // ── Europe ──
+  uk: 'whois.nic.uk', de: 'whois.denic.de', fr: 'whois.nic.fr',
+  it: 'whois.nic.it', es: 'whois.nic.es', nl: 'whois.domain-registry.nl',
+  se: 'whois.iis.se', ch: 'whois.nic.ch', ru: 'whois.tcinet.ru',
+  pl: 'whois.dns.pl', gr: 'whois.ics.forth.gr', cz: 'whois.nic.cz',
+  be: 'whois.dns.be', at: 'whois.nic.at', dk: 'whois.dk-hostmaster.dk',
+  no: 'whois.norid.no', fi: 'whois.fi', ie: 'whois.iedr.ie',
+  pt: 'whois.dns.pt', hu: 'whois.nic.hu', ro: 'whois.rotld.ro',
+  ua: 'whois.ua', is: 'whois.isnic.is', lu: 'whois.dns.lu',
+  ee: 'whois.tld.ee', lv: 'whois.nic.lv', lt: 'whois.domreg.lt',
+  si: 'whois.register.si', sk: 'whois.sk-nic.sk', hr: 'whois.dns.hr',
+  bg: 'whois.register.bg', rs: 'whois.rnids.rs', al: 'whois.nic.al',
+  ba: 'whois.nic.ba', by: 'whois.cctld.by', mc: 'whois.ripe.net',
+  sm: 'whois.nic.sm', li: 'whois.nic.li', fo: 'whois.nic.fo',
+  gl: 'whois.nic.gl', gg: 'whois.gg', je: 'whois.je', im: 'whois.nic.im',
+  mk: 'whois.marnet.mk', me: 'whois.nic.me', md: 'whois.nic.md',
+  eu: 'whois.eu', su: 'whois.tcinet.ru', tr: 'whois.nic.tr',
+  nu: 'whois.iis.nu', cy: 'whois.nic.cy', mt: 'whois.nic.mt',
+
+  // ── Americas ──
+  us: 'whois.nic.us', ca: 'whois.cira.ca', br: 'whois.registro.br',
+  mx: 'whois.mx', ar: 'whois.nic.ar', cl: 'whois.nic.cl',
+  co: 'whois.nic.co', pe: 'kero.yachay.pe', ve: 'whois.nic.ve',
+  uy: 'whois.nic.org.uy', ec: 'whois.nic.ec', py: 'whois.nic.py',
+  bo: 'whois.nic.bo', cr: 'whois.nic.cr', gt: 'whois.nic.gt',
+  sv: 'whois.nic.sv', ni: 'whois.nic.ni', pa: 'whois.nic.pa',
+  do: 'whois.nic.do', cu: 'whois.nic.cu', jm: 'whois.nic.jm',
+  bb: 'whois.nic.bb', tt: 'whois.nic.tt', ag: 'whois.nic.ag',
+  vc: 'whois.nic.vc', lc: 'whois2.afilias-grs.info',
+  dm: 'whois2.afilias-grs.info', gd: 'whois2.afilias-grs.info',
+  kn: 'whois2.afilias-grs.info', ai: 'whois.nic.ai', bm: 'whois.nic.bm',
+  ky: 'whois.kyregistry.ky', tc: 'whois.nic.tc', vg: 'whois.nic.vg',
+  aw: 'whois.nic.aw', bs: 'whois.nic.bs', bz: 'whois.afilias-grs.info',
+
+  // ── Oceania ──
+  au: 'whois.auda.org.au', nz: 'whois.irs.net.nz',
+  fj: 'whois.domains.fj', pg: 'whois.nic.pg', ws: 'whois.website.ws',
+  to: 'whois.tonic.to', sb: 'whois.nic.net.sb', vu: 'vunic.vu',
+  ck: 'whois.nic.ck', fm: 'whois.nic.fm', cc: 'ccwhois.verisign-grs.com',
+  cx: 'whois.nic.cx', io: 'whois.nic.io', tv: 'whois.nic.tv',
+  tk: 'whois.dot.tk', as: 'whois.nic.as', nf: 'whois.nic.nf',
+
+  // ── Middle East ──
+  ae: 'whois.aeda.net.ae', sa: 'whois.nic.net.sa', eg: 'whois.nic.eg',
+  il: 'whois.isoc.org.il', qa: 'whois.registry.qa', kw: 'whois.nic.kw',
+  om: 'whois.registry.om', jo: 'whois.dns.jo', bh: 'whois.nic.bh',
+  ir: 'whois.nic.ir', iq: 'whois.cmc.iq',
+
+  // ── Africa ──
+  za: 'whois.registry.net.za', ng: 'whois.nic.net.ng',
+  ke: 'whois.kenic.or.ke', gh: 'whois.nic.gh', tn: 'whois.ati.tn',
+  ma: 'whois.registre.ma', ao: 'whois.nic.ao', mz: 'whois.nic.mz',
+  tz: 'whois.tznic.or.tz', rw: 'whois.ricta.org.rw', ug: 'whois.registry.co.ug',
+  cm: 'whois.netcom.cm', sn: 'whois.nic.sn', ci: 'whois.nic.ci',
+  tg: 'whois.nic.tg', td: 'whois.nic.td', mw: 'whois.nic.mw',
+  bw: 'whois.nic.net.bw', zw: 'whois.co.zw', zm: 'whois.zicta.zm',
+  na: 'whois.na-nic.com.na', mu: 'whois.nic.mu', mg: 'whois.nic.mg',
+  sc: 'whois.nic.sc', dz: 'whois.nic.dz', ly: 'whois.nic.ly',
+  ml: 'whois.nic.ml', bf: 'whois.nic.bf', gn: 'whois.nic.gn',
+  sh: 'whois.nic.sh', re: 'whois.nic.re', ac: 'whois.nic.ac',
 };
 
 async function tcpWhoisQuery(host, domain, timeoutMs = 7000) {

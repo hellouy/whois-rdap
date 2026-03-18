@@ -17,6 +17,7 @@ export enum DataSource {
   RDAP_DIRECT     = "RDAP_DIRECT",
   RDAP_ORG        = "RDAP_ORG",
   WHOIS_FALLBACK  = "WHOIS_FALLBACK",
+  TIANHU          = "TIANHU",
   DNS_FALLBACK    = "DNS_FALLBACK",
   UNKNOWN         = "UNKNOWN",
 }
@@ -51,6 +52,7 @@ function provenanceLabel(source: DataSource, score: number): string {
     case DataSource.RDAP_DIRECT:  return `RDAP direct registry (${pct}% complete)`;
     case DataSource.RDAP_ORG:     return `RDAP via rdap.org (${pct}% complete)`;
     case DataSource.WHOIS_FALLBACK: return `WHOIS text fallback (${pct}% complete)`;
+    case DataSource.TIANHU:       return `tian.hu WHOIS API (${pct}% complete)`;
     case DataSource.DNS_FALLBACK: return `DNS existence check (${pct}% complete)`;
     default:                      return `Unknown source (${pct}% complete)`;
   }
@@ -213,23 +215,50 @@ export function stripHtmlTags(s: string): string {
     .split("\n").map(l => l.trim()).join("\n");
 }
 
+const _MONTH_MAP: Record<string, string> = {
+  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+};
+
 export function formatDate(s?: string): string | undefined {
   if (!s) return undefined;
   const dateStr = String(s).trim();
 
+  // Strip "before " prefix used by some ccTLD WHOIS servers
+  const noBefore = dateStr.replace(/^before\s+/i, "");
+
   // Strip trailing timezone abbreviations like CLST, AEST, NZST, GMT, UTC, etc.
   // and UTC offset strings like +05:30, -03:00
-  const cleaned = dateStr
+  const cleaned = noBefore
     .replace(/\s+[A-Z]{2,6}(\s*[+-]\d{2}:?\d{2})?$/, "")
     .replace(/\s+[+-]\d{2}:?\d{2}$/, "")
     .trim();
 
   let date: Date;
 
-  const dotMatch = cleaned.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  if (dotMatch) {
-    const [, day, month, year] = dotMatch;
-    date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+  // dd-Mon-yyyy or dd/Mon/yyyy  e.g. "15-Jan-2024", "02-jan-2001 00:00:00"
+  const dmyAlpha = cleaned.match(/^(\d{1,2})[-/]([a-z]{3})[-/](\d{4})/i);
+  if (dmyAlpha) {
+    const [, d, mon, y] = dmyAlpha;
+    const mm = _MONTH_MAP[mon.toLowerCase()] || "01";
+    date = new Date(`${y}-${mm}-${d.padStart(2, "0")}`);
+  // yyyy.mm.dd Korean-style
+  } else if (/^\d{4}\.\d{1,2}\.\d{1,2}/.test(cleaned)) {
+    const m = cleaned.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+    date = m ? new Date(`${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`) : new Date(cleaned);
+  // Korean 년/월/일
+  } else if (/\d{4}년/.test(cleaned)) {
+    const m = cleaned.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    date = m ? new Date(`${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`) : new Date(cleaned);
+  // dd.mm.yyyy
+  } else if (/^\d{1,2}\.\d{1,2}\.\d{4}/.test(cleaned)) {
+    const dotMatch = cleaned.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (dotMatch) {
+      const [, day, month, year] = dotMatch;
+      date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+    } else {
+      date = new Date(cleaned);
+    }
   } else if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(cleaned)) {
     const m = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     date = m ? new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`) : new Date(cleaned);
@@ -453,7 +482,7 @@ export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<Wh
             registered: tianStatus === 1 ? true : tianStatus === 0 ? false : parsedRaw?.registered,
             raw: rawResult,
           },
-          source: DataSource.WHOIS_FALLBACK,
+          source: DataSource.TIANHU,
         };
       }
       if (edgeData.source === "whois-tcp") {
@@ -547,7 +576,7 @@ export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<Wh
               registered: tianStatus === 1 ? true : tianStatus === 0 ? false : parsedRaw?.registered,
               raw: rawResult,
             },
-            source: DataSource.WHOIS_FALLBACK,
+            source: DataSource.TIANHU,
           };
         }
       }

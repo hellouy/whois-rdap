@@ -196,9 +196,23 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
       case DataSource.RDAP_DIRECT:  return "RDAP";
       case DataSource.RDAP_ORG:     return "RDAP";
       case DataSource.WHOIS_FALLBACK: return "WHOIS";
+      case DataSource.TIANHU:       return "tian.hu";
       case DataSource.DNS_FALLBACK: return "DNS";
       default:                      return "Unknown";
     }
+  };
+
+  const getSourceBadgeClass = (src: DataSource): string => {
+    if (src === DataSource.RDAP || src === DataSource.RDAP_DIRECT || src === DataSource.RDAP_ORG) {
+      return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800";
+    }
+    if (src === DataSource.TIANHU) {
+      return "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800";
+    }
+    if (src === DataSource.DNS_FALLBACK) {
+      return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800";
+    }
+    return "bg-muted text-muted-foreground border-border";
   };
 
   // 获取分类后的状态信息（用于增强状态徽标）
@@ -831,37 +845,30 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 </Badge>
               </div>
               
-              {/* DNSSEC */}
-              <div className="flex items-center gap-2 sm:gap-3">
+              {/* DNSSEC + inline status labels */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">DNSSEC:</span>
-                <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec || "未启用"}</span>
+                <span className="text-xs sm:text-sm text-foreground flex-shrink-0">{whoisData.dnssec || "未启用"}</span>
+                {domainLabels && domainLabels.labels.map((lbl) => (
+                  <span
+                    key={lbl.key}
+                    title={lbl.en}
+                    className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border flex-shrink-0 ${
+                      lbl.severity === "error"
+                        ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
+                        : lbl.severity === "warning"
+                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                        : lbl.key === "newly-registered"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
+                        : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                    }`}
+                  >
+                    <span>{lbl.icon}</span>
+                    <span>{lbl.zh}</span>
+                  </span>
+                ))}
               </div>
-
-              {/* i18n Smart Labels — shown inline after DNSSEC */}
-              {domainLabels && domainLabels.labels.length > 0 && (
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 opacity-0" />
-                  <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">标签:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {domainLabels.labels.map((lbl) => (
-                      <span
-                        key={lbl.key}
-                        title={lbl.en}
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${
-                          lbl.severity === "error"
-                            ? "bg-destructive/10 text-destructive border-destructive/30"
-                            : lbl.severity === "warning"
-                            ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
-                            : "bg-primary/10 text-primary border-primary/20"
-                        }`}
-                      >
-                        {lbl.zh}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1091,17 +1098,11 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 7. 数据来源 (Data Source Badge) */}
           {envelope.source !== "UNKNOWN" && (
-            <div className="flex items-center gap-2 px-1">
+            <div className="flex items-center gap-2 px-1 flex-wrap">
               <Database className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               <span className="text-[10px] text-muted-foreground">数据来源:</span>
               <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
-                  envelope.source === DataSource.RDAP || envelope.source === DataSource.RDAP_DIRECT || envelope.source === DataSource.RDAP_ORG
-                    ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
-                    : envelope.source === DataSource.DNS_FALLBACK
-                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
-                    : "bg-muted text-muted-foreground border-border"
-                }`}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${getSourceBadgeClass(envelope.source)}`}
                 title={envelope.dataProvenance}
               >
                 {getSourceLabel(envelope.source)}

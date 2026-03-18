@@ -111,6 +111,15 @@ export function isExpiringThisQuarter(expirationDate: string | undefined): boole
   return diff > 30 * DAY && diff <= 90 * DAY;
 }
 
+/**
+ * T1-G: Domain was registered within the last 30 days.
+ */
+export function isNewlyRegistered(creationDate: string | undefined): boolean {
+  const created = parseDomainDate(creationDate);
+  if (!created) return false;
+  return Date.now() - created.getTime() <= 30 * DAY;
+}
+
 // ── Label builder (i18n) ──────────────────────────────────────────────────────
 
 const LABEL_DEFS: Array<{
@@ -146,16 +155,24 @@ const LABEL_DEFS: Array<{
     check: (d) => isExpiringThisQuarter(d.expirationDate),
   },
   {
+    key: "newly-registered",
+    zh: "新注册",
+    en: "Newly Registered",
+    severity: "info",
+    icon: "🆕",
+    check: (d) => isNewlyRegistered(d.creationDate) && !isExpired(d.expirationDate),
+  },
+  {
     key: "freshly-updated",
     zh: "近期更新",
     en: "Freshly Updated",
     severity: "info",
     icon: "✨",
-    check: (d) => isFreshlyUpdated(d.updatedDate),
+    check: (d) => isFreshlyUpdated(d.updatedDate) && !isNewlyRegistered(d.creationDate),
   },
   {
     key: "long-term-inactive",
-    zh: "长期未更新",
+    zh: "长期未变动",
     en: "Long-term Inactive",
     severity: "warning",
     icon: "💤",
