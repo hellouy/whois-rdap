@@ -546,43 +546,10 @@ export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<Wh
     return null;
   })());
 
-  // 4. tian.hu WHOIS API
-  allPromises.push((async (): Promise<SourcedResult | null> => {
-    try {
-      const resp = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
-        signal: AbortSignal.timeout(10000), headers: { Accept: "application/json" },
-      });
-      if (resp.ok) {
-        const body = await resp.json() as AnyObj;
-        if (body.code === 200 && body.data) {
-          const payload = body.data as AnyObj;
-          const formatted = payload.formatted as AnyObj | undefined;
-          const domainInfo = (formatted?.domain) as AnyObj | undefined;
-          const rawResult = payload.result as string | undefined;
-          const tianStatus = payload.status as number | undefined;
-          const rawStatuses = (Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [])
-            .map((s: string) => decodeHtmlEntities(s).replace(/\s+https?:\/\/\S+/g, "").trim()).filter(Boolean);
-          const parsedRaw = tianStatus === -1 && rawResult ? parseWhoisText(rawResult, norm) : null;
-          return {
-            data: {
-              domainName: (payload.domain as string) || norm,
-              registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
-              registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
-              creationDate: formatDate((domainInfo?.created_date_utc || domainInfo?.created_date) as string | undefined) || parsedRaw?.creationDate,
-              expirationDate: formatDate((domainInfo?.expired_date_utc || domainInfo?.expired_date) as string | undefined) || parsedRaw?.expirationDate,
-              updatedDate: formatDate((domainInfo?.updated_date_utc || domainInfo?.updated_date) as string | undefined) || parsedRaw?.updatedDate,
-              nameServers: (domainInfo?.name_servers as string[])?.length ? (domainInfo.name_servers as string[]) : (parsedRaw?.nameServers || []),
-              status: rawStatuses.length ? rawStatuses : (parsedRaw?.status || []),
-              registered: tianStatus === 1 ? true : tianStatus === 0 ? false : parsedRaw?.registered,
-              raw: rawResult,
-            },
-            source: DataSource.TIANHU,
-          };
-        }
-      }
-    } catch {}
-    return null;
-  })());
+  // Note: tian.hu is NOT called here — the backend proxy already uses it as
+  // Phase 3 fallback (after RDAP + TCP WHOIS + rdap.org all fail). Calling it
+  // directly from the browser would bypass that priority cascade and make the
+  // app unnecessarily dependent on the third-party API.
 
   const result = await raceToFirst(allPromises);
 

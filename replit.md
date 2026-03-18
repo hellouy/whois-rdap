@@ -45,7 +45,11 @@ API (server.mjs / external APIs)
   - `word-corpus.json` — 3,479 words + meanings
   - `word-corpus-extra.json` — 2,607 words + meanings
 - `server.mjs` — Express API server
-  - `GET /api/whois?domain=` — WHOIS/RDAP proxy (races multiple sources)
+  - `GET /api/whois?domain=` — WHOIS/RDAP proxy — strict 4-phase priority cascade:
+    1. Phase 1 (parallel race): TLD registry RDAP direct + TCP WHOIS port 43 — no third parties
+    2. Phase 2: rdap.org public RDAP bootstrap — covers nearly all TLDs via IANA
+    3. Phase 3: tian.hu API — only when Phases 1 & 2 both fail (last resort before DNS)
+    4. Phase 4: Google DNS existence check (absolute last resort)
   - `GET /api/whois?mode=dns-batch&domains=` — Batch DNS availability check
   - `GET /api/price?domain=` — Domain pricing proxy (nazhumi.com)
 - `scripts/extract-corpus.mjs` — One-time script: converts word-corpus.ts → JSON

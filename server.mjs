@@ -294,14 +294,17 @@ app.get('/api/whois', async (req, res) => {
   const tld = parts[parts.length - 1];
   const cache = { 'Cache-Control': 'public, max-age=300' };
 
+  // ── Phase 1: Direct local sources — TLD registry RDAP + TCP WHOIS port 43 ──
+  // Neither requires third-party intermediaries.
   const phase1 = [];
+
   const rdapServer = RDAP_SERVERS[tld];
   if (rdapServer) {
     phase1.push((async () => {
       try {
         const r = await fetch(`${rdapServer}/domain/${domain}`, {
           headers: { Accept: 'application/rdap+json, application/json' },
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(6000),
         });
         if (r.ok) return { source: 'rdap', data: await r.json() };
       } catch {}
@@ -309,53 +312,39 @@ app.get('/api/whois', async (req, res) => {
     })());
   }
 
-  phase1.push((async () => {
-    try {
-      const r = await fetch(`https://rdap.org/domain/${domain}`, {
-        headers: { Accept: 'application/rdap+json, application/json' },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
-        return { source: 'rdap', data: await r.json() };
-      }
-    } catch {}
-    return null;
-  })());
-
-  phase1.push((async () => {
-    try {
-      const r = await fetch(`https://api.tian.hu/whois/${domain}`, {
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (r.ok) {
-        const data = await r.json();
-        if (data.code === 200) return { source: 'tianhu', data };
-      }
-    } catch {}
-    return null;
-  })());
-
-  // TCP WHOIS (port 43) for TLDs with a known WHOIS server
   const whoisHost = WHOIS_SERVERS[tld];
   if (whoisHost) {
     phase1.push((async () => {
       try {
-        const raw = await tcpWhoisQuery(whoisHost, domain);
+        const raw = await tcpWhoisQuery(whoisHost, domain, 8000);
         if (raw && raw.trim().length > 20) return { source: 'whois-tcp', data: raw };
       } catch {}
       return null;
     })());
   }
 
-  const result = await raceSuccessful(phase1);
-  if (result) return sendJson(res, result, 200, cache);
+  if (phase1.length > 0) {
+    const result = await raceSuccessful(phase1);
+    if (result) return sendJson(res, result, 200, cache);
+  }
 
-  // Phase 2: tian.hu retry
+  // ── Phase 2: rdap.org public RDAP bootstrap ──────────────────────────────
+  // Covers nearly all TLDs via the IANA RDAP bootstrap registry.
+  try {
+    const r = await fetch(`https://rdap.org/domain/${domain}`, {
+      headers: { Accept: 'application/rdap+json, application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
+      return sendJson(res, { source: 'rdap', data: await r.json() }, 200, cache);
+    }
+  } catch {}
+
+  // ── Phase 3: tian.hu API — third-party, only when all direct sources fail ─
   try {
     const r = await fetch(`https://api.tian.hu/whois/${domain}`, {
       headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(10000),
     });
     if (r.ok) {
       const data = await r.json();
@@ -363,7 +352,7 @@ app.get('/api/whois', async (req, res) => {
     }
   } catch {}
 
-  // Phase 3: DNS fallback (check multiple record types)
+  // ── Phase 4: DNS existence check (absolute last resort) ──────────────────
   try {
     const dnsChecks = await Promise.allSettled([
       fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`, {
@@ -375,11 +364,9 @@ app.get('/api/whois', async (req, res) => {
         signal: AbortSignal.timeout(4000),
       }).then(r => r.ok ? r.json() : null).catch(() => null),
     ]);
-    
     const results = dnsChecks.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean);
     const hasRecords = results.some(d => d.Status === 0 && d.Answer && d.Answer.length > 0);
     const allNxDomain = results.length > 0 && results.every(d => d.Status === 3);
-    
     if (hasRecords) {
       return sendJson(res, { source: 'dns-fallback', data: { exists: true, answers: results[0]?.Answer || [] } }, 200, cache);
     }
