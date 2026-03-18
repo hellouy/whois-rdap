@@ -365,31 +365,179 @@ export function parseWhoisText(rawInput: string, domain: string): WhoisData {
     return [...new Set(results)];
   };
 
-  // Generic fallback values
-  const genericRegistrar = getValue([/Registrar:\s*(.+)/i, /Registrar Name:\s*(.+)/i, /Sponsoring Registrar:\s*(.+)/i, /Register:\s*(.+)/i, /注册商:\s*(.+)/i]);
-  const genericNS = getValues([/Name Server:\s*(.+)/i, /nserver:\s*(.+)/i, /Nameserver:\s*(.+)/i, /DNS:\s*(.+)/i])
-    .map((ns) => ns.split(/\s+/)[0].toLowerCase().replace(/\.+$/, ""))
-    .filter((ns) => ns.includes("."));
+  // ── Generic fallback field extraction ────────────────────────────────────
+  const genericRegistrar = getValue([
+    /Registrar:\s*(.+)/i,
+    /Registrar Name:\s*(.+)/i,
+    /Sponsoring Registrar:\s*(.+)/i,
+    /Registration Service Provider:\s*(.+)/i,
+    /Authorized Agency:\s*(.+)/i,        // KR
+    /Register:\s*(.+)/i,
+    /注册商:\s*(.+)/i,
+    /등록기관:\s*(.+)/i,                 // Korean
+    /organisation:\s*(.+)/i,
+    /provider:\s*(.+)/i,                 // BR NIC.br
+    /owner:\s*(.+)/i,                    // BR (domain owner)
+  ]);
 
-  // ccTLD-specific values take priority; fall back to generic
+  // Nameservers: handle both "Name Server: ns1.example.com" style
+  // and indented block-format (e.g., NIC.br, DENIC, JPRS)
+  const genericNS: string[] = [];
+  const nsPatterns = [
+    /Name Server:\s*(.+)/i,
+    /nserver:\s*(.+)/i,
+    /Nameserver:\s*(.+)/i,
+    /DNS:\s*(\S+\.\S+)/i,
+    /\[Name Server\]\s*(.+)/i,           // JP
+    /Host Name:\s*(.+)/i,                // KR
+    /Domain nameservers:\s*\n\s*(.+)/im,
+  ];
+  for (const line of lines) {
+    for (const p of nsPatterns) {
+      const m = line.match(p);
+      if (m?.[1]?.trim()) {
+        const raw_ns = m[1].trim().split(/\s+/)[0].toLowerCase().replace(/\.+$/, "");
+        if (raw_ns.includes(".")) genericNS.push(raw_ns);
+      }
+    }
+  }
+  // Also capture indented lines that look like hostnames (after a "Name servers:" label line)
+  let inNsBlock = false;
+  for (const line of lines) {
+    if (/name\s*servers?\s*:/i.test(line)) { inNsBlock = true; continue; }
+    if (inNsBlock) {
+      const trimmed = line.trim();
+      if (!trimmed || /^\S.*:/.test(trimmed)) { inNsBlock = false; continue; }
+      const candidate = trimmed.split(/\s+/)[0].toLowerCase().replace(/\.+$/, "");
+      if (candidate.includes(".") && /^[a-z0-9]/.test(candidate)) genericNS.push(candidate);
+    }
+  }
+  const dedupeNS = [...new Set(genericNS)];
+
+  // ── Build the WhoisData object (ccTLD parser values take priority) ────────
   const data: WhoisData = {
-    domainName:          getValue([/Domain Name:\s*(.+)/i, /domain:\s*(.+)/i, /Domain\s*:\s*(.+)/i]) || domain,
-    registrar:           cc.registrar            || genericRegistrar,
-    registrarIanaId:     getValue([/Registrar IANA ID:\s*(.+)/i]),
-    registrarAbuseEmail: cc.registrarAbuseEmail  || getValue([/Registrar Abuse Contact Email:\s*(.+)/i, /Abuse Email:\s*(.+)/i]),
-    registrarAbusePhone: getValue([/Registrar Abuse Contact Phone:\s*(.+)/i, /Abuse Phone:\s*(.+)/i]),
-    creationDate:        formatDate(cc.creationDate   || getValue([/Creation Date:\s*(.+)/i, /Created Date:\s*(.+)/i, /created:\s*(.+)/i, /Registered:\s*(.+)/i, /登録年月日:\s*(.+)/i])),
-    expirationDate:      formatDate(cc.expirationDate || getValue([/Expir(?:y|ation) Date:\s*(.+)/i, /expire:\s*(.+)/i, /Registry Expiry Date:\s*(.+)/i, /paid-till:\s*(.+)/i, /有効期限:\s*(.+)/i])),
-    updatedDate:         formatDate(cc.updatedDate    || getValue([/Updated Date:\s*(.+)/i, /changed:\s*(.+)/i, /Last Modified:\s*(.+)/i, /最終更新:\s*(.+)/i])),
-    nameServers:         cc.nameServers.length > 0 ? cc.nameServers : genericNS,
-    status:              (cc.status.length > 0 ? cc.status : getValues([/Domain Status:\s*(.+)/i, /Status:\s*(.+)/i, /state:\s*(.+)/i]))
-                           .map(s => decodeHtmlEntities(s).replace(/\s+https?:\/\/\S+/g, "").trim()).filter(Boolean),
-    registrantOrg:       cc.registrantOrg       || getValue([/Registrant Organization:\s*(.+)/i, /Registrant:\s*(.+)/i, /Organization:\s*(.+)/i, /Owner:\s*(.+)/i, /Holder:\s*(.+)/i]),
-    registrantCountry:   cc.registrantCountry   || getValue([/Registrant Country:\s*(.+)/i, /Country:\s*(.+)/i, /country:\s*(.+)/i]),
+    domainName: getValue([
+      /Domain Name:\s*(.+)/i,
+      /domain:\s*(.+)/i,
+      /Domain\s*:\s*(.+)/i,
+      /\[Domain Name\]\s*(.+)/i,         // JP
+      /도메인이름\s*:\s*(.+)/i,           // KR
+    ]) || domain,
+
+    registrar: cc.registrar || genericRegistrar,
+
+    registrarIanaId: getValue([/Registrar IANA ID:\s*(.+)/i, /Registrar IANA-ID:\s*(.+)/i]),
+
+    registrarAbuseEmail: cc.registrarAbuseEmail || getValue([
+      /Registrar Abuse Contact Email:\s*(.+)/i,
+      /Abuse Email:\s*(.+)/i,
+      /Abuse Contact Email:\s*(.+)/i,
+      /e-mail:\s*(.+)/i,
+    ]),
+
+    registrarAbusePhone: getValue([
+      /Registrar Abuse Contact Phone:\s*(.+)/i,
+      /Abuse Phone:\s*(.+)/i,
+      /Abuse Contact Phone:\s*(.+)/i,
+    ]),
+
+    creationDate: formatDate(cc.creationDate || getValue([
+      /Creation Date:\s*(.+)/i,
+      /Created Date:\s*(.+)/i,
+      /created:\s*(.+)/i,
+      /Registered:\s*(\d{4}[-/.]\d{2}[-/.]\d{1,2}.*)/i,   // avoid matching "Registered: yes"
+      /Registration Time:\s*(.+)/i,                          // CN
+      /Registration Date:\s*(.+)/i,
+      /Domain registered:\s*(.+)/i,                          // CA
+      /Domain Name Commencement Date:\s*(.+)/i,              // HK
+      /Registered on:\s*(.+)/i,                              // UK
+      /Record created on\s+(.+)/i,                           // TW
+      /Registered Date\s*:\s*(.+)/i,                         // KR
+      /등록일\s*:\s*(.+)/i,                                   // KR
+      /First registration date:\s*(.+)/i,                    // CH
+      /\[登録年月日\]\s*(.+)/i,                               // JP
+      /\[Created on\]\s*(.+)/i,                              // JP
+      /registration date:\s*(.+)/i,                          // PL
+      /Fecha de Alta:\s*(.+)/i,                              // ES
+    ])),
+
+    expirationDate: formatDate(cc.expirationDate || getValue([
+      /Expir(?:y|ation) Date:\s*(.+)/i,
+      /expire:\s*(.+)/i,
+      /Registry Expiry Date:\s*(.+)/i,
+      /Expiration Time:\s*(.+)/i,                            // CN
+      /paid-till:\s*(.+)/i,                                  // RU
+      /valid-till:\s*(.+)/i,
+      /Valid Until:\s*(.+)/i,
+      /Renewal Date:\s*(.+)/i,
+      /Domain expires:\s*(.+)/i,                             // CA
+      /Expiry date:\s*(.+)/i,                                // UK
+      /Record expires on\s+(.+)/i,                           // TW
+      /Expiration Date\s*:\s*(.+)/i,                         // KR
+      /만료일\s*:\s*(.+)/i,                                   // KR
+      /Expire Date:\s*(.+)/i,                                // IT
+      /option expiration date:\s*(.+)/i,                     // PL
+      /renewal date:\s*(.+)/i,                               // PL
+      /\[有効期限\]\s*(.+)/i,                                 // JP
+      /\[Expires on\]\s*(.+)/i,                              // JP
+      /Fecha de Expiración:\s*(.+)/i,                        // ES
+    ])),
+
+    updatedDate: formatDate(cc.updatedDate || getValue([
+      /Updated Date:\s*(.+)/i,
+      /changed:\s*(.+)/i,
+      /Last Modified:\s*(.+)/i,
+      /Update Date:\s*(.+)/i,                                // CN
+      /last-update:\s*(.+)/i,                                // FR
+      /Last Updated Date\s*:\s*(.+)/i,                       // KR
+      /최종수정일\s*:\s*(.+)/i,                               // KR
+      /last modified:\s*(.+)/i,                              // PL
+      /Domain last updated:\s*(.+)/i,                        // CA
+      /Last Updated:\s*(.+)/i,
+      /Record last updated on\s+(.+)/i,                      // TW
+      /\[最終更新\]\s*(.+)/i,                                 // JP
+      /\[Last Updated\]\s*(.+)/i,                            // JP
+      /modified:\s*(.+)/i,                                   // SE
+      /Fecha de Modificación:\s*(.+)/i,                      // ES
+    ])),
+
+    nameServers: cc.nameServers.length > 0 ? cc.nameServers : dedupeNS,
+
+    status: (cc.status.length > 0 ? cc.status : getValues([
+      /Domain Status:\s*(.+)/i,
+      /Status:\s*(.+)/i,
+      /state:\s*(.+)/i,
+      /Registration status:\s*(.+)/i,    // UK
+      /\[状態\]\s*(.+)/i,                // JP
+    ])).map(s => decodeHtmlEntities(s).replace(/\s+https?:\/\/\S+/g, "").trim())
+       .flatMap(s => s.split(/[,;]\s*/))
+       .filter(Boolean),
+
+    registrantOrg: cc.registrantOrg || getValue([
+      /Registrant Organization:\s*(.+)/i,
+      /Registrant\s*:\s*(.+)/i,
+      /Organization:\s*(.+)/i,
+      /Owner:\s*(.+)/i,
+      /Holder:\s*(.+)/i,
+      /Titulaire:\s*(.+)/i,              // FR
+      /Inhaber:\s*(.+)/i,                // DE
+      /\[Registrant\]\s*(.+)/i,          // JP
+      /\[登録者\]\s*(.+)/i,              // JP
+      /등록인\s*:\s*(.+)/i,              // KR
+    ]),
+
+    registrantCountry: cc.registrantCountry || getValue([
+      /Registrant Country:\s*(.+)/i,
+      /Country:\s*(.+)/i,
+      /country:\s*(.+)/i,
+      /Registrant Country Code:\s*(.+)/i,
+    ]),
+
     raw: text,
   };
 
-  const dnssecValue = getValue([/DNSSEC:\s*(.+)/i]);
+  // DNSSEC
+  const dnssecValue = getValue([/DNSSEC:\s*(.+)/i, /dnssec:\s*(.+)/i, /secureDNS:\s*(.+)/i]);
   if (dnssecValue) data.dnssec = /sign|true|yes|active|delegated/i.test(dnssecValue) ? "已启用" : "未启用";
 
   const inferred = inferRegisteredFromWhois(text);

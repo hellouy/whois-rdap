@@ -1,17 +1,57 @@
 // Lightweight heuristics shared by WHOIS/RDAP parsing.
 
+/**
+ * Strong positive signals that prove a domain IS registered.
+ * When ≥2 of these match, we trust registration even if "not found" text appears.
+ */
+const STRONG_POSITIVE_PATTERNS: RegExp[] = [
+  /creation date\s*:/i,
+  /created\s*:/i,
+  /registered\s*:\s*\d{2}/i,           // "Registered: 2020-..."
+  /domain registered\s*:/i,
+  /registration date\s*:/i,
+  /registry expiry date\s*:/i,
+  /expir(?:y|ation) date\s*:/i,
+  /expiration time\s*:/i,
+  /paid-till\s*:/i,
+  /valid until\s*:/i,
+  /renewal date\s*:/i,
+  /name\s*server\s*:\s*\S+\.\S+/i,
+  /nserver\s*:\s*\S+\.\S+/i,
+  /registrar\s*:\s*\S/i,
+  /sponsoring registrar\s*:/i,
+  /domain status\s*:\s*(?:active|ok|live|clienttransferprohibited|clientupdateprohibited|clientdeleteprohibited|serverdeleteprohibited)/i,
+  /status\s*:\s*(?:active|ok|live|registered|delegated)/i,
+  /registered\s*:\s*yes/i,
+  /registration status\s*:\s*(?:active|registered|ok)/i,
+  /\[登録年月日\]/i,           // JP
+  /\[有効期限\]/i,              // JP
+  /\[name server\]/i,           // JP
+  /paid-till\s*:/i,             // RU
+  /state\s*:\s*\S/i,            // RU
+  /expiry\s*:\s*\d{4}/i,
+  /holder\s*:/i,
+  /titular\s*:/i,               // ES/PT
+];
+
+export function hasClearRegistrationSignals(text: string): boolean {
+  return STRONG_POSITIVE_PATTERNS.filter(p => p.test(text)).length >= 2;
+}
+
 export function looksLikeNotFoundWhois(text: string): boolean {
   const t = (text || "").toLowerCase();
   if (!t) return false;
 
+  // If there are strong positive registration signals, don't flag as "not found"
+  if (hasClearRegistrationSignals(text)) return false;
+
   const patterns: RegExp[] = [
     /no whois data was found/i,
     /no match for/i,
-    /not found/i,
+    /^%?\s*no match/im,
     /no entries found/i,
     /domain not found/i,
     /no information available/i,
-    /status:\s*available/i,
     /is free/i,
     /available for registration/i,
     /no data found/i,
@@ -23,7 +63,6 @@ export function looksLikeNotFoundWhois(text: string): boolean {
     /未注册/i,
     /该域名未被注册/i,
     /this domain is available/i,
-    /no match/i,
     /nothing found/i,
     /the queried object does not exist/i,
     /domain(.+)is available/i,
@@ -35,45 +74,43 @@ export function looksLikeNotFoundWhois(text: string): boolean {
     /domain is available for registration/i,
     /no record found/i,
     /^% no such domain/im,
-    /^% this is the .+ whois.*\n% .*\n%\s*$/im,
     /query_status:\s*220\s+available/i,
-    /status:\s*free/i,
-    /status:\s*not registered/i,
+    /^status:\s*free$/im,
+    /^status:\s*not registered$/im,
     /dominio libre/i,
     /domaine disponible/i,
-    /^% object not found/im,
-    /domain status:\s*available/i,
+    /^%\s*object not found/im,
+    /^domain status:\s*available$/im,
     /^%error:\s*101/im,
-    // Freenom系列
     /your request cannot be processed/i,
     /invalid domain name/i,
     /no domain exists/i,
+    // More specific "domain is not registered" variants (not just "not registered")
+    /this domain is not registered/i,
     /domain is not registered/i,
-    // 法语非洲
+    /this domain name has not been registered/i,
+    /the domain has not been registered/i,
+    /the domain .+ is available/i,
+    /domain is free/i,
+    /is available for purchase/i,
+    // French African
     /aucun résultat/i,
     /pas de résultat/i,
     /non enregistré/i,
-    // 更多语言/格式支持
-    /nie znaleziono/i,           // 波兰语: not found
-    /nicht gefunden/i,            // 德语: not found
-    /niet gevonden/i,             // 荷兰语: not found
-    /ikke funnet/i,               // 挪威语: not found
-    /ei löydy/i,                  // 芬兰语: not found
+    // Multi-language "not found"
+    /nie znaleziono/i,
+    /nicht gefunden/i,
+    /niet gevonden/i,
+    /ikke funnet/i,
+    /ei löydy/i,
     /未查到/i,
     /该域名.*?可以注册/i,
     /此域名.*?可以注册/i,
-    /domain.*?not registered/i,
-    /not registered/i,
     /free to register/i,
     /available to register/i,
     /^no data returned$/im,
-    /registration status:\s*available/i,
-    /^$ empty/im,
-    /This domain name has not been registered/i,
-    /The domain has not been registered/i,
-    /The domain .+ is available/i,
-    /domain is free/i,
-    /is available for purchase/i,
+    /^registration status:\s*available$/im,
+    /^% empty/im,
   ];
 
   return patterns.some((p) => p.test(t));
@@ -101,12 +138,18 @@ export function looksLikeReserved(text: string): boolean {
 export function inferRegisteredFromWhois(text: string): boolean | null {
   if (!text) return null;
 
+  // ── Step 1: Strong positive signals take priority ─────────────────────────
+  // If ≥2 clear registration signals exist, it's registered regardless of other text.
+  if (hasClearRegistrationSignals(text)) return true;
+
+  // ── Step 2: Check for unambiguous "not found" language ───────────────────
   if (looksLikeNotFoundWhois(text)) return false;
 
-  // Reserved domains are registered (held by registry)
+  // ── Step 3: Reserved domains are registered ───────────────────────────────
   if (looksLikeReserved(text)) return true;
 
-  const registeredIndicators = [
+  // ── Step 4: Broader registration indicators ───────────────────────────────
+  const registeredIndicators: RegExp[] = [
     /domain name:/i,
     /registr(?:ar|ant)/i,
     /name\s*server/i,
@@ -130,7 +173,17 @@ export function inferRegisteredFromWhois(text: string): boolean | null {
     /address:/i,
     /phone:/i,
     /e-mail:/i,
-    /status:\s*(?:active|ok|live|registered|delegated)/i,
+    /paid-till:/i,
+    /state:/i,
+    /sponsoring registrar:/i,
+    /domain id:/i,
+    /roid:/i,
+    /registry domain id:/i,
+    /registrar iana id:/i,
+    /dnssec:/i,
+    /status:\s*(?:active|ok|live|registered|delegated|connect)/i,
+    /registered:\s*yes/i,
+    /registration status:\s*(?:active|registered)/i,
   ];
 
   const matchCount = registeredIndicators.filter(p => p.test(text)).length;

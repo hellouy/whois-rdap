@@ -849,6 +849,394 @@ const SG_PARSER: CcTLDParser = {
   },
 };
 
+// ── Additional ccTLD parsers (BN, MY, VN, TH, ID, etc.) ─────────────────────
+
+const BN_PARSER: CcTLDParser = {
+  tld: ".bn",
+  label: "BNNIC (.bn)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Sponsoring Registrar:\s*(.+)/i,
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+        /Nameserver:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Creation Date:\s*(.+)/i,
+        /Created Date:\s*(.+)/i,
+        /Registration Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+        /Expiration Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Updated Date:\s*(.+)/i,
+        /Last Updated Date:\s*(.+)/i,
+        /Last Modified:\s*(.+)/i,
+      ])),
+      status: raw.match(/Domain Status:\s*(\S+)/gi)?.map(l => l.replace(/Domain Status:\s*/i, "")) || [],
+      registrantCountry: "BN",
+      registrantOrg: extract(raw, [
+        /Registrant Organization:\s*(.+)/i,
+        /Registrant:\s*(.+)/i,
+        /Owner:\s*(.+)/i,
+      ]),
+    };
+  },
+};
+
+const MY_PARSER: CcTLDParser = {
+  tld: ".my",
+  label: "MYNIC (.my)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+        /Sponsoring Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Creation Date:\s*(.+)/i,
+        /Domain registered:\s*(.+)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+        /Domain expires:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Updated Date:\s*(.+)/i,
+        /Last Modified:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: raw.match(/Domain Status:\s*(\S+)/gi)?.map(l => l.replace(/Domain Status:\s*/i, "")) || [],
+      registrantCountry: "MY",
+    };
+  },
+};
+
+const VN_PARSER: CcTLDParser = {
+  tld: ".vn",
+  label: "VNNIC (.vn)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+        /Sponsoring Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+        /DNS:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Creation Date:\s*(.+)/i,
+        /Registered:\s*(\d{4}[-/. ]\d{1,2}[-/. ]\d{1,2}.*)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+        /Expiration Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Updated Date:\s*(.+)/i,
+        /Last Modified:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: raw.match(/Domain Status:\s*(\S+)/gi)?.map(l => l.replace(/Domain Status:\s*/i, "")) || [],
+      registrantCountry: "VN",
+    };
+  },
+};
+
+const TH_PARSER: CcTLDParser = {
+  tld: ".th",
+  label: "THNIC (.th)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+        /Sponsoring Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+        /DNS:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Creation Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+        /Registered:\s*(\d{4}[-/. ]\d{1,2}[-/. ]\d{1,2}.*)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+        /Expiration Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Updated Date:\s*(.+)/i,
+        /Last Modified:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: (extract(raw, [/Domain Status:\s*(.+)/i, /Status:\s*(.+)/i]) || "").split(/[\s,]+/).filter(Boolean),
+      registrantCountry: "TH",
+    };
+  },
+};
+
+const ID_PARSER: CcTLDParser = {
+  tld: ".id",
+  label: "PANDI (.id)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+        /Sponsoring Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Creation Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+        /Registered:\s*(\d{4}[-/. ]\d{1,2}[-/. ]\d{1,2}.*)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+        /Expiration Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Updated Date:\s*(.+)/i,
+        /Last Modified:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: raw.match(/Domain Status:\s*(\S+)/gi)?.map(l => l.replace(/Domain Status:\s*/i, "")) || [],
+      registrantCountry: "ID",
+    };
+  },
+};
+
+const PH_PARSER: CcTLDParser = {
+  tld: ".ph",
+  label: "DOT.PH (.ph)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registration Authority:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /DNS:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Registered:\s*(.+)/i,
+        /Creation Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Expiration Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+        /Registry Expiry Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Updated:\s*(.+)/i,
+        /Updated Date:\s*(.+)/i,
+        /Last Modified:\s*(.+)/i,
+      ])),
+      status: raw.match(/Domain Status:\s*(\S+)/gi)?.map(l => l.replace(/Domain Status:\s*/i, "")) || [],
+      registrantCountry: "PH",
+    };
+  },
+};
+
+const TR_PARSER: CcTLDParser = {
+  tld: ".tr",
+  label: "NIC.TR (.tr)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Name Server:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+        /Nameserver:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Created Date:\s*(.+)/i,
+        /Creation Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Expiry Date:\s*(.+)/i,
+        /Expires:\s*(.+)/i,
+        /Registry Expiry Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Last Updated:\s*(.+)/i,
+        /Updated Date:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: (extract(raw, [/Status:\s*(.+)/i]) || "").split(/[\s,]+/).filter(Boolean),
+      registrantCountry: "TR",
+    };
+  },
+};
+
+const UA_PARSER: CcTLDParser = {
+  tld: ".ua",
+  label: "Hostmaster (.ua)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /registrar:\s*(.+)/i,
+        /Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /nserver:\s*(.+)/i,
+        /Name Server:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /created:\s*(.+)/i,
+        /Creation Date:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /expiry-date:\s*(.+)/i,
+        /expires:\s*(.+)/i,
+        /Registry Expiry Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /modified:\s*(.+)/i,
+        /Updated Date:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: (extract(raw, [/status:\s*(.+)/i]) || "").split(/[\s,]+/).filter(Boolean),
+      registrantCountry: "UA",
+    };
+  },
+};
+
+const BE_PARSER: CcTLDParser = {
+  tld: ".be",
+  label: "DNS.be (.be)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /Registrar:\s*(.+)/i,
+        /Registrar Name:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /Nameserver:\s*(.+)/i,
+        /nserver:\s*(.+)/i,
+        /Name Server:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /Registered:\s*(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}.*)/i,
+        /Creation Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /Expiry Date:\s*(.+)/i,
+        /Registry Expiry Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /Last Updated:\s*(.+)/i,
+        /Updated Date:\s*(.+)/i,
+        /changed:\s*(.+)/i,
+      ])),
+      status: (extract(raw, [/Status:\s*(.+)/i]) || "").split(/[\s,]+/).filter(Boolean),
+      registrantCountry: "BE",
+    };
+  },
+};
+
+const AT_PARSER: CcTLDParser = {
+  tld: ".at",
+  label: "NIC.at (.at)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /registrar:\s*(.+)/i,
+        /Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /nserver:\s*(.+)/i,
+        /Name Server:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /registered:\s*(.+)/i,
+        /Creation Date:\s*(.+)/i,
+        /created:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /expires:\s*(.+)/i,
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /changed:\s*(.+)/i,
+        /Updated Date:\s*(.+)/i,
+      ])),
+      status: (extract(raw, [/rstatus:\s*(.+)/i, /Status:\s*(.+)/i]) || "").split(/[\s,]+/).filter(Boolean),
+      registrantCountry: "AT",
+    };
+  },
+};
+
+const RU_PARSER_ALT: CcTLDParser = {
+  tld: ".ru",
+  label: "TCINET (.ru)",
+  parse(raw) {
+    return {
+      registrar: extract(raw, [
+        /registrar:\s*(.+)/i,
+        /Registrar:\s*(.+)/i,
+      ]),
+      nameServers: extractAll(raw, [
+        /nserver:\s*(.+)/i,
+        /Name Server:\s*(.+)/i,
+      ]),
+      creationDate: normaliseCcDate(extract(raw, [
+        /created:\s*(.+)/i,
+        /Creation Date:\s*(.+)/i,
+      ])),
+      expirationDate: normaliseCcDate(extract(raw, [
+        /paid-till:\s*(.+)/i,
+        /Registry Expiry Date:\s*(.+)/i,
+        /Expiry Date:\s*(.+)/i,
+      ])),
+      updatedDate: normaliseCcDate(extract(raw, [
+        /changed:\s*(.+)/i,
+        /Updated Date:\s*(.+)/i,
+      ])),
+      status: (extract(raw, [/state:\s*(.+)/i, /Status:\s*(.+)/i]) || "").split(/[\s,]+/).filter(Boolean),
+      registrantCountry: "RU",
+    };
+  },
+};
+
 const DEFAULT_PARSER: CcTLDParser = {
   tld: "*",
   label: "Generic WHOIS",
@@ -914,25 +1302,11 @@ const DEFAULT_PARSER: CcTLDParser = {
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 const PARSER_REGISTRY: Map<string, CcTLDParser> = new Map([
+  // ── East Asia ──
   [".jp", JP_PARSER],
-  [".de", DE_PARSER],
-  [".uk", UK_PARSER],
-  [".co.uk", UK_PARSER],
-  [".org.uk", UK_PARSER],
-  [".me.uk", UK_PARSER],
-  [".in", IN_PARSER],
-  [".co.in", IN_PARSER],
-  [".net.in", IN_PARSER],
-  [".br", BR_PARSER],
-  [".com.br", BR_PARSER],
-  [".net.br", BR_PARSER],
-  [".ru", RU_PARSER],
-  [".рф", RU_PARSER],
-  [".au", AU_PARSER],
-  [".com.au", AU_PARSER],
-  [".net.au", AU_PARSER],
-  [".io", IO_PARSER],
-  // Extended ccTLD coverage
+  [".co.jp", JP_PARSER],
+  [".ne.jp", JP_PARSER],
+  [".or.jp", JP_PARSER],
   [".cn", CN_PARSER],
   [".com.cn", CN_PARSER],
   [".net.cn", CN_PARSER],
@@ -944,20 +1318,84 @@ const PARSER_REGISTRY: Map<string, CcTLDParser> = new Map([
   [".kr", KR_PARSER],
   [".co.kr", KR_PARSER],
   [".or.kr", KR_PARSER],
+  [".hk", HK_PARSER],
+  [".com.hk", HK_PARSER],
+  [".net.hk", HK_PARSER],
+  [".org.hk", HK_PARSER],
+
+  // ── Southeast Asia ──
+  [".sg", SG_PARSER],
+  [".com.sg", SG_PARSER],
+  [".net.sg", SG_PARSER],
+  [".org.sg", SG_PARSER],
+  [".bn", BN_PARSER],
+  [".com.bn", BN_PARSER],
+  [".my", MY_PARSER],
+  [".com.my", MY_PARSER],
+  [".net.my", MY_PARSER],
+  [".vn", VN_PARSER],
+  [".com.vn", VN_PARSER],
+  [".net.vn", VN_PARSER],
+  [".th", TH_PARSER],
+  [".co.th", TH_PARSER],
+  [".in.th", TH_PARSER],
+  [".id", ID_PARSER],
+  [".co.id", ID_PARSER],
+  [".net.id", ID_PARSER],
+  [".ph", PH_PARSER],
+  [".com.ph", PH_PARSER],
+
+  // ── South Asia ──
+  [".in", IN_PARSER],
+  [".co.in", IN_PARSER],
+  [".net.in", IN_PARSER],
+
+  // ── Oceania ──
+  [".au", AU_PARSER],
+  [".com.au", AU_PARSER],
+  [".net.au", AU_PARSER],
+
+  // ── UK / Ireland ──
+  [".uk", UK_PARSER],
+  [".co.uk", UK_PARSER],
+  [".org.uk", UK_PARSER],
+  [".me.uk", UK_PARSER],
+  [".ie", DEFAULT_PARSER],
+
+  // ── Western Europe ──
+  [".de", DE_PARSER],
   [".fr", FR_PARSER],
   [".it", IT_PARSER],
   [".es", ES_PARSER],
-  [".pl", PL_PARSER],
   [".nl", NL_PARSER],
   [".se", SE_PARSER],
   [".nu", SE_PARSER],
   [".ch", CH_PARSER],
   [".li", CH_PARSER],
+  [".be", BE_PARSER],
+  [".at", AT_PARSER],
+
+  // ── Central / Eastern Europe ──
+  [".pl", PL_PARSER],
+
+  // ── Eastern Europe / CIS ──
+  [".ru", RU_PARSER_ALT],
+  [".рф", RU_PARSER_ALT],
+  [".ua", UA_PARSER],
+
+  // ── Middle East / Turkey ──
+  [".tr", TR_PARSER],
+  [".com.tr", TR_PARSER],
+  [".net.tr", TR_PARSER],
+
+  // ── Americas ──
+  [".br", BR_PARSER],
+  [".com.br", BR_PARSER],
+  [".net.br", BR_PARSER],
   [".ca", CA_PARSER],
-  [".hk", HK_PARSER],
-  [".com.hk", HK_PARSER],
-  [".sg", SG_PARSER],
-  [".com.sg", SG_PARSER],
+
+  // ── Generic popular TLDs ──
+  [".io", IO_PARSER],
 ]);
 
 // ── Factory ───────────────────────────────────────────────────────────────────
