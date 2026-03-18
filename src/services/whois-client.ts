@@ -183,27 +183,69 @@ function parseEvents(events: AnyObj[] = []) {
   };
 }
 
+/** Decode HTML entities in a string (handles &eacute; &#233; etc.) */
+export function decodeHtmlEntities(s: string): string {
+  if (!s || !s.includes("&")) return s;
+  return s
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, " ")
+    .replace(/&eacute;/g, "é").replace(/&Eacute;/g, "É")
+    .replace(/&egrave;/g, "è").replace(/&Egrave;/g, "È")
+    .replace(/&ecirc;/g, "ê").replace(/&Ecirc;/g, "Ê")
+    .replace(/&oacute;/g, "ó").replace(/&Oacute;/g, "Ó")
+    .replace(/&ouml;/g, "ö").replace(/&Ouml;/g, "Ö")
+    .replace(/&uuml;/g, "ü").replace(/&Uuml;/g, "Ü")
+    .replace(/&auml;/g, "ä").replace(/&Auml;/g, "Ä")
+    .replace(/&ntilde;/g, "ñ").replace(/&Ntilde;/g, "Ñ")
+    .replace(/&aacute;/g, "á").replace(/&Aacute;/g, "Á")
+    .replace(/&iacute;/g, "í").replace(/&Iacute;/g, "Í")
+    .replace(/&uacute;/g, "ú").replace(/&Uacute;/g, "Ú")
+    .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(+c))
+    .replace(/&#x([0-9a-f]+);/gi, (_, c) => String.fromCharCode(parseInt(c, 16)));
+}
+
+/** Strip HTML tags and collapse whitespace in WHOIS raw text from tian.hu */
+export function stripHtmlTags(s: string): string {
+  if (!s || !s.includes("<")) return s;
+  return s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .split("\n").map(l => l.trim()).join("\n");
+}
+
 export function formatDate(s?: string): string | undefined {
   if (!s) return undefined;
   const dateStr = String(s).trim();
+
+  // Strip trailing timezone abbreviations like CLST, AEST, NZST, GMT, UTC, etc.
+  // and UTC offset strings like +05:30, -03:00
+  const cleaned = dateStr
+    .replace(/\s+[A-Z]{2,6}(\s*[+-]\d{2}:?\d{2})?$/, "")
+    .replace(/\s+[+-]\d{2}:?\d{2}$/, "")
+    .trim();
+
   let date: Date;
 
-  const dotMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  const dotMatch = cleaned.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
   if (dotMatch) {
     const [, day, month, year] = dotMatch;
     date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
-  } else if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(dateStr)) {
-    const m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    date = m ? new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`) : new Date(dateStr);
-  } else if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(dateStr)) {
-    date = new Date(dateStr.replace(/\//g, "-"));
-  } else if (/^\d{8}$/.test(dateStr)) {
-    date = new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`);
+  } else if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(cleaned)) {
+    const m = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    date = m ? new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`) : new Date(cleaned);
+  } else if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(cleaned)) {
+    date = new Date(cleaned.replace(/\//g, "-"));
+  } else if (/^\d{8}$/.test(cleaned)) {
+    date = new Date(`${cleaned.slice(0, 4)}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 8)}`);
   } else {
-    date = new Date(dateStr);
+    date = new Date(cleaned);
   }
 
-  if (isNaN(date.getTime())) return dateStr;
+  if (isNaN(date.getTime())) {
+    const fallback = new Date(dateStr);
+    if (!isNaN(fallback.getTime())) date = fallback;
+    else return dateStr;
+  }
   const y = date.getFullYear();
   const mo = date.getMonth() + 1;
   const d = date.getDate();
@@ -225,9 +267,12 @@ export function parseRdap(obj: AnyObj): WhoisData {
 
   let status: string[] = [];
   if (Array.isArray(obj.status)) {
-    status = (obj.status as unknown[]).map((s) => typeof s === "string" ? s : (s as AnyObj).status || (s as AnyObj).text || (s as AnyObj).value).filter(Boolean) as string[];
+    status = (obj.status as unknown[]).map((s) => {
+      const raw = typeof s === "string" ? s : (s as AnyObj).status || (s as AnyObj).text || (s as AnyObj).value;
+      return decodeHtmlEntities(String(raw || "")).replace(/\s+https?:\/\/\S+/g, "").trim();
+    }).filter(Boolean) as string[];
   } else if (obj.status) {
-    status = [String(obj.status)];
+    status = [decodeHtmlEntities(String(obj.status)).trim()];
   }
 
   const secureDNS = obj.secureDNS as AnyObj | undefined;
@@ -258,9 +303,12 @@ export function parseRdap(obj: AnyObj): WhoisData {
   };
 }
 
-export function parseWhoisText(text: string, domain: string): WhoisData {
+export function parseWhoisText(rawInput: string, domain: string): WhoisData {
+  // Decode HTML entities and strip HTML tags (tian.hu sometimes returns HTML-encoded WHOIS)
+  const text = stripHtmlTags(decodeHtmlEntities(rawInput));
+
   if (looksLikeNotFoundWhois(text)) {
-    return { domainName: domain, registered: false, status: ["available"], raw: text };
+    return { domainName: domain, registered: false, status: ["available"], raw: rawInput };
   }
 
   // Use ccTLD-specific parser for richer field extraction
@@ -305,7 +353,8 @@ export function parseWhoisText(text: string, domain: string): WhoisData {
     expirationDate:      formatDate(cc.expirationDate || getValue([/Expir(?:y|ation) Date:\s*(.+)/i, /expire:\s*(.+)/i, /Registry Expiry Date:\s*(.+)/i, /paid-till:\s*(.+)/i, /有効期限:\s*(.+)/i])),
     updatedDate:         formatDate(cc.updatedDate    || getValue([/Updated Date:\s*(.+)/i, /changed:\s*(.+)/i, /Last Modified:\s*(.+)/i, /最終更新:\s*(.+)/i])),
     nameServers:         cc.nameServers.length > 0 ? cc.nameServers : genericNS,
-    status:              cc.status.length > 0 ? cc.status : getValues([/Domain Status:\s*(.+)/i, /Status:\s*(.+)/i, /state:\s*(.+)/i]),
+    status:              (cc.status.length > 0 ? cc.status : getValues([/Domain Status:\s*(.+)/i, /Status:\s*(.+)/i, /state:\s*(.+)/i]))
+                           .map(s => decodeHtmlEntities(s).replace(/\s+https?:\/\/\S+/g, "").trim()).filter(Boolean),
     registrantOrg:       cc.registrantOrg       || getValue([/Registrant Organization:\s*(.+)/i, /Registrant:\s*(.+)/i, /Organization:\s*(.+)/i, /Owner:\s*(.+)/i, /Holder:\s*(.+)/i]),
     registrantCountry:   cc.registrantCountry   || getValue([/Registrant Country:\s*(.+)/i, /Country:\s*(.+)/i, /country:\s*(.+)/i]),
     raw: text,
@@ -384,20 +433,36 @@ export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<Wh
         const payload = (edgeData.data as AnyObj)?.data as AnyObj;
         const formatted = payload?.formatted as AnyObj | undefined;
         const domainInfo = formatted?.domain as AnyObj | undefined;
+        const rawResult = payload?.result as string | undefined;
+        // tian.hu status: 1=registered, 0=unregistered, -1=unknown (WHOIS unavailable/undetermined)
+        const tianStatus = payload?.status as number | undefined;
+        const rawStatuses = (Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [])
+          .map((s: string) => decodeHtmlEntities(s).replace(/\s+https?:\/\/\S+/g, "").trim()).filter(Boolean);
+        // Prefer UTC dates (ISO format) for reliable parsing; fall back to local format
+        const parsedRaw = tianStatus === -1 && rawResult ? parseWhoisText(rawResult, norm) : null;
         return {
           data: {
             domainName: (payload?.domain as string) || norm,
             registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
             registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
-            creationDate: formatDate((domainInfo?.created_date || domainInfo?.created_date_utc) as string | undefined),
-            expirationDate: formatDate((domainInfo?.expired_date || domainInfo?.expired_date_utc) as string | undefined),
-            nameServers: (domainInfo?.name_servers as string[]) || [],
-            status: Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [],
-            registered: payload?.status === 1,
-            raw: payload?.result as string | undefined,
+            creationDate: formatDate((domainInfo?.created_date_utc || domainInfo?.created_date) as string | undefined) || parsedRaw?.creationDate,
+            expirationDate: formatDate((domainInfo?.expired_date_utc || domainInfo?.expired_date) as string | undefined) || parsedRaw?.expirationDate,
+            updatedDate: formatDate((domainInfo?.updated_date_utc || domainInfo?.updated_date) as string | undefined) || parsedRaw?.updatedDate,
+            nameServers: (domainInfo?.name_servers as string[])?.length ? (domainInfo.name_servers as string[]) : (parsedRaw?.nameServers || []),
+            status: rawStatuses.length ? rawStatuses : (parsedRaw?.status || []),
+            registered: tianStatus === 1 ? true : tianStatus === 0 ? false : parsedRaw?.registered,
+            raw: rawResult,
           },
           source: DataSource.WHOIS_FALLBACK,
         };
+      }
+      if (edgeData.source === "whois-tcp") {
+        const rawText = edgeData.data as string;
+        if (rawText && rawText.trim().length > 20) {
+          const parsed = parseWhoisText(rawText, norm);
+          return { data: parsed, source: DataSource.WHOIS_FALLBACK };
+        }
+        return null;
       }
       if (edgeData.source === "dns-fallback") {
         const d = edgeData.data as AnyObj;
@@ -456,7 +521,7 @@ export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<Wh
   allPromises.push((async (): Promise<SourcedResult | null> => {
     try {
       const resp = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
-        signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(10000), headers: { Accept: "application/json" },
       });
       if (resp.ok) {
         const body = await resp.json() as AnyObj;
@@ -464,17 +529,23 @@ export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<Wh
           const payload = body.data as AnyObj;
           const formatted = payload.formatted as AnyObj | undefined;
           const domainInfo = (formatted?.domain) as AnyObj | undefined;
+          const rawResult = payload.result as string | undefined;
+          const tianStatus = payload.status as number | undefined;
+          const rawStatuses = (Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [])
+            .map((s: string) => decodeHtmlEntities(s).replace(/\s+https?:\/\/\S+/g, "").trim()).filter(Boolean);
+          const parsedRaw = tianStatus === -1 && rawResult ? parseWhoisText(rawResult, norm) : null;
           return {
             data: {
               domainName: (payload.domain as string) || norm,
               registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
               registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
-              creationDate: formatDate((domainInfo?.created_date || domainInfo?.created_date_utc) as string | undefined),
-              expirationDate: formatDate((domainInfo?.expired_date || domainInfo?.expired_date_utc) as string | undefined),
-              nameServers: (domainInfo?.name_servers as string[]) || [],
-              status: Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [],
-              registered: payload.status === 1,
-              raw: payload.result as string | undefined,
+              creationDate: formatDate((domainInfo?.created_date_utc || domainInfo?.created_date) as string | undefined) || parsedRaw?.creationDate,
+              expirationDate: formatDate((domainInfo?.expired_date_utc || domainInfo?.expired_date) as string | undefined) || parsedRaw?.expirationDate,
+              updatedDate: formatDate((domainInfo?.updated_date_utc || domainInfo?.updated_date) as string | undefined) || parsedRaw?.updatedDate,
+              nameServers: (domainInfo?.name_servers as string[])?.length ? (domainInfo.name_servers as string[]) : (parsedRaw?.nameServers || []),
+              status: rawStatuses.length ? rawStatuses : (parsedRaw?.status || []),
+              registered: tianStatus === 1 ? true : tianStatus === 0 ? false : parsedRaw?.registered,
+              raw: rawResult,
             },
             source: DataSource.WHOIS_FALLBACK,
           };

@@ -169,6 +169,47 @@ export const STATUS_MAPPING: Record<string, StatusInfo> = {
   "notrenewed": { chinese: "未续费", english: "Not Renewed", description: "域名未续费", category: "renew", severity: "warning", isActionRequired: true },
   "nottransferrable": { chinese: "不可转移", english: "Not Transferrable", description: "域名不可转移", category: "lock", severity: "info", isActionRequired: false },
   "notregistrable": { chinese: "不可注册", english: "Not Registrable", description: "域名不可注册", category: "other", severity: "warning", isActionRequired: false },
+
+  // ========== ccTLD 语言变体 (French / Spanish / Portuguese / Other) ==========
+  // French (AFNIC .fr, .re, .pm, NIC.TG .tg etc.)
+  "activé": { chinese: "已激活", english: "Active", description: "域名已激活（法语）", category: "normal", severity: "info", isActionRequired: false },
+  "activée": { chinese: "已激活", english: "Active", description: "域名已激活（法语）", category: "normal", severity: "info", isActionRequired: false },
+  "actif": { chinese: "活跃", english: "Active", description: "域名活跃（法语）", category: "normal", severity: "info", isActionRequired: false },
+  "actifbloqué": { chinese: "活跃(锁定)", english: "Active (Blocked)", description: "活跃但被锁定", category: "hold", severity: "warning", isActionRequired: true },
+  "bloqué": { chinese: "已锁定", english: "Blocked", description: "域名被锁定（法语）", category: "hold", severity: "error", isActionRequired: true },
+  "supprimé": { chinese: "已删除", english: "Deleted", description: "域名已删除（法语）", category: "delete", severity: "error", isActionRequired: false },
+  "expiré": { chinese: "已过期", english: "Expired", description: "域名已过期（法语）", category: "delete", severity: "error", isActionRequired: true },
+  "gelé": { chinese: "已冻结", english: "Frozen", description: "域名已冻结（法语）", category: "hold", severity: "error", isActionRequired: true },
+  "réservé": { chinese: "已保留", english: "Reserved", description: "域名被保留（法语）", category: "other", severity: "info", isActionRequired: false },
+  "enattente": { chinese: "待处理", english: "Pending", description: "等待处理（法语）", category: "pending", severity: "warning", isActionRequired: false },
+
+  // Spanish (NIC.CL .cl, NIC.MX .mx, etc.)
+  "activo": { chinese: "活跃", english: "Active", description: "域名活跃（西班牙语）", category: "normal", severity: "info", isActionRequired: false },
+  "inactivo": { chinese: "非活跃", english: "Inactive", description: "域名不活跃（西班牙语）", category: "other", severity: "warning", isActionRequired: false },
+  "bloqueado": { chinese: "已锁定", english: "Blocked", description: "域名被锁定（西班牙语）", category: "hold", severity: "error", isActionRequired: true },
+  "suspendido": { chinese: "已暂停", english: "Suspended", description: "域名已暂停（西班牙语）", category: "hold", severity: "error", isActionRequired: true },
+  "eliminado": { chinese: "已删除", english: "Deleted", description: "域名已删除（西班牙语）", category: "delete", severity: "error", isActionRequired: false },
+  "libre": { chinese: "可注册", english: "Available", description: "域名可注册（西班牙语）", category: "normal", severity: "info", isActionRequired: false },
+
+  // Portuguese (NIC.BR .br etc.)
+  "publicado": { chinese: "已发布", english: "Published", description: "域名已发布（葡萄牙语）", category: "normal", severity: "info", isActionRequired: false },
+  "ativo": { chinese: "活跃", english: "Active", description: "域名活跃（葡萄牙语）", category: "normal", severity: "info", isActionRequired: false },
+  "inativo": { chinese: "非活跃", english: "Inactive", description: "域名不活跃（葡萄牙语）", category: "other", severity: "warning", isActionRequired: false },
+  "bloqueado(judicialmente)": { chinese: "司法冻结", english: "Judicially Frozen", description: "域名被法院冻结（葡萄牙语）", category: "hold", severity: "error", isActionRequired: true },
+
+  // Russian (RIPN .ru, .su etc.) — Cyrillic handled by cleanStatus lowercasing
+  "registered": { chinese: "已注册", english: "Registered", description: "域名已注册", category: "normal", severity: "info", isActionRequired: false },
+  "delegated": { chinese: "已委托", english: "Delegated", description: "域名已委托 DNS", category: "normal", severity: "info", isActionRequired: false },
+  "not delegated": { chinese: "未委托", english: "Not Delegated", description: "域名 DNS 未委托", category: "other", severity: "warning", isActionRequired: false },
+  "notdelegated": { chinese: "未委托", english: "Not Delegated", description: "域名 DNS 未委托", category: "other", severity: "warning", isActionRequired: false },
+
+  // .TG / West African ccTLDs
+  "valid": { chinese: "有效", english: "Valid", description: "域名有效", category: "normal", severity: "info", isActionRequired: false },
+  "expired": { chinese: "已过期", english: "Expired", description: "域名已过期", category: "delete", severity: "error", isActionRequired: true },
+  "locked": { chinese: "已锁定", english: "Locked", description: "域名已锁定", category: "lock", severity: "warning", isActionRequired: false },
+  "free": { chinese: "可注册", english: "Available", description: "域名可注册", category: "normal", severity: "info", isActionRequired: false },
+  "connect": { chinese: "已连接", english: "Connected", description: "域名已连接 DNS", category: "normal", severity: "info", isActionRequired: false },
+  "disconnect": { chinese: "未连接", english: "Disconnected", description: "域名 DNS 未连接", category: "other", severity: "warning", isActionRequired: false },
 };
 
 // ── Utility functions ─────────────────────────────────────────────────────────

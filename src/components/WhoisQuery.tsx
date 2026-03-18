@@ -427,6 +427,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
   // 解析年月日格式的日期字符串
   const parseChineseDate = (dateString: string): Date => {
+    if (!dateString) return new Date(NaN);
     // 匹配 "2026年2月5日 08:00:00" 格式
     const match = dateString.match(/(\d{4})年(\d{1,2})月(\d{1,2})日\s*(\d{2}):(\d{2}):(\d{2})/);
     if (match) {
@@ -437,6 +438,13 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     if (match2) {
       return new Date(+match2[1], +match2[2] - 1, +match2[3]);
     }
+    // Strip timezone abbreviations and try direct parse
+    const cleaned = dateString
+      .replace(/\s+[A-Z]{2,6}(\s*[+-]\d{2}:?\d{2})?$/, "")
+      .replace(/\s+[+-]\d{2}:?\d{2}$/, "")
+      .trim();
+    const d = new Date(cleaned);
+    if (!isNaN(d.getTime())) return d;
     return new Date(dateString);
   };
 
@@ -496,10 +504,12 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
   // 计算距离过期时间
   const getTimeUntilExpiry = (expirationDate: string): string => {
     const expDate = parseChineseDate(expirationDate);
+    if (isNaN(expDate.getTime())) return '';
     const now = new Date();
     
     if (expDate < now) {
-      return '已过期';
+      // Show exactly how long ago the domain expired
+      return `已过期 ${getTimeDifference(expirationDate)}`;
     }
     
     const diffTime = expDate.getTime() - now.getTime();
@@ -812,26 +822,6 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                       </span>
                     </div>
                   )}
-                  {/* i18n Smart Labels */}
-                  {domainLabels && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {domainLabels.labels.map((lbl) => (
-                        <span
-                          key={lbl.key}
-                          title={`${lbl.en} / ${lbl.zh}`}
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${
-                            lbl.severity === "error"
-                              ? "bg-destructive/10 text-destructive border-destructive/30"
-                              : lbl.severity === "warning"
-                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
-                              : "bg-primary/8 text-primary border-primary/20"
-                          }`}
-                        >
-                          {lbl.zh}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <Badge 
                   variant={getDomainStatus().variant} 
@@ -847,6 +837,31 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">DNSSEC:</span>
                 <span className="text-xs sm:text-sm text-foreground">{whoisData.dnssec || "未启用"}</span>
               </div>
+
+              {/* i18n Smart Labels — shown inline after DNSSEC */}
+              {domainLabels && domainLabels.labels.length > 0 && (
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0 opacity-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">标签:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {domainLabels.labels.map((lbl) => (
+                      <span
+                        key={lbl.key}
+                        title={lbl.en}
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                          lbl.severity === "error"
+                            ? "bg-destructive/10 text-destructive border-destructive/30"
+                            : lbl.severity === "warning"
+                            ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                            : "bg-primary/10 text-primary border-primary/20"
+                        }`}
+                      >
+                        {lbl.zh}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1042,7 +1057,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                         : severity === "error"
                         ? "bg-destructive text-destructive-foreground"
                         : severity === "warning"
-                        ? "bg-secondary text-secondary-foreground"
+                        ? "bg-amber-500 text-white dark:bg-amber-600"
                         : "bg-primary text-primary-foreground";
                       return (
                         <span

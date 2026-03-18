@@ -1,5 +1,42 @@
 import express from 'express';
 import { createServer } from 'http';
+import net from 'net';
+
+// ── TCP WHOIS server map (port 43) for TLDs that lack reliable RDAP ──────────
+const WHOIS_SERVERS = {
+  // Caribbean / Atlantic
+  bb: 'whois.co.bb', ag: 'whois.nic.ag', vc: 'whois.nic.vc', lc: 'whois2.afilias-grs.info',
+  dm: 'whois2.afilias-grs.info', gd: 'whois2.afilias-grs.info', kn: 'whois2.afilias-grs.info',
+  // Pacific
+  fj: 'whois.domains.fj', pg: 'whois.nic.pg', ws: 'whois.website.ws', to: 'whois.tonic.to',
+  sb: 'whois.nic.net.sb', vu: 'vunic.vu',
+  // Africa
+  mw: 'whois.nic.mw', tg: 'whois.nic.tg', td: 'whois.nic.td', rw: 'whois.ricta.org.rw',
+  ke: 'whois.kenic.or.ke', ug: 'whois.registry.co.ug', gh: 'whois.nic.gh',
+  ng: 'whois.nic.net.ng', sn: 'whois.nic.sn', ci: 'whois.nic.ci',
+  cm: 'whois.netcom.cm', ao: 'whois.nic.ao', zw: 'whois.co.zw',
+  bw: 'whois.nic.net.bw', mz: 'whois.nic.mz', tz: 'whois.tznic.or.tz',
+  // Asia / Middle East
+  af: 'whois.nic.af', bn: 'whois.bnnic.bn', kh: 'whois.nic.kh',
+  // South America
+  py: 'whois.nic.py', bo: 'whois.nic.bo', uy: 'whois.nic.org.uy',
+  // Europe (missing RDAP)
+  sm: 'whois.nic.sm', mc: 'whois.ripe.net',
+};
+
+async function tcpWhoisQuery(host, domain, timeoutMs = 7000) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    const socket = net.createConnection({ host, port: 43 });
+    socket.setEncoding('utf8');
+    socket.setTimeout(timeoutMs);
+    socket.on('connect', () => socket.write(`${domain}\r\n`));
+    socket.on('data', chunk => { data += chunk; });
+    socket.on('end', () => resolve(data));
+    socket.on('error', reject);
+    socket.on('timeout', () => { socket.destroy(); reject(new Error(`TCP WHOIS timeout: ${host}`)); });
+  });
+}
 
 const app = express();
 const PORT = 3001;
@@ -240,6 +277,18 @@ app.get('/api/whois', async (req, res) => {
     } catch {}
     return null;
   })());
+
+  // TCP WHOIS (port 43) for TLDs with a known WHOIS server
+  const whoisHost = WHOIS_SERVERS[tld];
+  if (whoisHost) {
+    phase1.push((async () => {
+      try {
+        const raw = await tcpWhoisQuery(whoisHost, domain);
+        if (raw && raw.trim().length > 20) return { source: 'whois-tcp', data: raw };
+      } catch {}
+      return null;
+    })());
+  }
 
   const result = await raceSuccessful(phase1);
   if (result) return sendJson(res, result, 200, cache);
