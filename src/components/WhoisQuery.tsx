@@ -1,18 +1,19 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink, Code2 } from "lucide-react";
-import { useWhois } from "@/hooks/use-whois";
+import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink, Code2, ShieldAlert, Database } from "lucide-react";
+import { useWhois, DataSource } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { WhoisSkeleton } from "@/components/WhoisSkeleton";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { toUnicode, toASCII, isIDN } from "@/utils/tld-servers";
 import { getRdapServer, getWhoisServer } from "@/utils/whois-servers";
-import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo } from "@/utils/domain-status-mapping";
+import { categorizeStatuses, getSeverityVariant, translateStatus, getStatusInfo, isActionRequired } from "@/utils/domain-status-mapping";
 import { getRegistrarWebsite, getFaviconUrl } from "@/utils/registrar-data";
 import { getDnsProvider } from "@/utils/dns-provider-data";
 import { getCountryName } from "@/utils/country-data";
 import { useDomainMeaning } from "@/hooks/use-domain-meaning";
+import { getDomainLabels } from "@/lib/domain-label-manager";
 
 // ── Raw Data Section ──────────────────────────────────────────────────────────
 
@@ -129,7 +130,7 @@ interface WhoisQueryProps {
 
 
 export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadComplete, onStatusDetected, showPrice = true }: WhoisQueryProps) => {
-  const { whois: whoisData, isLoading, error } = useWhois(domain);
+  const { whois: whoisData, envelope, isLoading, error } = useWhois(domain);
   const { priceData, isLoading: isPriceLoading, error: priceError, fetchPrice, formatPrice, resetPrice } = useDomainPrice();
   const [expandedRegistrar, setExpandedRegistrar] = useState(false);
   const domainMeaning = useDomainMeaning(domain);
@@ -176,6 +177,29 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain, showPrice]);
+
+  // Domain labels (i18n smart labels based on timestamps)
+  const domainLabels = useMemo(() => {
+    if (!whoisData) return null;
+    const result = getDomainLabels({
+      creationDate:   whoisData.creationDate,
+      expirationDate: whoisData.expirationDate,
+      updatedDate:    whoisData.updatedDate,
+    });
+    return result.labels.length > 0 ? result : null;
+  }, [whoisData?.creationDate, whoisData?.expirationDate, whoisData?.updatedDate]);
+
+  // Data source display helper
+  const getSourceLabel = (src: DataSource): string => {
+    switch (src) {
+      case DataSource.RDAP:         return "RDAP";
+      case DataSource.RDAP_DIRECT:  return "RDAP";
+      case DataSource.RDAP_ORG:     return "RDAP";
+      case DataSource.WHOIS_FALLBACK: return "WHOIS";
+      case DataSource.DNS_FALLBACK: return "DNS";
+      default:                      return "Unknown";
+    }
+  };
 
   // 获取分类后的状态信息（用于增强状态徽标）
   const getCategorizedStatuses = () => {
@@ -788,6 +812,26 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                       </span>
                     </div>
                   )}
+                  {/* i18n Smart Labels */}
+                  {domainLabels && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {domainLabels.labels.map((lbl) => (
+                        <span
+                          key={lbl.key}
+                          title={`${lbl.en} / ${lbl.zh}`}
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                            lbl.severity === "error"
+                              ? "bg-destructive/10 text-destructive border-destructive/30"
+                              : lbl.severity === "warning"
+                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                              : "bg-primary/8 text-primary border-primary/20"
+                          }`}
+                        >
+                          {lbl.zh}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Badge 
                   variant={getDomainStatus().variant} 
@@ -991,18 +1035,22 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                   <div className="ml-[6.5rem] sm:ml-[8rem] flex flex-wrap gap-1.5 sm:gap-2">
                     {whoisData.status.map((status, index) => {
                       const statusInfo = getStatusInfo(status);
-                      const severity = statusInfo?.severity || 'info';
-                      const badgeClass = severity === 'error' 
-                        ? 'bg-destructive text-destructive-foreground' 
-                        : severity === 'warning'
-                        ? 'bg-secondary text-secondary-foreground'
-                        : 'bg-primary text-primary-foreground';
+                      const severity = statusInfo?.severity || "info";
+                      const actionReq = isActionRequired(status);
+                      const badgeClass = actionReq
+                        ? "bg-destructive text-destructive-foreground ring-2 ring-destructive/40"
+                        : severity === "error"
+                        ? "bg-destructive text-destructive-foreground"
+                        : severity === "warning"
+                        ? "bg-secondary text-secondary-foreground"
+                        : "bg-primary text-primary-foreground";
                       return (
                         <span
                           key={index}
                           className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg shadow-sm ${badgeClass}`}
-                          title={typeof status === 'string' ? status : ''}
+                          title={`${typeof status === "string" ? status : ""}${actionReq ? " ⚠ 需要处理" : ""}`}
                         >
+                          {actionReq && <ShieldAlert className="inline h-3 w-3 mr-1 -mt-0.5" />}
                           {translateStatus(status)}
                         </span>
                       );
@@ -1011,11 +1059,11 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                       <span
                         key={`extra-${index}`}
                         className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg shadow-sm ${
-                          badge.variant === 'destructive' 
-                            ? 'bg-destructive text-destructive-foreground' 
-                            : badge.variant === 'secondary'
-                            ? 'bg-secondary text-secondary-foreground'
-                            : 'bg-primary text-primary-foreground'
+                          badge.variant === "destructive"
+                            ? "bg-destructive text-destructive-foreground"
+                            : badge.variant === "secondary"
+                            ? "bg-secondary text-secondary-foreground"
+                            : "bg-primary text-primary-foreground"
                         }`}
                       >
                         {badge.label}
@@ -1026,7 +1074,40 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
               </div>
             )}
 
-          {/* 7. 原始数据 */}
+          {/* 7. 数据来源 (Data Source Badge) */}
+          {envelope.source !== "UNKNOWN" && (
+            <div className="flex items-center gap-2 px-1">
+              <Database className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              <span className="text-[10px] text-muted-foreground">数据来源:</span>
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                  envelope.source === DataSource.RDAP || envelope.source === DataSource.RDAP_DIRECT || envelope.source === DataSource.RDAP_ORG
+                    ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                    : envelope.source === DataSource.DNS_FALLBACK
+                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                    : "bg-muted text-muted-foreground border-border"
+                }`}
+                title={envelope.dataProvenance}
+              >
+                {getSourceLabel(envelope.source)}
+              </span>
+              {/* Reliability score pill */}
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                  envelope.reliabilityScore >= 0.7
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
+                    : envelope.reliabilityScore >= 0.4
+                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+                    : "bg-muted text-muted-foreground border-border"
+                }`}
+                title={envelope.dataProvenance}
+              >
+                完整度 {Math.round(envelope.reliabilityScore * 100)}%
+              </span>
+            </div>
+          )}
+
+          {/* 8. 原始数据 */}
           {whoisData && (whoisData.raw || whoisData.rdapRaw) && (
             <RawDataSection rawText={whoisData.raw} rdapData={whoisData.rdapRaw} />
           )}

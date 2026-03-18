@@ -87,6 +87,39 @@ To update the corpus:
 - Replaced Vercel Edge Functions (`api/`) with Express server (`server.mjs`)
 - Updated `vite.config.ts`: host `0.0.0.0`, port `8080`, added `/api` proxy
 
+## Feature Modules (Task 1–4)
+
+### Task 1 — i18n Smart Label System (`src/lib/domain-label-manager.ts`)
+Pure functions that compute time-based domain labels from WHOIS timestamps:
+- `isExpiringSoon()` — expires within 30 days → "即将过期 / Expiring Soon" (warning)
+- `isLongTermInactive()` — no update for > 1 year → "长期未更新 / Long-term Inactive" (warning)
+- `isFreshlyUpdated()` — updated within 7 days → "近期更新 / Freshly Updated" (info)
+- `isLegacyDomain()` — registered > 10 years ago → "老牌域名 / Legacy Domain" (info)
+- `isExpired()`, `isExpiringThisQuarter()` — additional predicates
+- `getDomainLabels()` — returns all applicable bilingual labels with priority ordering
+- Labels shown inline under the domain name in WhoisQuery with severity-coded colors
+
+### Task 2 — Data Provenance & Reliability (`src/services/whois-client.ts`)
+`fetchWhois()` now returns a `ResultEnvelope<WhoisData>` with:
+- `source: DataSource` — enum (RDAP, RDAP_DIRECT, RDAP_ORG, WHOIS_FALLBACK, DNS_FALLBACK, UNKNOWN)
+- `reliabilityScore: number` — 0–1 completeness score (counts populated fields)
+- `dataProvenance: string` — human-readable description like "RDAP via proxy (85% complete)"
+- Displayed in WhoisQuery as a small "数据来源" + "完整度" badge row below the status section
+
+### Task 3 — ccTLD Strategy Pattern (`src/utils/cctld-parsers.ts`)
+`ccTLDParserFactory(domain)` returns a TLD-specific parser for:
+`.jp` (JPRS), `.de` (DENIC), `.uk/.co.uk` (Nominet), `.in` (NIXI), `.br/.com.br` (NIC.br), `.ru` (RIPN), `.au/.com.au` (auDA), `.io` (Afilias)
+- Each parser provides optimized regexes for Registrar, NameServers, dates and status
+- Falls back to `DEFAULT_PARSER` safely — never throws
+- Integrated into `parseWhoisText()`: ccTLD results take priority, generic patterns fill gaps
+
+### Task 4 — EPP Status Taxonomy (`src/utils/domain-status-mapping.ts`)
+`StatusInfo` interface now includes:
+- `english: string` — English label (e.g. "Redemption Period", "Client Hold")
+- `isActionRequired: boolean` — true for hold/dispute/redemption/expired/delete states
+- `isActionRequired()` / `hasActionRequired()` helper functions exported
+- Status badges in WhoisQuery show a shield icon + ring highlight for action-required states
+
 ## Architecture Decisions
 
 - **Services layer**: `services/whois-client.ts` centralises all WHOIS fetching (retry, parsing, caching). Hook `use-whois.ts` is now a 30-line thin wrapper.

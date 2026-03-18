@@ -8,8 +8,53 @@
 import { getRdapServer } from "@/utils/whois-servers";
 import { toASCII, isIDN } from "@/utils/tld-servers";
 import { looksLikeNotFoundWhois, inferRegisteredFromWhois } from "@/utils/whois-heuristics";
+import { ccTLDParserFactory } from "@/utils/cctld-parsers";
 
 // ── Public types ──────────────────────────────────────────────────────────────
+
+export enum DataSource {
+  RDAP            = "RDAP",
+  RDAP_DIRECT     = "RDAP_DIRECT",
+  RDAP_ORG        = "RDAP_ORG",
+  WHOIS_FALLBACK  = "WHOIS_FALLBACK",
+  DNS_FALLBACK    = "DNS_FALLBACK",
+  UNKNOWN         = "UNKNOWN",
+}
+
+export interface ResultEnvelope<T> {
+  data: T | null;
+  error: string | null;
+  source: DataSource;
+  reliabilityScore: number;
+  dataProvenance: string;
+}
+
+/** Calculate 0–1 completeness score for a WhoisData object. */
+export function calculateReliabilityScore(d: WhoisData | null): number {
+  if (!d) return 0;
+  let score = 0;
+  if (d.domainName)                              score += 0.10;
+  if (d.registrar)                               score += 0.15;
+  if (d.creationDate)                            score += 0.15;
+  if (d.expirationDate)                          score += 0.15;
+  if (d.nameServers && d.nameServers.length > 0) score += 0.15;
+  if (d.status      && d.status.length > 0)      score += 0.10;
+  if (d.registrantOrg || d.registrantCountry)    score += 0.10;
+  if (d.updatedDate)                             score += 0.10;
+  return Math.min(1, parseFloat(score.toFixed(2)));
+}
+
+function provenanceLabel(source: DataSource, score: number): string {
+  const pct = Math.round(score * 100);
+  switch (source) {
+    case DataSource.RDAP:         return `RDAP via proxy (${pct}% complete)`;
+    case DataSource.RDAP_DIRECT:  return `RDAP direct registry (${pct}% complete)`;
+    case DataSource.RDAP_ORG:     return `RDAP via rdap.org (${pct}% complete)`;
+    case DataSource.WHOIS_FALLBACK: return `WHOIS text fallback (${pct}% complete)`;
+    case DataSource.DNS_FALLBACK: return `DNS existence check (${pct}% complete)`;
+    default:                      return `Unknown source (${pct}% complete)`;
+  }
+}
 
 export interface WhoisData {
   domainName?: string;
@@ -214,68 +259,74 @@ export function parseRdap(obj: AnyObj): WhoisData {
 }
 
 export function parseWhoisText(text: string, domain: string): WhoisData {
-  const lines = text.split(/\r?\n/);
   if (looksLikeNotFoundWhois(text)) {
     return { domainName: domain, registered: false, status: ["available"], raw: text };
   }
 
-  const data: WhoisData = { domainName: domain };
+  // Use ccTLD-specific parser for richer field extraction
+  const ccParser = ccTLDParserFactory(domain);
+  const cc = ccParser.parse(text, domain);
 
+  const lines = text.split(/\r?\n/);
   const getValue = (patterns: RegExp[]): string | undefined => {
-    for (const pattern of patterns) {
+    for (const p of patterns) {
       for (const line of lines) {
-        const match = line.match(pattern);
-        if (match && match[1]?.trim()) return match[1].trim();
+        const m = line.match(p);
+        if (m?.[1]?.trim()) return m[1].trim();
       }
     }
     return undefined;
   };
-
   const getValues = (patterns: RegExp[]): string[] => {
     const results: string[] = [];
-    for (const pattern of patterns) {
+    for (const p of patterns) {
       for (const line of lines) {
-        const match = line.match(pattern);
-        if (match && match[1]?.trim()) results.push(match[1].trim());
+        const m = line.match(p);
+        if (m?.[1]?.trim()) results.push(m[1].trim());
       }
     }
     return [...new Set(results)];
   };
 
-  data.domainName = getValue([/Domain Name:\s*(.+)/i, /domain:\s*(.+)/i, /Domain\s*:\s*(.+)/i]) || domain;
-  data.registrar = getValue([/Registrar:\s*(.+)/i, /Registrar Name:\s*(.+)/i, /Sponsoring Registrar:\s*(.+)/i, /Register:\s*(.+)/i, /注册商:\s*(.+)/i]);
-  data.registrarIanaId = getValue([/Registrar IANA ID:\s*(.+)/i]);
-  data.registrarAbuseEmail = getValue([/Registrar Abuse Contact Email:\s*(.+)/i, /Abuse Email:\s*(.+)/i]);
-  data.registrarAbusePhone = getValue([/Registrar Abuse Contact Phone:\s*(.+)/i, /Abuse Phone:\s*(.+)/i]);
-  data.creationDate = formatDate(getValue([/Creation Date:\s*(.+)/i, /Created Date:\s*(.+)/i, /created:\s*(.+)/i, /Registered:\s*(.+)/i, /登録年月日:\s*(.+)/i]));
-  data.expirationDate = formatDate(getValue([/Expir(?:y|ation) Date:\s*(.+)/i, /expire:\s*(.+)/i, /Registry Expiry Date:\s*(.+)/i, /paid-till:\s*(.+)/i, /有効期限:\s*(.+)/i]));
-  data.updatedDate = formatDate(getValue([/Updated Date:\s*(.+)/i, /changed:\s*(.+)/i, /Last Modified:\s*(.+)/i, /最終更新:\s*(.+)/i]));
-  data.nameServers = getValues([/Name Server:\s*(.+)/i, /nserver:\s*(.+)/i, /Nameserver:\s*(.+)/i, /DNS:\s*(.+)/i])
+  // Generic fallback values
+  const genericRegistrar = getValue([/Registrar:\s*(.+)/i, /Registrar Name:\s*(.+)/i, /Sponsoring Registrar:\s*(.+)/i, /Register:\s*(.+)/i, /注册商:\s*(.+)/i]);
+  const genericNS = getValues([/Name Server:\s*(.+)/i, /nserver:\s*(.+)/i, /Nameserver:\s*(.+)/i, /DNS:\s*(.+)/i])
     .map((ns) => ns.split(/\s+/)[0].toLowerCase().replace(/\.+$/, ""))
     .filter((ns) => ns.includes("."));
-  data.status = getValues([/Domain Status:\s*(.+)/i, /Status:\s*(.+)/i, /state:\s*(.+)/i]);
-  data.registrantOrg = getValue([/Registrant Organization:\s*(.+)/i, /Registrant:\s*(.+)/i, /Organization:\s*(.+)/i, /Owner:\s*(.+)/i, /Holder:\s*(.+)/i]);
-  data.registrantCountry = getValue([/Registrant Country:\s*(.+)/i, /Country:\s*(.+)/i, /country:\s*(.+)/i]);
+
+  // ccTLD-specific values take priority; fall back to generic
+  const data: WhoisData = {
+    domainName:          getValue([/Domain Name:\s*(.+)/i, /domain:\s*(.+)/i, /Domain\s*:\s*(.+)/i]) || domain,
+    registrar:           cc.registrar            || genericRegistrar,
+    registrarIanaId:     getValue([/Registrar IANA ID:\s*(.+)/i]),
+    registrarAbuseEmail: cc.registrarAbuseEmail  || getValue([/Registrar Abuse Contact Email:\s*(.+)/i, /Abuse Email:\s*(.+)/i]),
+    registrarAbusePhone: getValue([/Registrar Abuse Contact Phone:\s*(.+)/i, /Abuse Phone:\s*(.+)/i]),
+    creationDate:        formatDate(cc.creationDate   || getValue([/Creation Date:\s*(.+)/i, /Created Date:\s*(.+)/i, /created:\s*(.+)/i, /Registered:\s*(.+)/i, /登録年月日:\s*(.+)/i])),
+    expirationDate:      formatDate(cc.expirationDate || getValue([/Expir(?:y|ation) Date:\s*(.+)/i, /expire:\s*(.+)/i, /Registry Expiry Date:\s*(.+)/i, /paid-till:\s*(.+)/i, /有効期限:\s*(.+)/i])),
+    updatedDate:         formatDate(cc.updatedDate    || getValue([/Updated Date:\s*(.+)/i, /changed:\s*(.+)/i, /Last Modified:\s*(.+)/i, /最終更新:\s*(.+)/i])),
+    nameServers:         cc.nameServers.length > 0 ? cc.nameServers : genericNS,
+    status:              cc.status.length > 0 ? cc.status : getValues([/Domain Status:\s*(.+)/i, /Status:\s*(.+)/i, /state:\s*(.+)/i]),
+    registrantOrg:       cc.registrantOrg       || getValue([/Registrant Organization:\s*(.+)/i, /Registrant:\s*(.+)/i, /Organization:\s*(.+)/i, /Owner:\s*(.+)/i, /Holder:\s*(.+)/i]),
+    registrantCountry:   cc.registrantCountry   || getValue([/Registrant Country:\s*(.+)/i, /Country:\s*(.+)/i, /country:\s*(.+)/i]),
+    raw: text,
+  };
 
   const dnssecValue = getValue([/DNSSEC:\s*(.+)/i]);
-  if (dnssecValue) {
-    data.dnssec = /sign|true|yes|active|delegated/i.test(dnssecValue) ? "已启用" : "未启用";
-  }
+  if (dnssecValue) data.dnssec = /sign|true|yes|active|delegated/i.test(dnssecValue) ? "已启用" : "未启用";
 
-  data.raw = text;
   const inferred = inferRegisteredFromWhois(text);
-  if (inferred !== null) {
-    data.registered = inferred;
-  } else {
-    data.registered = !!(data.registrar || data.creationDate || (data.nameServers && data.nameServers.length > 0));
-  }
+  data.registered = inferred !== null
+    ? inferred
+    : !!(data.registrar || data.creationDate || (data.nameServers && data.nameServers.length > 0));
 
   return data;
 }
 
 // ── Main fetch function ───────────────────────────────────────────────────────
 
-async function raceToFirst<T>(promises: Promise<T | null>[]): Promise<T | null> {
+type SourcedResult = { data: WhoisData; source: DataSource };
+
+async function raceToFirst(promises: Promise<SourcedResult | null>[]): Promise<SourcedResult | null> {
   return new Promise((resolve) => {
     let pending = promises.length;
     if (pending === 0) { resolve(null); return; }
@@ -293,56 +344,65 @@ async function raceToFirst<T>(promises: Promise<T | null>[]): Promise<T | null> 
 
 /**
  * Fetch WHOIS data for a domain.
- * Uses in-memory cache; queries Edge proxy, direct RDAP, rdap.org, and tian.hu in parallel.
+ * Returns a ResultEnvelope with data, source, reliabilityScore and provenance.
  */
-export async function fetchWhois(domainInput: string): Promise<{ data: WhoisData | null; error: string | null }> {
+export async function fetchWhois(domainInput: string): Promise<ResultEnvelope<WhoisData>> {
+  const empty = (error: string | null = null): ResultEnvelope<WhoisData> => ({
+    data: null, error, source: DataSource.UNKNOWN, reliabilityScore: 0, dataProvenance: "No data",
+  });
+
   const rawDomain = domainInput.trim().toLowerCase();
-  if (!rawDomain) return { data: null, error: null };
+  if (!rawDomain) return empty();
 
   const norm = toASCII(rawDomain);
   const isIdnDomain = isIDN(rawDomain);
 
   const cached = getCachedWhois(norm);
-  if (cached) return { data: cached, error: null };
+  if (cached) {
+    const score = calculateReliabilityScore(cached);
+    return { data: cached, error: null, source: DataSource.RDAP, reliabilityScore: score, dataProvenance: provenanceLabel(DataSource.RDAP, score) };
+  }
 
   console.log(`[whois-client] querying: ${rawDomain}${isIdnDomain ? ` (punycode: ${norm})` : ""}`);
 
-  const allPromises: Promise<WhoisData | null>[] = [];
+  const allPromises: Promise<SourcedResult | null>[] = [];
 
-  // 1. Edge proxy (aggregates RDAP + tian.hu)
-  allPromises.push((async (): Promise<WhoisData | null> => {
+  // 1. Edge proxy (RDAP + tian.hu)
+  allPromises.push((async (): Promise<SourcedResult | null> => {
     try {
       const resp = await fetch(`/api/whois?domain=${encodeURIComponent(norm)}`, {
-        signal: AbortSignal.timeout(6000),
-        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(6000), headers: { Accept: "application/json" },
       });
       if (!resp.ok) return null;
       const edgeData = await resp.json() as AnyObj;
       if (edgeData.source === "rdap" && edgeData.data) {
         const r = parseRdap(edgeData.data as AnyObj);
         r.raw = JSON.stringify(edgeData.data, null, 2);
-        return r;
+        return { data: r, source: DataSource.RDAP };
       }
       if (edgeData.source === "tianhu") {
         const payload = (edgeData.data as AnyObj)?.data as AnyObj;
         const formatted = payload?.formatted as AnyObj | undefined;
         const domainInfo = formatted?.domain as AnyObj | undefined;
         return {
-          domainName: (payload?.domain as string) || norm,
-          registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
-          registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
-          creationDate: formatDate((domainInfo?.created_date || domainInfo?.created_date_utc) as string | undefined),
-          expirationDate: formatDate((domainInfo?.expired_date || domainInfo?.expired_date_utc) as string | undefined),
-          nameServers: (domainInfo?.name_servers as string[]) || [],
-          status: Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [],
-          registered: payload?.status === 1,
-          raw: payload?.result as string | undefined,
+          data: {
+            domainName: (payload?.domain as string) || norm,
+            registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
+            registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
+            creationDate: formatDate((domainInfo?.created_date || domainInfo?.created_date_utc) as string | undefined),
+            expirationDate: formatDate((domainInfo?.expired_date || domainInfo?.expired_date_utc) as string | undefined),
+            nameServers: (domainInfo?.name_servers as string[]) || [],
+            status: Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [],
+            registered: payload?.status === 1,
+            raw: payload?.result as string | undefined,
+          },
+          source: DataSource.WHOIS_FALLBACK,
         };
       }
       if (edgeData.source === "dns-fallback") {
         const d = edgeData.data as AnyObj;
-        if (d.exists === true) return { domainName: rawDomain, registered: true, raw: "DNS 记录存在，WHOIS 数据暂不可用" };
-        if (d.exists === false) return { domainName: rawDomain, registered: false, status: ["available"] };
+        if (d.exists === true)  return { data: { domainName: rawDomain, registered: true, raw: "DNS 记录存在，WHOIS 数据暂不可用" }, source: DataSource.DNS_FALLBACK };
+        if (d.exists === false) return { data: { domainName: rawDomain, registered: false, status: ["available"] }, source: DataSource.DNS_FALLBACK };
       }
     } catch {}
     return null;
@@ -351,17 +411,16 @@ export async function fetchWhois(domainInput: string): Promise<{ data: WhoisData
   // 2. Direct RDAP lookup
   const rdapServer = getRdapServer(norm);
   if (rdapServer) {
-    allPromises.push((async (): Promise<WhoisData | null> => {
+    allPromises.push((async (): Promise<SourcedResult | null> => {
       try {
         const resp = await fetch(`${rdapServer}/domain/${encodeURIComponent(norm)}`, {
-          signal: AbortSignal.timeout(5000),
-          headers: { Accept: "application/rdap+json, application/json" },
+          signal: AbortSignal.timeout(5000), headers: { Accept: "application/rdap+json, application/json" },
         });
         if (resp.ok) {
           const rdapData = await resp.json() as AnyObj;
           const r = parseRdap(rdapData);
           r.raw = JSON.stringify(rdapData, null, 2);
-          return r;
+          return { data: r, source: DataSource.RDAP_DIRECT };
         }
       } catch {}
       return null;
@@ -369,26 +428,24 @@ export async function fetchWhois(domainInput: string): Promise<{ data: WhoisData
   }
 
   // 3. rdap.org universal fallback
-  allPromises.push((async (): Promise<WhoisData | null> => {
+  allPromises.push((async (): Promise<SourcedResult | null> => {
     try {
       const resp = await fetch(`https://rdap.org/domain/${encodeURIComponent(norm)}`, {
-        signal: AbortSignal.timeout(7000),
-        headers: { Accept: "application/rdap+json, application/json" },
+        signal: AbortSignal.timeout(7000), headers: { Accept: "application/rdap+json, application/json" },
       });
       if (resp.ok) {
         const contentType = resp.headers.get("content-type") || "";
+        let rdapData: AnyObj | null = null;
         if (contentType.includes("json")) {
-          const rdapData = await resp.json() as AnyObj;
-          const parsed = parseRdap(rdapData);
-          parsed.raw = JSON.stringify(rdapData, null, 2);
-          return parsed;
+          rdapData = await resp.json() as AnyObj;
+        } else {
+          const text = await resp.text();
+          rdapData = safeParseJson(text) as AnyObj | null;
         }
-        const text = await resp.text();
-        const jsonParsed = safeParseJson(text) as AnyObj | null;
-        if (jsonParsed) {
-          const result = parseRdap(jsonParsed);
-          result.raw = JSON.stringify(jsonParsed, null, 2);
-          return result;
+        if (rdapData) {
+          const r = parseRdap(rdapData);
+          r.raw = JSON.stringify(rdapData, null, 2);
+          return { data: r, source: DataSource.RDAP_ORG };
         }
       }
     } catch {}
@@ -396,11 +453,10 @@ export async function fetchWhois(domainInput: string): Promise<{ data: WhoisData
   })());
 
   // 4. tian.hu WHOIS API
-  allPromises.push((async (): Promise<WhoisData | null> => {
+  allPromises.push((async (): Promise<SourcedResult | null> => {
     try {
       const resp = await fetch(`https://api.tian.hu/whois/${encodeURIComponent(norm)}`, {
-        signal: AbortSignal.timeout(8000),
-        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" },
       });
       if (resp.ok) {
         const body = await resp.json() as AnyObj;
@@ -409,15 +465,18 @@ export async function fetchWhois(domainInput: string): Promise<{ data: WhoisData
           const formatted = payload.formatted as AnyObj | undefined;
           const domainInfo = (formatted?.domain) as AnyObj | undefined;
           return {
-            domainName: (payload.domain as string) || norm,
-            registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
-            registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
-            creationDate: formatDate((domainInfo?.created_date || domainInfo?.created_date_utc) as string | undefined),
-            expirationDate: formatDate((domainInfo?.expired_date || domainInfo?.expired_date_utc) as string | undefined),
-            nameServers: (domainInfo?.name_servers as string[]) || [],
-            status: Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [],
-            registered: payload.status === 1,
-            raw: payload.result as string | undefined,
+            data: {
+              domainName: (payload.domain as string) || norm,
+              registrar: (formatted?.registrar as AnyObj)?.registrar_name as string | undefined,
+              registrantOrg: ((formatted?.registrant as AnyObj)?.registrant_organization || (formatted?.registrant as AnyObj)?.name) as string | undefined,
+              creationDate: formatDate((domainInfo?.created_date || domainInfo?.created_date_utc) as string | undefined),
+              expirationDate: formatDate((domainInfo?.expired_date || domainInfo?.expired_date_utc) as string | undefined),
+              nameServers: (domainInfo?.name_servers as string[]) || [],
+              status: Array.isArray(domainInfo?.status) ? domainInfo.status as string[] : [],
+              registered: payload.status === 1,
+              raw: payload.result as string | undefined,
+            },
+            source: DataSource.WHOIS_FALLBACK,
           };
         }
       }
@@ -428,9 +487,10 @@ export async function fetchWhois(domainInput: string): Promise<{ data: WhoisData
   const result = await raceToFirst(allPromises);
 
   if (result) {
-    setCachedWhois(norm, result);
-    return { data: result, error: null };
+    setCachedWhois(norm, result.data);
+    const score = calculateReliabilityScore(result.data);
+    return { data: result.data, error: null, source: result.source, reliabilityScore: score, dataProvenance: provenanceLabel(result.source, score) };
   }
 
-  return { data: null, error: "所有数据源查询失败，请稍后重试" };
+  return empty("所有数据源查询失败，请稍后重试");
 }
