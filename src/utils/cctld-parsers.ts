@@ -1237,6 +1237,74 @@ const RU_PARSER_ALT: CcTLDParser = {
   },
 };
 
+// ── RIPE-style parser for African / francophone ccTLDs ───────────────────────
+// Used by .sn, .ci, .cm, .bf, .ml, .gn, .tg, .bj, .ne, etc.
+// These registries use AFRINIC / NIC-Africa RIPE-style format where:
+//   - registrant: NICHANDLE (in domain block)
+//   - person: Full Name  (in contact block)
+//   - phone: +221...     (in contact block)
+//   - e-mail: foo@bar    (in contact block)
+//   - created: YYYYMMDD or YYYY-MM-DD
+//   - expire:  ...       (NOT "Expiry Date:")
+//   - changed: ...
+const RIPE_STYLE_PARSER: CcTLDParser = {
+  tld: ".sn",
+  label: "RIPE-style",
+  parse(raw) {
+    const registrar = extract(raw, [
+      /registrar:\s*(.+)/i,
+      /Registrar:\s*(.+)/i,
+      /Registrar Name:\s*(.+)/i,
+    ]);
+
+    const nameServers = extractAll(raw, [
+      /nserver:\s*(\S+)/i,
+      /Name Server:\s*(\S+)/i,
+      /nameserver:\s*(\S+)/i,
+    ]);
+
+    const creationDate = normaliseCcDate(extract(raw, [
+      /created:\s*(.+)/i,
+      /Creation Date:\s*(.+)/i,
+      /registered:\s*(\d{8}|\d{4}[-/]\d{2}[-/]\d{2}.*)/i,
+    ]));
+
+    const expirationDate = normaliseCcDate(extract(raw, [
+      /expire:\s*(.+)/i,
+      /expiry:\s*(.+)/i,
+      /Expiry Date:\s*(.+)/i,
+      /Registry Expiry Date:\s*(.+)/i,
+      /Expiration Date:\s*(.+)/i,
+    ]));
+
+    const updatedDate = normaliseCcDate(extract(raw, [
+      /changed:\s*(.+)/i,
+      /Updated Date:\s*(.+)/i,
+      /Last Modified:\s*(.+)/i,
+    ]));
+
+    const status = (extract(raw, [/status:\s*(.+)/i, /Status:\s*(.+)/i]) || "")
+      .split(/[\s,]+/).filter(Boolean);
+
+    // Person name from contact block (filter out NIC handles)
+    const rawPerson = extract(raw, [/person:\s*(.+)/i, /Registrant Name:\s*(.+)/i]);
+    const registrantOrg = rawPerson && !/^[A-Z0-9]{2,30}-[A-Z]{2,15}/i.test(rawPerson.trim())
+      ? rawPerson
+      : undefined;
+
+    return {
+      registrar,
+      nameServers,
+      creationDate,
+      expirationDate,
+      updatedDate,
+      status,
+      registrantOrg,
+      registrantCountry: undefined,
+    };
+  },
+};
+
 const DEFAULT_PARSER: CcTLDParser = {
   tld: "*",
   label: "Generic WHOIS",
@@ -1396,6 +1464,26 @@ const PARSER_REGISTRY: Map<string, CcTLDParser> = new Map([
 
   // ── Generic popular TLDs ──
   [".io", IO_PARSER],
+
+  // ── West / Central Africa (RIPE-style WHOIS via NIC.Africa / AFRINIC) ──
+  [".sn", RIPE_STYLE_PARSER],   // Senegal
+  [".ci", RIPE_STYLE_PARSER],   // Côte d'Ivoire
+  [".cm", RIPE_STYLE_PARSER],   // Cameroon
+  [".bf", RIPE_STYLE_PARSER],   // Burkina Faso
+  [".ml", RIPE_STYLE_PARSER],   // Mali
+  [".gn", RIPE_STYLE_PARSER],   // Guinea
+  [".tg", RIPE_STYLE_PARSER],   // Togo
+  [".bj", RIPE_STYLE_PARSER],   // Benin
+  [".ne", RIPE_STYLE_PARSER],   // Niger
+  [".mg", RIPE_STYLE_PARSER],   // Madagascar
+  [".cd", RIPE_STYLE_PARSER],   // DR Congo
+  [".ga", RIPE_STYLE_PARSER],   // Gabon
+  [".cg", RIPE_STYLE_PARSER],   // Congo
+  [".td", RIPE_STYLE_PARSER],   // Chad
+  [".mr", RIPE_STYLE_PARSER],   // Mauritania
+  [".dj", RIPE_STYLE_PARSER],   // Djibouti
+  [".km", RIPE_STYLE_PARSER],   // Comoros
+  [".sc", RIPE_STYLE_PARSER],   // Seychelles
 ]);
 
 // ── Factory ───────────────────────────────────────────────────────────────────

@@ -38,11 +38,20 @@ export function calculateReliabilityScore(d: WhoisData | null): number {
   if (d.registrar)                               score += 0.15;
   if (d.creationDate)                            score += 0.15;
   if (d.expirationDate)                          score += 0.15;
-  if (d.nameServers && d.nameServers.length > 0) score += 0.15;
-  if (d.status      && d.status.length > 0)      score += 0.10;
-  if (d.registrantOrg || d.registrantCountry)    score += 0.10;
-  if (d.updatedDate)                             score += 0.10;
+  if (d.nameServers && d.nameServers.length > 0) score += 0.10;
+  if (d.status      && d.status.length > 0)      score += 0.08;
+  if (d.registrantOrg || d.registrantCountry || d.registrantName) score += 0.08;
+  if (d.updatedDate)                             score += 0.08;
+  if (d.registrantPhone || d.registrantEmail)    score += 0.06;
   return Math.min(1, parseFloat(score.toFixed(2)));
+}
+
+/**
+ * Returns true if the string looks like a WHOIS NIC handle (e.g. "JD123-NIC-SN",
+ * "AB12-RIPE", "IH12-AFRINIC") rather than an organisation/person name.
+ */
+function isNicHandle(s: string): boolean {
+  return /^[A-Z0-9]{2,30}-[A-Z]{2,15}(-[A-Z0-9]{1,10})?$/i.test(s.trim());
 }
 
 function provenanceLabel(source: DataSource, score: number): string {
@@ -71,7 +80,11 @@ export interface WhoisData {
   tldServers?: string[];
   status?: string[];
   registrantOrg?: string;
+  registrantName?: string;    // actual person name (RIPE-style `person:` field)
   registrantCountry?: string;
+  registrantPhone?: string;   // registrant phone number
+  registrantEmail?: string;   // registrant email
+  registrantCity?: string;    // registrant city/location
   dnssec?: string;
   registered?: boolean;
   raw?: string;
@@ -432,7 +445,7 @@ export function parseWhoisText(rawInput: string, domain: string): WhoisData {
       /Registrar Abuse Contact Email:\s*(.+)/i,
       /Abuse Email:\s*(.+)/i,
       /Abuse Contact Email:\s*(.+)/i,
-      /e-mail:\s*(.+)/i,
+      // NOTE: do NOT include generic `e-mail:` here — that belongs to registrantEmail
     ]),
 
     registrarAbusePhone: getValue([
@@ -513,18 +526,52 @@ export function parseWhoisText(rawInput: string, domain: string): WhoisData {
        .flatMap(s => s.split(/[,;]\s*/))
        .filter(Boolean),
 
-    registrantOrg: cc.registrantOrg || getValue([
-      /Registrant Organization:\s*(.+)/i,
-      /Registrant\s*:\s*(.+)/i,
-      /Organization:\s*(.+)/i,
-      /Owner:\s*(.+)/i,
-      /Holder:\s*(.+)/i,
-      /Titulaire:\s*(.+)/i,              // FR
-      /Inhaber:\s*(.+)/i,                // DE
-      /\[Registrant\]\s*(.+)/i,          // JP
-      /\[登録者\]\s*(.+)/i,              // JP
-      /등록인\s*:\s*(.+)/i,              // KR
-    ]),
+    // registrantOrg: skip RIPE-style NIC handles (e.g. "JD123-NIC-SN")
+    // and fall back to `person:` which holds the actual name in RIPE-style WHOIS
+    registrantOrg: (() => {
+      const raw = cc.registrantOrg || getValue([
+        /Registrant Organization:\s*(.+)/i,
+        /Registrant Org(?:anization)?:\s*(.+)/i,
+        /Organization:\s*(.+)/i,
+        /Organisation:\s*(.+)/i,
+        /Owner:\s*(.+)/i,
+        /Holder:\s*(.+)/i,
+        /Titulaire:\s*(.+)/i,              // FR
+        /Inhaber:\s*(.+)/i,                // DE
+        /\[Registrant\]\s*(.+)/i,          // JP
+        /\[登録者\]\s*(.+)/i,              // JP
+        /등록인\s*:\s*(.+)/i,              // KR
+      ]);
+      // If raw value looks like a NIC handle, return undefined so registrantName takes over
+      return raw && !isNicHandle(raw) ? raw : undefined;
+    })(),
+
+    // Registrant fields: name (person), phone, email, city
+    // RIPE-style: `person:` field in contact block holds the actual name.
+    // ICANN-style: `Registrant Name:` field.
+    // We filter out NIC handles (e.g. "JD123-NIC-SN") from any name field.
+    registrantName: (() => {
+      const candidates = [
+        getValue([/Registrant Name:\s*(.+)/i]),
+        getValue([/person:\s*(.+)/i]),    // RIPE-style contact block
+        getValue([/contact name:\s*(.+)/i]),
+      ];
+      const found = candidates.find(v => v && !isNicHandle(v.trim()));
+      return found?.trim() || undefined;
+    })(),
+
+    registrantPhone: getValue([
+      /Registrant Phone:\s*(.+)/i,
+      /phone:\s*(\+?[\d\s.()\-/]+\d)/i,
+      /fax-no:\s*(\+?[\d\s.()\-/]+\d)/i,
+      /tel(?:ephone)?:\s*(\+?[\d\s.()\-/]+\d)/i,
+    ])?.trim(),
+
+    registrantEmail: getValue([
+      /Registrant Email:\s*(.+)/i,
+      /e-mail:\s*([^\s@]+@[^\s@]+\.[^\s]+)/i,   // must look like an email
+      /email:\s*([^\s@]+@[^\s@]+\.[^\s]+)/i,
+    ])?.trim(),
 
     registrantCountry: cc.registrantCountry || getValue([
       /Registrant Country:\s*(.+)/i,
@@ -533,8 +580,19 @@ export function parseWhoisText(rawInput: string, domain: string): WhoisData {
       /Registrant Country Code:\s*(.+)/i,
     ]),
 
+    registrantCity: getValue([
+      /Registrant City:\s*(.+)/i,
+      /Registrant State\/Province:\s*(.+)/i,
+      /city:\s*(.+)/i,
+      /address:\s*(.+)/i,                        // first address line as city hint
+    ])?.trim(),
+
     raw: text,
   };
+
+  // For RIPE-style responses: if registrantOrg is still empty but registrantName was found
+  // from `person:`, use it as the display name. If registrantOrg exists but registrantName
+  // was also found separately, keep both.
 
   // DNSSEC
   const dnssecValue = getValue([/DNSSEC:\s*(.+)/i, /dnssec:\s*(.+)/i, /secureDNS:\s*(.+)/i]);

@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink, Code2, ShieldAlert, Database } from "lucide-react";
+import { FileText, Calendar, User, Building, Server, CheckCircle2, ChevronDown, ChevronUp, DollarSign, RefreshCw, Globe, ExternalLink, Code2, ShieldAlert, Database, Phone, Mail, MapPin } from "lucide-react";
 import { useWhois, DataSource } from "@/hooks/use-whois";
 import { useDomainPrice } from "@/hooks/use-domain-price";
 import { WhoisSkeleton } from "@/components/WhoisSkeleton";
@@ -812,7 +812,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
           )}
 
           {/* 1. 域名信息 */}
-          <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
+          <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border sm:shadow-md">
             <div className="space-y-3">
               {/* 域名和状态标签 */}
               <div className="flex items-start gap-2 sm:gap-3">
@@ -874,7 +874,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 2. 注册商信息 */}
           {whoisData.registrar && (
-              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border sm:shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 sm:gap-3">
                     {getRegistrarWebsite(whoisData.registrar) && (
@@ -892,7 +892,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       {isRegistrarLong(whoisData.registrar) && !expandedRegistrar ? (
                         <>
-                          <span className="font-bold text-sm sm:text-base text-foreground truncate max-w-[150px] sm:max-w-[200px]">
+                          <span className="font-semibold text-sm text-foreground truncate max-w-[150px] sm:max-w-[200px]">
                             {whoisData.registrar.slice(0, 25)}...
                           </span>
                           <button 
@@ -905,7 +905,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                         </>
                       ) : isRegistrarLong(whoisData.registrar) && expandedRegistrar ? (
                         <>
-                          <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                          <span className="font-semibold text-sm text-foreground break-all">{whoisData.registrar}</span>
                           <button 
                             onClick={() => setExpandedRegistrar(false)}
                             className="flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors flex-shrink-0"
@@ -915,7 +915,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                           </button>
                         </>
                       ) : (
-                        <span className="font-bold text-sm sm:text-base text-foreground break-all">{whoisData.registrar}</span>
+                        <span className="font-semibold text-sm text-foreground break-all">{whoisData.registrar}</span>
                       )}
                     </div>
                     {getRegistrarWebsite(whoisData.registrar) && (
@@ -936,77 +936,99 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     <div className="flex items-center gap-2 sm:gap-3">
                       <Building className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">IANA ID:</span>
-                      <span className="font-bold text-sm sm:text-base text-foreground">{whoisData.registrarIanaId}</span>
+                      <span className="text-sm font-medium text-foreground">{whoisData.registrarIanaId}</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-          {/* 3. 时间信息 */}
-          {whoisData.creationDate && (
-            <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">注册时间:</span>
-                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.creationDate)}</span>
-              </div>
-              <p className="absolute bottom-2 sm:bottom-3 right-3 sm:right-4 text-xs text-muted-foreground">
-                已注册 {getRegisteredTime(whoisData.creationDate)}
-              </p>
-            </div>
-          )}
-
-          {whoisData.expirationDate && (
-            <div className="relative p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md pb-7 sm:pb-8">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">过期时间:</span>
-                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.expirationDate)}</span>
-              </div>
-              <p className="absolute bottom-2 sm:bottom-3 right-3 sm:right-4 text-xs text-muted-foreground">
-                距离过期 {getTimeUntilExpiry(whoisData.expirationDate)}
-              </p>
-            </div>
-          )}
-
-          {whoisData.updatedDate && (
-            <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">更新时间:</span>
-                <span className="font-mono text-sm sm:text-base font-bold text-foreground">{formatDateTime(whoisData.updatedDate)}</span>
+          {/* 3. 时间信息 — 三个日期合并到一张卡片 */}
+          {(whoisData.creationDate || whoisData.expirationDate || whoisData.updatedDate) && (
+            <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border sm:shadow-md">
+              <div className="space-y-2.5 sm:space-y-3">
+                {whoisData.creationDate && (
+                  <div className="flex items-baseline gap-2 sm:gap-3">
+                    <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">注册:</span>
+                    <span className="font-mono text-xs sm:text-sm font-medium text-foreground">{formatDateTime(whoisData.creationDate)}</span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground ml-auto flex-shrink-0 hidden xs:block">已注册 {getRegisteredTime(whoisData.creationDate)}</span>
+                  </div>
+                )}
+                {whoisData.expirationDate && (
+                  <div className="flex items-baseline gap-2 sm:gap-3">
+                    <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">过期:</span>
+                    <span className="font-mono text-xs sm:text-sm font-medium text-foreground">{formatDateTime(whoisData.expirationDate)}</span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground ml-auto flex-shrink-0 hidden xs:block">{getTimeUntilExpiry(whoisData.expirationDate)}</span>
+                  </div>
+                )}
+                {whoisData.updatedDate && (
+                  <div className="flex items-baseline gap-2 sm:gap-3">
+                    <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">更新:</span>
+                    <span className="font-mono text-xs sm:text-sm font-medium text-foreground">{formatDateTime(whoisData.updatedDate)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* 4. 注册人信息 */}
-          {(whoisData.registrantOrg || whoisData.registrantCountry) && (
-              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
-                <div className="space-y-3">
-                  {whoisData.registrantOrg && (
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">注册主体:</span>
-                      <span className={`font-bold text-sm sm:text-base break-all ${isPrivacyRedacted(whoisData.registrantOrg) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
-                        {formatDisplayValue(whoisData.registrantOrg)}
-                      </span>
-                    </div>
-                  )}
-                  {whoisData.registrantCountry && (
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4.5rem] sm:w-[5.5rem] text-right">国家/地区:</span>
-                      <span className="font-bold text-sm sm:text-base text-foreground">{getCountryName(whoisData.registrantCountry)}</span>
-                    </div>
-                  )}
-                </div>
+          {/* 4. 注册人信息 — 包含联系人、组织、国家、电话、邮箱 */}
+          {(whoisData.registrantOrg || whoisData.registrantName || whoisData.registrantCountry || whoisData.registrantPhone || whoisData.registrantEmail) && (
+            <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border sm:shadow-md">
+              <div className="space-y-2 sm:space-y-2.5">
+                {/* 注册人姓名 (person: field from RIPE-style or Registrant Name:) */}
+                {whoisData.registrantName && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">注册人:</span>
+                    <span className={`text-xs sm:text-sm font-medium break-all ${isPrivacyRedacted(whoisData.registrantName) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                      {formatDisplayValue(whoisData.registrantName)}
+                    </span>
+                  </div>
+                )}
+                {/* 注册机构 */}
+                {whoisData.registrantOrg && whoisData.registrantOrg !== whoisData.registrantName && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">机构:</span>
+                    <span className={`text-xs sm:text-sm font-medium break-all ${isPrivacyRedacted(whoisData.registrantOrg) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                      {formatDisplayValue(whoisData.registrantOrg)}
+                    </span>
+                  </div>
+                )}
+                {/* 国家/地区 */}
+                {whoisData.registrantCountry && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">地区:</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground">{getCountryName(whoisData.registrantCountry)}</span>
+                  </div>
+                )}
+                {/* 联系电话 */}
+                {whoisData.registrantPhone && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">电话:</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground font-mono">{whoisData.registrantPhone}</span>
+                  </div>
+                )}
+                {/* 联系邮箱 */}
+                {whoisData.registrantEmail && (
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0 w-[4rem] sm:w-[5rem] text-right">邮箱:</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground break-all">{whoisData.registrantEmail}</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
 
           {/* 5. 域名NS */}
           {whoisData.nameServers && whoisData.nameServers.length > 0 && (
-              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border sm:shadow-md">
                 <div className="space-y-2">
                   {/* 标题行：名称服务器 + DNS提供商标识 */}
                    <div className="flex items-center gap-2 sm:gap-3">
@@ -1038,7 +1060,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
                     {whoisData.nameServers.map((ns, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">NS{index + 1}:</span>
-                        <span className="font-mono text-sm sm:text-base font-bold text-foreground break-all">{ns}</span>
+                        <span className="font-mono text-xs sm:text-sm font-medium text-foreground break-all">{ns}</span>
                       </div>
                     ))}
                   </div>
@@ -1048,7 +1070,7 @@ export const WhoisQuery = ({ domain, displayDomain: propDisplayDomain, onLoadCom
 
           {/* 6. 域名状态 */}
           {whoisData.status && whoisData.status.length > 0 && (
-              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border shadow-md">
+              <div className="p-2.5 sm:p-5 bg-card/60 backdrop-blur-sm rounded-lg sm:rounded-xl border border-border sm:shadow-md">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
