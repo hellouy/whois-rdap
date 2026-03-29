@@ -86,6 +86,7 @@ const HackGenerator = () => {
   const browseModeResults = useMemo(() => {
     if (keyword.trim() || !selectedTld || !libraryLoaded) return [];
     return getAllHacksForTld(selectedTld);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, selectedTld, libraryLoaded]);
 
   // Generate and filter results
@@ -133,7 +134,7 @@ const HackGenerator = () => {
     }
 
     return results;
-  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith, pinyinMode]);
+  }, [keyword, activeTlds, sortMode, sortAsc, prefixLengthEnabled, prefixMaxLength, modeStartsWith, modeEndsWith, pinyinMode, libraryLoaded]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(allResults.length / pageSize));

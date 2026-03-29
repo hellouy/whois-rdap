@@ -33,7 +33,9 @@ API (server.mjs / external APIs)
     - `domain-hack.ts` — Orchestration: lazy library loading, corpus fetching
     - `dns-cache.ts` — LocalStorage-backed DNS result cache
     - `tld-list.ts`, `tld-categories.ts` — TLD data
-    - `word-library*.ts`, `word-meanings*.ts`, `pinyin-library.ts` — Curated domain hack word lists
+    - `word-library*.ts` (word-library through word-library-extra8) — Curated domain hack word lists; extra8 adds .al/.re/.de/.sh/.is/.ve/.se/.ge/.pe/.er and more
+    - `word-meanings*.ts` (through word-meanings-extra8) — Chinese + English meanings for domain hacks
+    - `pinyin-library.ts` — Pinyin-based domain hack words
   - `services/` — API middleware layer
     - `whois-client.ts` — All WHOIS/RDAP fetching, parsing, caching (pure, no React)
     - `single-char-service.ts` — Business logic for batch domain availability checks

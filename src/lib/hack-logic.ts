@@ -37,14 +37,18 @@ export function generateVariants(keyword: string): string[] {
   const variants = new Set<string>();
   variants.add(kw);
 
+  // Basic inflections
   if (!kw.endsWith("s")) variants.add(kw + "s");
   if (kw.endsWith("s") && kw.length > 2) variants.add(kw.slice(0, -1));
   variants.add(kw + "ing");
   variants.add(kw + "er");
+  variants.add(kw + "ers");
   variants.add(kw + "ed");
   variants.add(kw + "ly");
   variants.add(kw + "tion");
+  variants.add(kw + "tions");
   variants.add(kw + "ment");
+  variants.add(kw + "ments");
   variants.add(kw + "ness");
   variants.add(kw + "able");
   variants.add(kw + "ful");
@@ -63,7 +67,14 @@ export function generateVariants(keyword: string): string[] {
   variants.add(kw + "ism");
   variants.add(kw + "ify");
   variants.add(kw + "ic");
+  variants.add(kw + "ical");
+  variants.add(kw + "age");
+  variants.add(kw + "ure");
+  variants.add(kw + "ive");
+  variants.add(kw + "or");
+  variants.add(kw + "ors");
 
+  // Double-last-consonant before suffix
   if (kw.length <= 5 && /[bcdfgklmnprstvz]$/.test(kw)) {
     const doubled = kw + kw[kw.length - 1];
     variants.add(doubled + "ing");
@@ -71,38 +82,139 @@ export function generateVariants(keyword: string): string[] {
     variants.add(doubled + "ed");
   }
 
-  const prefixes = ["un", "re", "pre", "mis", "out", "over", "under", "up", "non", "dis"];
+  // Common English prefixes
+  const prefixes = ["un", "re", "pre", "mis", "out", "over", "under", "up", "non", "dis", "in", "ex", "co", "pro", "anti", "de", "sub", "super", "inter", "self", "multi", "over", "micro", "macro"];
   for (const p of prefixes) {
     variants.add(p + kw);
   }
 
+  // Common English suffixes applied to base
+  const suffixes = ["ware", "work", "base", "lab", "hub", "net", "tech", "app", "box", "core", "flow", "link", "mark", "meet", "now", "pay", "ship", "spot", "stack", "star", "ify", "ly", "er"];
+  for (const s of suffixes) {
+    variants.add(kw + s);
+  }
+
   return Array.from(variants);
+}
+
+// ── Compound word splitter ────────────────────────────────────────────────────
+
+/**
+ * Known common English word segments used to split compound words.
+ * When a compound token like "techblog" or "startup" is found, we check if
+ * it starts or ends with one of these segments so we can split it.
+ */
+const SPLIT_SEGMENTS = [
+  // prefixes (sorted longest first to prefer greedy splits)
+  "self", "over", "under", "inter", "multi", "micro", "macro", "semi",
+  "super", "hyper", "ultra", "anti", "auto", "bio", "crypto", "cyber",
+  "data", "eco", "geo", "info", "meta", "nano", "tele", "web", "net",
+  "pre", "pro", "sub", "co", "re", "de", "un", "in", "up", "ex",
+  // common tech words that appear as prefixes
+  "tech", "soft", "hard", "cloud", "open", "smart", "fast", "easy",
+  "quick", "safe", "free", "live", "real", "true", "full", "high",
+  "low", "top", "hot", "cool", "new", "big", "mini",
+  // common tech words that appear as suffixes
+  "hub", "lab", "app", "box", "io", "api", "sdk", "ai", "ml", "ux",
+  "ui", "dev", "ops", "sec", "db", "bot", "pay", "kit", "map",
+  "book", "shop", "mart", "park", "link", "mark", "spot", "base",
+  "cast", "chat", "code", "core", "drop", "feed", "flow", "fund",
+  "gate", "grid", "hack", "host", "list", "live", "meet", "mint",
+  "note", "pass", "pipe", "play", "pool", "push", "rack", "read",
+  "ring", "run", "sale", "scan", "send", "ship", "sign", "site",
+  "snap", "sort", "spin", "star", "sync", "tag", "task", "team",
+  "test", "tool", "track", "view", "wave", "wire", "word", "work",
+  "yard", "zone",
+];
+
+/**
+ * Split a compound word into sub-tokens.
+ * Returns the sub-words found by segmenting at known segment boundaries.
+ */
+export function splitCompoundWord(word: string): string[] {
+  if (!word || word.length < 4) return [];
+  const results = new Set<string>();
+  const wl = word.toLowerCase();
+
+  for (const seg of SPLIT_SEGMENTS) {
+    // Word starts with this segment
+    if (wl.startsWith(seg) && wl.length > seg.length + 2) {
+      results.add(seg);
+      results.add(wl.slice(seg.length));
+    }
+    // Word ends with this segment
+    if (wl.endsWith(seg) && wl.length > seg.length + 2) {
+      results.add(wl.slice(0, wl.length - seg.length));
+      results.add(seg);
+    }
+  }
+
+  return Array.from(results).filter(s => s.length >= 2);
+}
+
+// ── CamelCase splitter ────────────────────────────────────────────────────────
+
+/**
+ * Split a camelCase or PascalCase string into lower-case parts.
+ * "TechBlog" → ["tech", "blog"]
+ * "domainHack" → ["domain", "hack"]
+ */
+export function splitCamelCase(input: string): string[] {
+  return input
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .split(/\s+/)
+    .map(p => p.toLowerCase())
+    .filter(p => p.length > 0);
 }
 
 // ── Phrase tokenizer ──────────────────────────────────────────────────────────
 
 /**
  * Split a user input phrase into individual tokens suitable for hack generation.
- * Handles spaces, hyphens, underscores, and generates concatenated forms.
+ * Handles spaces, hyphens, underscores, camelCase, and compound words.
  */
 export function tokenizePhrase(input: string): string[] {
   if (!input || typeof input !== "string") return [];
+
+  // 1. First pass: CamelCase splitting (before lowercasing)
+  const camelParts = splitCamelCase(input.trim());
+
+  // 2. Sanitize and split on whitespace/separators
   const sanitized = input
     .toLowerCase()
     .replace(/[^a-z0-9\s\-_]/g, "")
     .split(/[\s\-_]+/)
     .filter((p) => p.length > 0);
 
-  if (sanitized.length === 0) return [];
-
   const tokens = new Set<string>();
+
+  // Add camelCase parts
+  for (const p of camelParts) {
+    const clean = p.replace(/[^a-z0-9]/g, "");
+    if (clean.length >= 2) tokens.add(clean);
+  }
+
+  // Add raw sanitized parts
   for (const p of sanitized) tokens.add(p);
 
+  // Add adjacent-pair combinations
   if (sanitized.length >= 2) {
     for (let i = 0; i < sanitized.length - 1; i++) {
       tokens.add(sanitized[i] + sanitized[i + 1]);
     }
     tokens.add(sanitized.join(""));
+  }
+
+  // 3. Compound splitting: for single-word inputs, try segment splitting
+  const allBase = Array.from(tokens);
+  for (const tok of allBase) {
+    if (tok.length >= 5) {
+      const parts = splitCompoundWord(tok);
+      for (const p of parts) {
+        if (p.length >= 2) tokens.add(p);
+      }
+    }
   }
 
   return Array.from(tokens);
@@ -124,6 +236,19 @@ export function findHackPosition(word: string, tldClean: string): number | null 
 }
 
 /**
+ * Calculate a pronounceability bonus (0-15) for a prefix string.
+ * Prefers alternating consonants/vowels and pure-alpha short prefixes.
+ */
+function pronounceabilityBonus(prefix: string): number {
+  if (!prefix) return 10; // empty prefix = word IS the TLD, very creative
+  if (!/^[a-z]+$/i.test(prefix)) return 0; // has digits/hyphens
+  if (prefix.length <= 2) return 8;
+  if (prefix.length <= 4) return 5;
+  if (prefix.length <= 6) return 3;
+  return 0;
+}
+
+/**
  * Calculate a creativity score (0–100) for a domain hack.
  * Higher = shorter prefix, library match, readable.
  */
@@ -136,19 +261,24 @@ export function calculateCreativity(
   let score = 50;
   const tldClean = tld.replace(/^\./, "");
 
+  // Perfect hack: the domain spells the complete word
   if ((prefix + tldClean).toLowerCase() === word.toLowerCase()) score += 30;
   if (isFromLibrary) score += 15;
 
-  if (prefix.length === 0) score += 20;
-  else if (prefix.length <= 2) score += 15;
-  else if (prefix.length <= 4) score += 10;
-  else if (prefix.length <= 6) score += 5;
+  // Prefix length bonus — shorter prefix = more creative
+  if (prefix.length === 0) score += 25;
+  else if (prefix.length <= 2) score += 18;
+  else if (prefix.length <= 4) score += 12;
+  else if (prefix.length <= 6) score += 7;
+  else if (prefix.length <= 8) score += 3;
 
-  if (/[aeiou]/i.test(prefix)) score += 3;
-  if (prefix.length >= 2 && /^[a-z]+$/i.test(prefix)) score += 3;
+  // Pronounceability
+  score += pronounceabilityBonus(prefix);
 
+  // Penalty for very long prefixes
   if (prefix.length > 10) score -= 10;
   if (prefix.length > 15) score -= 15;
+  if (prefix.length > 20) score -= 20;
 
   return Math.min(100, Math.max(0, score));
 }
@@ -191,8 +321,10 @@ export function buildHackResult(
 ): HackResult {
   const tldClean = tld.replace(/^\./, "");
   const creativity = calculateCreativity(prefix, keyword, tld, isFromLibrary);
-  const lengthScore = Math.max(0, 100 - (prefix.length + tldClean.length) * 5);
-  const score = Math.round(creativity * 0.6 + lengthScore * 0.4);
+  // Length score: rewards short total domain length
+  const totalLen = prefix.length + tldClean.length;
+  const lengthScore = Math.max(0, 100 - totalLen * 6);
+  const score = Math.round(creativity * 0.55 + lengthScore * 0.45);
   const isExact = (prefix + tldClean).toLowerCase() === keyword.toLowerCase();
   return { domain, keyword, tld, prefix, score, creativity, lengthScore, isExact, isFromLibrary, meaning };
 }
