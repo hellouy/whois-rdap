@@ -238,7 +238,7 @@ export const FloatingNav = () => {
     : null;
 
   const refreshSupportList = useCallback(() => {
-    setSupportList(getTldSupportList());
+    getTldSupportList().then(setSupportList);
   }, []);
 
   const filteredItems = useMemo(() => {
@@ -462,7 +462,7 @@ export const FloatingNav = () => {
               <span className="text-xs text-muted-foreground ml-auto">{filteredSupportList.length} 个后缀</span>
               {supportList.length > 0 && (
                 <button
-                  onClick={() => { clearTldSupportList(); refreshSupportList(); }}
+                  onClick={() => clearTldSupportList().then(refreshSupportList)}
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -577,7 +577,7 @@ export const FloatingNav = () => {
 
                       {/* Remove button */}
                       <button
-                        onClick={() => { removeTldEntry(entry.tld); refreshSupportList(); }}
+                        onClick={() => removeTldEntry(entry.tld).then(refreshSupportList)}
                         className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0"
                       >
                         <X className="h-3.5 w-3.5" />
