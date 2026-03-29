@@ -970,6 +970,8 @@ export const RDAP_SERVERS: Record<string, string> = {
   "in": "https://rdap.nixiregistry.in/rdap",
   "kg": "https://rdap.cctld.kg",
   "uz": "https://rdap.cctld.uz",
+  "ir": "https://rdap.nic.ir",
+  "mn": "https://rdap.nic.mn",
   "lb": "https://rdap.lbdr.org.lb",
 
   // ========== ccTLDs - 中东 ==========

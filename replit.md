@@ -3,9 +3,12 @@
 A domain lookup and analysis tool built with React + Vite + TypeScript. Supports WHOIS queries, RDAP lookups, DNS resolution, SSL certificate checks, domain pricing, and a domain hack generator.
 
 ## Current Data Coverage (2026-03)
-- **RDAP servers**: 1,242 TLDs in `server.mjs` RDAP_SERVERS (up from 922, now matches IANA bootstrap)
+- **RDAP servers**: 1,168+ TLDs in `server.mjs` RDAP_SERVERS (IANA bootstrap complete + ccTLD extras)
+  - Added .ir (Iran) and .mn (Mongolia) direct RDAP servers
+  - 134 ccTLDs with RDAP, 114 ccTLDs without (logged as unsupported in coverage list)
 - **Domain Hack Generator**: 332 TLDs supported, 23,153+ words, 5,417 Chinese meanings
-- **RDAP accuracy**: All CentralNic→Radix migrations applied (.online/.site/.store/.tech/.space/.fun/.pw), .au fixed, .kg upgraded to https, .shop→gmoregistry, Japanese TLDs→gmoregistry, .foundation/.pharmacy/.tattoo/.health/.club/.adult/.lol/.luxury/.homes corrected
+- **RDAP accuracy**: All CentralNic→Radix migrations (.online/.site/.store/.tech/.space/.fun/.pw), .au→cctld.au, .kg→https, .shop→gmoregistry, Japanese TLDs→gmoregistry, .foundation/.pharmacy/.tattoo/.health/.club/.adult/.lol/.luxury/.homes corrected
+- **Navigation "支持列表"**: Two-tab UI — "我的记录" (dynamic per-user query log) + "后缀覆盖" (static RDAP coverage showing all 134 supported and 114 unsupported ccTLDs with Chinese country names)
 
 ## Architecture
 

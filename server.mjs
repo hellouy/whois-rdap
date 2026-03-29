@@ -1347,6 +1347,8 @@ const RDAP_SERVERS = {
   in: 'https://rdap.nixiregistry.in/rdap',
   kg: 'https://rdap.cctld.kg',
   uz: 'https://rdap.cctld.uz',
+  ir: 'https://rdap.nic.ir',
+  mn: 'https://rdap.nic.mn',
   au: 'https://rdap.cctld.au/rdap',
   nz: 'https://rdap.nzrs.nz',
   fj: 'https://www.rdap.fj',
