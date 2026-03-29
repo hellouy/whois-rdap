@@ -100,6 +100,19 @@ async function loadLibraries(): Promise<{
     { WORD_LIBRARY_EXTRA13 },
     { WORD_LIBRARY_EXTRA14 },
     { WORD_LIBRARY_EXTRA15 },
+    { WORD_LIBRARY_EXTRA16A },
+    { WORD_LIBRARY_EXTRA16B },
+    { WORD_LIBRARY_EXTRA16C },
+    { WORD_LIBRARY_EXTRA16D },
+    { WORD_LIBRARY_EXTRA16E },
+    { WORD_LIBRARY_EXTRA16F },
+    { WORD_LIBRARY_EXTRA16G },
+    { WORD_LIBRARY_EXTRA16H },
+    { WORD_LIBRARY_EXTRA17 },
+    { WORD_LIBRARY_EXTRA18 },
+    { WORD_LIBRARY_EXTRA19 },
+    { WORD_LIBRARY_EXTRA20 },
+    { WORD_LIBRARY_EXTRA21 },
     { PINYIN_WORD_LIBRARY, PINYIN_MEANINGS },
     { WORD_MEANINGS: BASE_MEANINGS },
     { WORD_MEANINGS_EXTRA },
@@ -132,6 +145,19 @@ async function loadLibraries(): Promise<{
     import("./word-library-extra13"),
     import("./word-library-extra14"),
     import("./word-library-extra15"),
+    import("./word-library-extra16a"),
+    import("./word-library-extra16b"),
+    import("./word-library-extra16c"),
+    import("./word-library-extra16d"),
+    import("./word-library-extra16e"),
+    import("./word-library-extra16f"),
+    import("./word-library-extra16g"),
+    import("./word-library-extra16h"),
+    import("./word-library-extra17"),
+    import("./word-library-extra18"),
+    import("./word-library-extra19"),
+    import("./word-library-extra20"),
+    import("./word-library-extra21"),
     import("./pinyin-library"),
     import("./word-meanings"),
     import("./word-meanings-extra"),
@@ -169,6 +195,19 @@ async function loadLibraries(): Promise<{
   mergeLibrary(library, WORD_LIBRARY_EXTRA13);
   mergeLibrary(library, WORD_LIBRARY_EXTRA14);
   mergeLibrary(library, WORD_LIBRARY_EXTRA15);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16A);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16B);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16C);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16D);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16E);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16F);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16G);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA16H);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA17);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA18);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA19);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA20);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA21);
   mergeLibrary(library, PINYIN_WORD_LIBRARY);
 
   const meanings: Record<string, string> = {
