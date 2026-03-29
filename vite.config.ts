@@ -6,7 +6,7 @@ export default defineConfig({
   root: path.resolve(__dirname),
   server: {
     host: "0.0.0.0",
-    port: 8080,
+    port: 5000,
     allowedHosts: true,
     proxy: {
       "/api": {
