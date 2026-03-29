@@ -1,9 +1,10 @@
 /**
- * TLD Support Store — database-backed via /api/tld-support
- * Falls back to localStorage cache so the UI stays snappy.
+ * TLD Support Store
+ * Persists per-TLD query outcomes to localStorage so users can see
+ * which extensions can be queried natively vs. fall through to a third-party.
  */
 
-const CACHE_KEY = "tld_support_cache_v2";
+const STORAGE_KEY = "tld_support_list_v1";
 
 export type TldStatus = "supported" | "third_party" | "unsupported";
 
@@ -16,97 +17,52 @@ export interface TldSupportEntry {
   queryCount: number;
 }
 
-// ── Local cache helpers ────────────────────────────────────────────────────────
-
-function loadCache(): Record<string, TldSupportEntry> {
+function load(): Record<string, TldSupportEntry> {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
 }
 
-function saveCache(data: Record<string, TldSupportEntry>) {
+function save(data: Record<string, TldSupportEntry>) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
-    // storage quota exceeded — ignore
+    // storage full — ignore
   }
 }
 
-// ── API calls ─────────────────────────────────────────────────────────────────
-
-/** Write or update a TLD entry — fire-and-forget from the call site. */
-export async function recordTldResult(
+export function recordTldResult(
   tld: string,
   status: TldStatus,
   source: string,
   errorMsg?: string
-): Promise<void> {
-  // Optimistic local cache update
-  const cache = loadCache();
-  const prev = cache[tld];
-  const entry: TldSupportEntry = {
+) {
+  const store = load();
+  const existing = store[tld];
+  store[tld] = {
     tld,
     status,
     source,
-    errorMsg: errorMsg ?? prev?.errorMsg,
+    errorMsg: errorMsg ?? existing?.errorMsg,
     lastQueried: Date.now(),
-    queryCount: (prev?.queryCount ?? 0) + 1,
+    queryCount: (existing?.queryCount ?? 0) + 1,
   };
-  cache[tld] = entry;
-  saveCache(cache);
-
-  // Persist to database
-  try {
-    await fetch("/api/tld-support", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry),
-    });
-  } catch {
-    // network error — local cache is the fallback
-  }
+  save(store);
 }
 
-/** Fetch the full list from the database (with local cache as fallback). */
-export async function getTldSupportList(): Promise<TldSupportEntry[]> {
-  try {
-    const r = await fetch("/api/tld-support");
-    if (r.ok) {
-      const list: TldSupportEntry[] = await r.json();
-      // Refresh local cache from server response
-      const cache: Record<string, TldSupportEntry> = {};
-      list.forEach((e) => (cache[e.tld] = e));
-      saveCache(cache);
-      return list;
-    }
-  } catch {
-    // fall through to local cache
-  }
-  // Fallback: local cache sorted by lastQueried desc
-  return Object.values(loadCache()).sort((a, b) => b.lastQueried - a.lastQueried);
+export function getTldSupportList(): TldSupportEntry[] {
+  return Object.values(load()).sort((a, b) => b.lastQueried - a.lastQueried);
 }
 
-/** Delete a single TLD entry. */
-export async function removeTldEntry(tld: string): Promise<void> {
-  const cache = loadCache();
-  delete cache[tld];
-  saveCache(cache);
-  try {
-    await fetch(`/api/tld-support/${encodeURIComponent(tld)}`, { method: "DELETE" });
-  } catch {
-    // ignore
-  }
+export function clearTldSupportList() {
+  localStorage.removeItem(STORAGE_KEY);
 }
 
-/** Delete all entries. */
-export async function clearTldSupportList(): Promise<void> {
-  saveCache({});
-  try {
-    await fetch("/api/tld-support", { method: "DELETE" });
-  } catch {
-    // ignore
-  }
+export function removeTldEntry(tld: string) {
+  const store = load();
+  delete store[tld];
+  save(store);
 }

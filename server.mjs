@@ -1,30 +1,6 @@
 import express from 'express';
 import { createServer } from 'http';
 import net from 'net';
-import pg from 'pg';
-
-// ── PostgreSQL pool ────────────────────────────────────────────────────────────
-const { Pool } = pg;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-async function dbReady() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS tld_support (
-        tld          TEXT PRIMARY KEY,
-        status       TEXT NOT NULL,
-        source       TEXT NOT NULL,
-        error_msg    TEXT,
-        last_queried BIGINT NOT NULL,
-        query_count  INT NOT NULL DEFAULT 1,
-        updated_at   TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-  } catch (e) {
-    console.warn('[db] tld_support table init failed:', e.message);
-  }
-}
-dbReady();
 
 // ── Per-TLD WHOIS query format overrides ──────────────────────────────────────
 // Most servers accept: `domain.tld\r\n` (RFC 3912 default)
@@ -689,12 +665,11 @@ async function tcpWhoisQuery(host, domain, timeoutMs = 7000, tld = '') {
 }
 
 const app = express();
-app.use(express.json());
 const PORT = 3001;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -1904,71 +1879,6 @@ app.get('/api/price', async (req, res) => {
     sendJson(res, data, 200, { 'Cache-Control': 'public, max-age=600' });
   } catch {
     sendJson(res, { error: 'Price API failed' }, 502, { 'Cache-Control': 'public, max-age=600' });
-  }
-});
-
-// ── TLD Support List API ──────────────────────────────────────────────────────
-
-app.options('/api/tld-support', (req, res) => res.set(corsHeaders).status(204).end());
-app.options('/api/tld-support/:tld', (req, res) => res.set(corsHeaders).status(204).end());
-
-app.get('/api/tld-support', async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT tld, status, source, error_msg, last_queried, query_count FROM tld_support ORDER BY last_queried DESC'
-    );
-    const list = rows.map(r => ({
-      tld: r.tld,
-      status: r.status,
-      source: r.source,
-      errorMsg: r.error_msg,
-      lastQueried: Number(r.last_queried),
-      queryCount: r.query_count,
-    }));
-    sendJson(res, list);
-  } catch (e) {
-    sendJson(res, { error: e.message }, 500);
-  }
-});
-
-app.post('/api/tld-support', async (req, res) => {
-  const { tld, status, source, errorMsg, lastQueried, queryCount } = req.body ?? {};
-  if (!tld || !status || !source) return sendJson(res, { error: 'Missing fields' }, 400);
-  try {
-    await pool.query(
-      `INSERT INTO tld_support (tld, status, source, error_msg, last_queried, query_count, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,NOW())
-       ON CONFLICT (tld) DO UPDATE SET
-         status       = EXCLUDED.status,
-         source       = EXCLUDED.source,
-         error_msg    = EXCLUDED.error_msg,
-         last_queried = EXCLUDED.last_queried,
-         query_count  = EXCLUDED.query_count,
-         updated_at   = NOW()`,
-      [tld, status, source, errorMsg ?? null, lastQueried ?? Date.now(), queryCount ?? 1]
-    );
-    sendJson(res, { ok: true });
-  } catch (e) {
-    sendJson(res, { error: e.message }, 500);
-  }
-});
-
-app.delete('/api/tld-support/:tld', async (req, res) => {
-  const tld = req.params.tld;
-  try {
-    await pool.query('DELETE FROM tld_support WHERE tld = $1', [tld]);
-    sendJson(res, { ok: true });
-  } catch (e) {
-    sendJson(res, { error: e.message }, 500);
-  }
-});
-
-app.delete('/api/tld-support', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM tld_support');
-    sendJson(res, { ok: true });
-  } catch (e) {
-    sendJson(res, { error: e.message }, 500);
   }
 });
 
