@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -14,6 +14,10 @@ import {
   Clock,
   X,
   Trash2,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import {
   Drawer,
@@ -23,6 +27,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQueryHistory, QueryHistoryItem } from "@/hooks/use-query-history";
+import {
+  getTldSupportList,
+  clearTldSupportList,
+  removeTldEntry,
+  type TldSupportEntry,
+  type TldStatus,
+} from "@/utils/tld-support-store";
 
 interface NavItem {
   title: string;
@@ -53,6 +64,7 @@ const quickNav: QuickNavEntry[] = [
   { key: "register", label: "注册", icon: Globe, action: "section", sectionKey: "register" },
   { key: "grab", label: "抢注", icon: Webhook, action: "section", sectionKey: "grab" },
   { key: "history", label: "历史", icon: History, action: "section", sectionKey: "history" },
+  { key: "support", label: "支持列表", icon: ShieldCheck, action: "section", sectionKey: "support" },
 ];
 
 const toolSections: Record<string, ToolSection> = {
@@ -197,14 +209,37 @@ function groupHistory(items: QueryHistoryItem[]): HistoryGroup[] {
   return order.filter(l => groups[l]).map(l => ({ label: l, items: groups[l] }));
 }
 
+type SupportFilter = "all" | "supported" | "third_party" | "unsupported";
+
+function sourceLabel(source: string): string {
+  const map: Record<string, string> = {
+    RDAP: "RDAP",
+    RDAP_DIRECT: "RDAP直连",
+    RDAP_ORG: "rdap.org",
+    WHOIS_FALLBACK: "WHOIS",
+    TIANHU: "tian.hu",
+    DNS_FALLBACK: "DNS检测",
+    UNKNOWN: "未知",
+  };
+  return map[source] ?? source;
+}
+
 export const FloatingNav = () => {
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [supportFilter, setSupportFilter] = useState<SupportFilter>("all");
+  const [supportList, setSupportList] = useState<TldSupportEntry[]>([]);
   const navigate = useNavigate();
   const { history, clearHistory, removeItem, refresh: refreshHistory } = useQueryHistory();
 
-  const currentSection = activeSection && activeSection !== "history" ? toolSections[activeSection] : null;
+  const currentSection = activeSection && activeSection !== "history" && activeSection !== "support"
+    ? toolSections[activeSection]
+    : null;
+
+  const refreshSupportList = useCallback(() => {
+    setSupportList(getTldSupportList());
+  }, []);
 
   const filteredItems = useMemo(() => {
     if (!currentSection) return [];
@@ -235,15 +270,35 @@ export const FloatingNav = () => {
       setOpen(false);
       if (entry.route) navigate(entry.route);
     } else if (entry.sectionKey) {
+      if (entry.sectionKey === "support") refreshSupportList();
       setActiveSection(entry.sectionKey);
       setSearch("");
+      setSupportFilter("all");
     }
   };
 
   const handleBack = () => {
     setActiveSection(null);
     setSearch("");
+    setSupportFilter("all");
   };
+
+  const filteredSupportList = useMemo(() => {
+    let list = supportList;
+    if (supportFilter !== "all") list = list.filter((e) => e.status === supportFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((e) => e.tld.toLowerCase().includes(q) || e.source.toLowerCase().includes(q));
+    }
+    return list;
+  }, [supportList, supportFilter, search]);
+
+  const supportCounts = useMemo(() => ({
+    all: supportList.length,
+    supported: supportList.filter((e) => e.status === "supported").length,
+    third_party: supportList.filter((e) => e.status === "third_party").length,
+    unsupported: supportList.filter((e) => e.status === "unsupported").length,
+  }), [supportList]);
 
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
@@ -252,6 +307,7 @@ export const FloatingNav = () => {
     } else {
       setActiveSection(null);
       setSearch("");
+      setSupportFilter("all");
     }
   };
 
@@ -385,6 +441,147 @@ export const FloatingNav = () => {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeSection === "support" ? (
+          <div className="flex flex-col overflow-hidden" style={{ height: "72vh" }}>
+            {/* Header */}
+            <div className="flex items-center gap-2 px-5 pt-1 pb-3 flex-shrink-0">
+              <button
+                onClick={handleBack}
+                className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">域名支持列表</span>
+              <span className="text-xs text-muted-foreground ml-auto">{filteredSupportList.length} 个后缀</span>
+              {supportList.length > 0 && (
+                <button
+                  onClick={() => { clearTldSupportList(); refreshSupportList(); }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  清除
+                </button>
+              )}
+            </div>
+
+            {/* Filter tabs */}
+            <div className="px-5 pb-2 flex-shrink-0">
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                {(
+                  [
+                    { key: "all",         label: "全部",   count: supportCounts.all },
+                    { key: "supported",   label: "已支持", count: supportCounts.supported },
+                    { key: "third_party", label: "第三方", count: supportCounts.third_party },
+                    { key: "unsupported", label: "不支持", count: supportCounts.unsupported },
+                  ] as { key: SupportFilter; label: string; count: number }[]
+                ).map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSupportFilter(key)}
+                    className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                      supportFilter === key
+                        ? "bg-foreground text-background"
+                        : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
+                    }`}
+                  >
+                    {label}
+                    <span className={`text-[10px] tabular-nums ${supportFilter === key ? "opacity-70" : "opacity-60"}`}>
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="px-5 pb-3 flex-shrink-0">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="搜索后缀..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8 h-8 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-6">
+              {supportList.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                  <p className="text-sm font-medium mb-1">暂无记录</p>
+                  <p className="text-xs opacity-70">查询域名后，系统会自动记录<br />各后缀的查询支持情况</p>
+                </div>
+              ) : filteredSupportList.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">无匹配结果</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {filteredSupportList.map((entry) => (
+                    <div
+                      key={entry.tld}
+                      className="group flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-card"
+                    >
+                      {/* Status icon */}
+                      <div className="flex-shrink-0">
+                        {entry.status === "supported" && (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        )}
+                        {entry.status === "third_party" && (
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                        )}
+                        {entry.status === "unsupported" && (
+                          <XCircle className="h-4 w-4 text-red-400" />
+                        )}
+                      </div>
+
+                      {/* TLD + info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-mono font-semibold">.{entry.tld}</span>
+                          <Badge
+                            className={`text-[9px] px-1.5 py-0 h-4 leading-none ${
+                              entry.status === "supported"
+                                ? "bg-green-500/10 text-green-600 border-green-500/20"
+                                : entry.status === "third_party"
+                                ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                : "bg-red-500/10 text-red-500 border-red-400/20"
+                            }`}
+                            variant="outline"
+                          >
+                            {entry.status === "supported"
+                              ? "已支持"
+                              : entry.status === "third_party"
+                              ? "第三方"
+                              : "不支持"}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">{sourceLabel(entry.source)}</span>
+                        </div>
+                        {entry.status === "unsupported" && entry.errorMsg && (
+                          <p className="text-[10px] text-red-400/80 mt-0.5 truncate">{entry.errorMsg}</p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                          查询 {entry.queryCount} 次 · {timeAgo(entry.lastQueried)}
+                        </p>
+                      </div>
+
+                      {/* Remove button */}
+                      <button
+                        onClick={() => { removeTldEntry(entry.tld); refreshSupportList(); }}
+                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   ))}
                 </div>

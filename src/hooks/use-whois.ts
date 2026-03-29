@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { fetchWhois, type WhoisData, type ResultEnvelope, DataSource, calculateReliabilityScore } from "@/services/whois-client";
 import { getSupportedTldCount } from "@/utils/whois-servers";
 import { toASCII } from "@/utils/tld-servers";
+import { recordTldResult, type TldStatus } from "@/utils/tld-support-store";
 
 export type { WhoisData, ResultEnvelope };
 export { DataSource, calculateReliabilityScore };
@@ -58,6 +59,20 @@ export function useWhois(domain: string) {
       setEnvelope(env);
       setError(env.error);
       setIsLoading(false);
+
+      // Record TLD support status
+      const tld = norm.includes(".") ? norm.split(".").slice(1).join(".") : "";
+      if (tld) {
+        let status: TldStatus;
+        if (env.source === DataSource.TIANHU) {
+          status = "third_party";
+        } else if (env.source === DataSource.UNKNOWN || (env.data === null && env.error !== null)) {
+          status = "unsupported";
+        } else {
+          status = "supported";
+        }
+        recordTldResult(tld, status, env.source, env.error ?? undefined);
+      }
     });
   }, [domain]);
 
