@@ -14,6 +14,9 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    headers: {
+      "Cache-Control": "no-store",
+    },
     watch: {
       ignored: ["**/.local/**", "**/node_modules/**", "**/.git/**"],
     },
