@@ -22,6 +22,16 @@ async function loadWordCounts(): Promise<Record<string, number>> {
     { WORD_LIBRARY_EXTRA3 },
     { WORD_LIBRARY_EXTRA4 },
     { WORD_LIBRARY_EXTRA5 },
+    { WORD_LIBRARY_EXTRA6 },
+    { WORD_LIBRARY_EXTRA7 },
+    { WORD_LIBRARY_EXTRA8 },
+    { WORD_LIBRARY_EXTRA9 },
+    { WORD_LIBRARY_EXTRA10 },
+    { WORD_LIBRARY_EXTRA11 },
+    { WORD_LIBRARY_EXTRA12 },
+    { WORD_LIBRARY_EXTRA13 },
+    { WORD_LIBRARY_EXTRA14 },
+    { WORD_LIBRARY_EXTRA15 },
     { PINYIN_WORD_LIBRARY },
   ] = await Promise.all([
     import("@/lib/word-library"),
@@ -30,10 +40,26 @@ async function loadWordCounts(): Promise<Record<string, number>> {
     import("@/lib/word-library-extra3"),
     import("@/lib/word-library-extra4"),
     import("@/lib/word-library-extra5"),
+    import("@/lib/word-library-extra6"),
+    import("@/lib/word-library-extra7"),
+    import("@/lib/word-library-extra8"),
+    import("@/lib/word-library-extra9"),
+    import("@/lib/word-library-extra10"),
+    import("@/lib/word-library-extra11"),
+    import("@/lib/word-library-extra12"),
+    import("@/lib/word-library-extra13"),
+    import("@/lib/word-library-extra14"),
+    import("@/lib/word-library-extra15"),
     import("@/lib/pinyin-library"),
   ]);
 
-  const libs = [WORD_LIBRARY, WORD_LIBRARY_EXTRA, WORD_LIBRARY_EXTRA2, WORD_LIBRARY_EXTRA3, WORD_LIBRARY_EXTRA4, WORD_LIBRARY_EXTRA5, PINYIN_WORD_LIBRARY];
+  const libs = [
+    WORD_LIBRARY, WORD_LIBRARY_EXTRA, WORD_LIBRARY_EXTRA2, WORD_LIBRARY_EXTRA3,
+    WORD_LIBRARY_EXTRA4, WORD_LIBRARY_EXTRA5, WORD_LIBRARY_EXTRA6, WORD_LIBRARY_EXTRA7,
+    WORD_LIBRARY_EXTRA8, WORD_LIBRARY_EXTRA9, WORD_LIBRARY_EXTRA10, WORD_LIBRARY_EXTRA11,
+    WORD_LIBRARY_EXTRA12, WORD_LIBRARY_EXTRA13, WORD_LIBRARY_EXTRA14, WORD_LIBRARY_EXTRA15,
+    PINYIN_WORD_LIBRARY,
+  ];
   
   for (const tld of PRESET_TLDS) {
     const clean = tld.replace(/^\./, "").toLowerCase();
