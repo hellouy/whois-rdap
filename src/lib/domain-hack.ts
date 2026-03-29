@@ -113,6 +113,8 @@ async function loadLibraries(): Promise<{
     { WORD_LIBRARY_EXTRA19 },
     { WORD_LIBRARY_EXTRA20 },
     { WORD_LIBRARY_EXTRA21 },
+    { WORD_LIBRARY_EXTRA22 },
+    { WORD_LIBRARY_EXTRA23 },
     { PINYIN_WORD_LIBRARY, PINYIN_MEANINGS },
     { WORD_MEANINGS: BASE_MEANINGS },
     { WORD_MEANINGS_EXTRA },
@@ -134,6 +136,8 @@ async function loadLibraries(): Promise<{
     { WORD_MEANINGS_EXTRA16B },
     { WORD_MEANINGS_EXTRA16C },
     { WORD_MEANINGS_EXTRA17 },
+    { WORD_MEANINGS_EXTRA18A },
+    { WORD_MEANINGS_EXTRA18B },
     { WORD_MEANINGS_WORDS },
     corpusJson,
     corpusExtraJson,
@@ -167,6 +171,8 @@ async function loadLibraries(): Promise<{
     import("./word-library-extra19"),
     import("./word-library-extra20"),
     import("./word-library-extra21"),
+    import("./word-library-extra22"),
+    import("./word-library-extra23"),
     import("./pinyin-library"),
     import("./word-meanings"),
     import("./word-meanings-extra"),
@@ -188,6 +194,8 @@ async function loadLibraries(): Promise<{
     import("./word-meanings-extra16b"),
     import("./word-meanings-extra16c"),
     import("./word-meanings-extra17"),
+    import("./word-meanings-extra18a"),
+    import("./word-meanings-extra18b"),
     import("./word-meanings-words"),
     fetchCorpusJson("/data/word-corpus.json"),
     fetchCorpusJson("/data/word-corpus-extra.json"),
@@ -226,6 +234,8 @@ async function loadLibraries(): Promise<{
   mergeLibrary(library, WORD_LIBRARY_EXTRA19);
   mergeLibrary(library, WORD_LIBRARY_EXTRA20);
   mergeLibrary(library, WORD_LIBRARY_EXTRA21);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA22);
+  mergeLibrary(library, WORD_LIBRARY_EXTRA23);
   mergeLibrary(library, PINYIN_WORD_LIBRARY);
 
   const meanings: Record<string, string> = {
@@ -254,6 +264,8 @@ async function loadLibraries(): Promise<{
     ...WORD_MEANINGS_EXTRA16B,
     ...WORD_MEANINGS_EXTRA16C,
     ...WORD_MEANINGS_EXTRA17,
+    ...WORD_MEANINGS_EXTRA18A,
+    ...WORD_MEANINGS_EXTRA18B,
     ...PINYIN_MEANINGS,
   };
 

@@ -45,6 +45,8 @@ async function loadWordCounts(): Promise<Record<string, number>> {
     { WORD_LIBRARY_EXTRA19 },
     { WORD_LIBRARY_EXTRA20 },
     { WORD_LIBRARY_EXTRA21 },
+    { WORD_LIBRARY_EXTRA22 },
+    { WORD_LIBRARY_EXTRA23 },
     { PINYIN_WORD_LIBRARY },
   ] = await Promise.all([
     import("@/lib/word-library"),
@@ -76,6 +78,8 @@ async function loadWordCounts(): Promise<Record<string, number>> {
     import("@/lib/word-library-extra19"),
     import("@/lib/word-library-extra20"),
     import("@/lib/word-library-extra21"),
+    import("@/lib/word-library-extra22"),
+    import("@/lib/word-library-extra23"),
     import("@/lib/pinyin-library"),
   ]);
 
@@ -87,7 +91,7 @@ async function loadWordCounts(): Promise<Record<string, number>> {
     WORD_LIBRARY_EXTRA16A, WORD_LIBRARY_EXTRA16B, WORD_LIBRARY_EXTRA16C, WORD_LIBRARY_EXTRA16D,
     WORD_LIBRARY_EXTRA16E, WORD_LIBRARY_EXTRA16F, WORD_LIBRARY_EXTRA16G, WORD_LIBRARY_EXTRA16H,
     WORD_LIBRARY_EXTRA17, WORD_LIBRARY_EXTRA18, WORD_LIBRARY_EXTRA19, WORD_LIBRARY_EXTRA20,
-    WORD_LIBRARY_EXTRA21, PINYIN_WORD_LIBRARY,
+    WORD_LIBRARY_EXTRA21, WORD_LIBRARY_EXTRA22, WORD_LIBRARY_EXTRA23, PINYIN_WORD_LIBRARY,
   ];
   
   for (const tld of PRESET_TLDS) {
