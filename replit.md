@@ -33,8 +33,11 @@ API (server.mjs / external APIs)
     - `domain-hack.ts` — Orchestration: lazy library loading, corpus fetching
     - `dns-cache.ts` — LocalStorage-backed DNS result cache
     - `tld-list.ts`, `tld-categories.ts` — TLD data
-    - `word-library*.ts` (word-library through word-library-extra8) — Curated domain hack word lists; extra8 adds .al/.re/.de/.sh/.is/.ve/.se/.ge/.pe/.er and more
-    - `word-meanings*.ts` (through word-meanings-extra8) — Chinese + English meanings for domain hacks
+    - `word-library*.ts` (through word-library-extra10) — 20,037+ curated domain hack words across 331 TLDs
+      - extra8: .al/.re/.de/.sh/.ve/.se/.ge/.pe/.er/.is
+      - extra9: .et/.ke/.ar/.an/.th/.id/.sk/.ky/.ph/.gy/.my/.sy/.ag/.ug/.bi/.gi/.ni/.li/.fi/.ad/.il/.ch/.st/.ne supplement
+      - extra10: .ee/.lk/.ro/.bo/.do/.no/.to/.cy/.tz/.by/.eu/.mn/.lv + supplements for .de/.re/.sh/.ve/.ge/.se/.pe/.al/.me/.in/.am/.at/.it/.us/.ly/.rs/.er/.ne
+    - `word-meanings*.ts` (through word-meanings-extra10) — 4,133+ Chinese + English meanings
     - `pinyin-library.ts` — Pinyin-based domain hack words
   - `services/` — API middleware layer
     - `whois-client.ts` — All WHOIS/RDAP fetching, parsing, caching (pure, no React)
