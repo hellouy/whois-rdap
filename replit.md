@@ -2,6 +2,11 @@
 
 A domain lookup and analysis tool built with React + Vite + TypeScript. Supports WHOIS queries, RDAP lookups, DNS resolution, SSL certificate checks, domain pricing, and a domain hack generator.
 
+## Current Data Coverage (2026-03)
+- **RDAP servers**: 1,242 TLDs in `server.mjs` RDAP_SERVERS (up from 922, now matches IANA bootstrap)
+- **Domain Hack Generator**: 332 TLDs supported, 23,153+ words, 5,417 Chinese meanings
+- **RDAP accuracy**: All CentralNic→Radix migrations applied (.online/.site/.store/.tech/.space/.fun/.pw), .au fixed, .kg upgraded to https, .shop→gmoregistry, Japanese TLDs→gmoregistry, .foundation/.pharmacy/.tattoo/.health/.club/.adult/.lol/.luxury/.homes corrected
+
 ## Architecture
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query, React Router v6
