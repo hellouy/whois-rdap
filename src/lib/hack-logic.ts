@@ -89,10 +89,31 @@ export function generateVariants(keyword: string): string[] {
   }
 
   // Common English suffixes applied to base
-  const suffixes = ["ware", "work", "base", "lab", "hub", "net", "tech", "app", "box", "core", "flow", "link", "mark", "meet", "now", "pay", "ship", "spot", "stack", "star", "ify", "ly", "er"];
+  const suffixes = [
+    "ware", "work", "base", "lab", "hub", "net", "tech", "app", "box",
+    "core", "flow", "link", "mark", "meet", "now", "pay", "ship", "spot",
+    "stack", "star", "ify", "ly", "er", "ism", "ist", "ish",
+    "ward", "wide", "side", "land", "scape",
+    "craft", "space", "time", "house", "room",
+    "cast", "stream", "cast", "show",
+    "way", "path", "road", "gate", "bridge",
+    "shop", "store", "mart", "place",
+    "health", "care", "life", "wise",
+  ];
   for (const s of suffixes) {
     variants.add(kw + s);
   }
+
+  // Additional compound patterns for -ism / -ist / -ight / -ck etc.
+  // These help find matches for .sm, .ht, .ck TLDs
+  variants.add(kw + "ight");   // for .ht hacks
+  variants.add(kw + "ight" + "s");
+  variants.add(kw + "ism");    // for .sm hacks
+  variants.add(kw + "ist");
+  variants.add(kw + "ack");    // for .ck hacks
+  variants.add(kw + "ick");
+  variants.add(kw + "ock");
+  variants.add(kw + "uck");
 
   return Array.from(variants);
 }
@@ -105,16 +126,25 @@ export function generateVariants(keyword: string): string[] {
  * it starts or ends with one of these segments so we can split it.
  */
 const SPLIT_SEGMENTS = [
-  // prefixes (sorted longest first to prefer greedy splits)
+  // ── Long prefixes (try first for greedy splitting) ──────────────────────────
+  "understand", "international", "information", "entertainment",
+  "communication", "environment", "development", "management",
+  "infrastructure", "semiconductor", "cryptocurrency",
+  // ── Standard prefixes ────────────────────────────────────────────────────────
   "self", "over", "under", "inter", "multi", "micro", "macro", "semi",
   "super", "hyper", "ultra", "anti", "auto", "bio", "crypto", "cyber",
   "data", "eco", "geo", "info", "meta", "nano", "tele", "web", "net",
   "pre", "pro", "sub", "co", "re", "de", "un", "in", "up", "ex",
-  // common tech words that appear as prefixes
+  "fore", "mid", "non", "out", "mis", "dis", "air", "all",
+  "trans", "cross", "back", "down", "high", "free", "full",
+  // ── Tech / startup prefix words ───────────────────────────────────────────────
   "tech", "soft", "hard", "cloud", "open", "smart", "fast", "easy",
-  "quick", "safe", "free", "live", "real", "true", "full", "high",
-  "low", "top", "hot", "cool", "new", "big", "mini",
-  // common tech words that appear as suffixes
+  "quick", "safe", "live", "real", "true", "high",
+  "low", "top", "hot", "cool", "new", "big", "mini", "next",
+  "deep", "dark", "bright", "clean", "green", "blue", "red",
+  "super", "hyper", "nano", "omni", "poly", "mono",
+  "quantum", "virtual", "digital", "global", "local",
+  // ── Common suffix segments ─────────────────────────────────────────────────
   "hub", "lab", "app", "box", "io", "api", "sdk", "ai", "ml", "ux",
   "ui", "dev", "ops", "sec", "db", "bot", "pay", "kit", "map",
   "book", "shop", "mart", "park", "link", "mark", "spot", "base",
@@ -124,7 +154,32 @@ const SPLIT_SEGMENTS = [
   "ring", "run", "sale", "scan", "send", "ship", "sign", "site",
   "snap", "sort", "spin", "star", "sync", "tag", "task", "team",
   "test", "tool", "track", "view", "wave", "wire", "word", "work",
-  "yard", "zone",
+  "yard", "zone", "port", "pod", "bay", "camp", "nest",
+  "space", "land", "side", "ward", "way", "path",
+  "time", "day", "night", "week", "year",
+  "house", "room", "hall", "town", "city", "world", "earth",
+  "health", "care", "life", "mind", "body", "soul",
+  "learn", "edu", "school", "teach", "study",
+  "media", "news", "blog", "cast", "stream",
+  "art", "craft", "design", "studio",
+  "market", "trade", "store", "sell", "buy",
+  "invest", "fund", "bank", "pay", "earn",
+  "build", "make", "grow", "launch", "start",
+  "help", "serve", "care", "give", "share",
+  "social", "network", "connect", "match",
+  "search", "find", "look", "seek",
+  "game", "play", "sport", "race",
+  "travel", "trip", "tour", "road", "map",
+  "food", "meal", "cook", "eat", "drink",
+  "farm", "garden", "nature", "wild",
+  "photo", "video", "audio", "music",
+  "book", "read", "write", "story", "text",
+  "safe", "guard", "shield", "lock", "key",
+  "mail", "post", "send", "msg", "chat",
+  "stack", "chain", "block", "token", "coin",
+  "cloud", "data", "byte", "bit", "hex",
+  "print", "scan", "render", "draw",
+  "ship", "freight", "cargo", "move", "go",
 ];
 
 /**

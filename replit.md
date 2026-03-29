@@ -33,11 +33,13 @@ API (server.mjs / external APIs)
     - `domain-hack.ts` — Orchestration: lazy library loading, corpus fetching
     - `dns-cache.ts` — LocalStorage-backed DNS result cache
     - `tld-list.ts`, `tld-categories.ts` — TLD data
-    - `word-library*.ts` (through word-library-extra10) — 20,037+ curated domain hack words across 331 TLDs
+    - `word-library*.ts` (through word-library-extra12) — 23,153+ curated domain hack words across 332 TLDs
       - extra8: .al/.re/.de/.sh/.ve/.se/.ge/.pe/.er/.is
       - extra9: .et/.ke/.ar/.an/.th/.id/.sk/.ky/.ph/.gy/.my/.sy/.ag/.ug/.bi/.gi/.ni/.li/.fi/.ad/.il/.ch/.st/.ne supplement
-      - extra10: .ee/.lk/.ro/.bo/.do/.no/.to/.cy/.tz/.by/.eu/.mn/.lv + supplements for .de/.re/.sh/.ve/.ge/.se/.pe/.al/.me/.in/.am/.at/.it/.us/.ly/.rs/.er/.ne
-    - `word-meanings*.ts` (through word-meanings-extra10) — 4,133+ Chinese + English meanings
+      - extra10: .ee/.lk/.ro/.bo/.do/.no/.to/.cy/.tz/.by/.eu/.mn/.lv + supplements
+      - extra11: .ht(232词,-ight)/.sm(197词,-ism)/.pt(162词,-pt:encrypt!)/.ck(432词,-ck:black!)/.ax(70词,-ax:syntax!)/.ir(123词,-ir/-air)/.hm(17词:algorithm) + .ms/.ls/.bs/.gs/.ps/.ws gTLD
+      - extra12: .lt(150词,-lt)/.lu/.hu supplements + gTLD .tech/.app/.shop/.store + massive supplements for .al/.ly/.er/.rs/.us/.at/.se/.de/.ve/.me/.ne etc.
+    - `word-meanings*.ts` (through word-meanings-extra12) — 5,417+ Chinese + English meanings
     - `pinyin-library.ts` — Pinyin-based domain hack words
   - `services/` — API middleware layer
     - `whois-client.ts` — All WHOIS/RDAP fetching, parsing, caching (pure, no React)
